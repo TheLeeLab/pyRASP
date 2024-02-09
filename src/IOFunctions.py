@@ -14,17 +14,6 @@ class IO_Functions():
         self = self
         return
     
-    def write_matrix(self, filename):
-        """
-        Writes data to a .csv file.
-    
-        Args:
-        - filename (str): The name of the csv file to write.
-    
-        """
-
-        return
-
     def load_json(self, filename):
         """
         Loads data from a JSON file.

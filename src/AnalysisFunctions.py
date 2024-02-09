@@ -486,8 +486,10 @@ class Analysis_Functions():
         idxs = np.logical_and(radiality[:, 0] <= rdl[0], radiality[:, 1] >= rdl[1])
         centroids = np.floor(centroids[idxs])
         centroids = np.asarray(centroids)
-        dl_mask = self.create_filled_region(imsz, pil_small[idxs])
-    
+        if len(pil_small[idxs]) > 1:
+            dl_mask = self.create_filled_region(imsz, pil_small[idxs])
+        else:
+            dl_mask = np.full_like(img, False)
         return dl_mask, centroids, radiality, idxs
 
 
