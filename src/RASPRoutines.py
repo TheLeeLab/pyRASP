@@ -89,6 +89,10 @@ class RASP_Routines():
         large_mask, img2, Gx, Gy,
         k2, thres, areathres, rdl)
         estimated_intensity, estimated_background = A_F.estimate_intensity(image, centroids)
+        to_keep = ~np.isnan(estimated_intensity)
+        estimated_intensity = estimated_intensity[to_keep]
+        estimated_background = estimated_background[to_keep]
+        centroids = centroids[to_keep, :]
         
         return centroids, estimated_intensity, estimated_background
 
@@ -161,14 +165,15 @@ class RASP_Routines():
         
         k1, k2 = A_F.create_kernel(gsigma, rwave) # create image processing kernels
         accepted_ratio = 95.; # perc. of CDF we'll use
-        areathres = 1000.
-        thres = 0.05
+        areathres = 1000. # arbitrarily high area threshold for this calibration
+        thres = 0.05 # threshold is 0.05
         rdl = [self.steepness, self.integratedGrad, 0.]
         for i in np.arange(len(files)):
             file_path = os.path.join(folder, files[i])
             image = IO.read_tiff(file_path)
             if len(image.shape) < 3:
-                dl_mask, centroids, radiality = self.compute_image_props(image, k1, k2, thres, large_thres, areathres, rdl)
+                dl_mask, centroids, radiality = self.compute_image_props(image, 
+                            k1, k2, thres, large_thres, areathres, rdl)
                 pixel_index_list, areas, centroids = A_F.calculate_region_properties(dl_mask)
                 if i == 0:
                     a_neg = areas
@@ -176,7 +181,8 @@ class RASP_Routines():
                     a_neg = np.hstack([a_neg, areas])
             else:
                 for j in np.arange(image.shape[2]):
-                    dl_mask, centroids, radiality = self.compute_image_props(image, k1, k2, thres, large_thres, areathres, rdl)
+                    dl_mask, centroids, radiality = self.compute_image_props(image, 
+                            k1, k2, thres, large_thres, areathres, rdl)
                     pixel_index_list, areas, centroids = A_F.calculate_region_properties(dl_mask)
                     if (i == 0) and (j == 0):
                         a_neg = areas
@@ -188,7 +194,8 @@ class RASP_Routines():
         to_save = {'areathres' : area_thresh}
         
         IO.make_directory('analysis_parameters')
-        IO.save_as_json(to_save, os.path.join('analysis_parameters', 'areathres.json'))
+        IO.save_as_json(to_save, os.path.join('analysis_parameters',
+                                              'areathres.json'))
         self.areathres = area_thresh
         return
     
