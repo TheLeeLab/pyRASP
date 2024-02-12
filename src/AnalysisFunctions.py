@@ -410,7 +410,6 @@ class Analysis_Functions():
         
         return large_mask.astype(bool)
 
-# axis labels 6, numbers in 5
 
     def calculate_region_properties(self, binary_mask):
         """
