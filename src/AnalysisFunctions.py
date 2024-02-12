@@ -403,13 +403,14 @@ class Analysis_Functions():
         - large_mask (numpy.ndarray): Binary mask for the large features.
         """
         # Apply Gaussian filters with different sigmas and subtract to enhance features
-        enhanced_image = gaussian(image, sigma=sigma1) - gaussian(image, sigma=sigma2)
+        enhanced_image = gaussian(image, sigma=sigma1, truncate=2.) - gaussian(image, sigma=sigma2, truncate=2.)
     
         # Create a binary mask for large features based on the threshold
         large_mask = enhanced_image > threshold
         
         return large_mask.astype(bool)
 
+# axis labels 6, numbers in 5
 
     def calculate_region_properties(self, binary_mask):
         """
