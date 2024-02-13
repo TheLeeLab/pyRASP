@@ -8,6 +8,7 @@ IO = IOFunctions.IO_Functions()
 from . import AnalysisFunctions
 A_F = AnalysisFunctions.Analysis_Functions()
 import os
+import fnmatch
 import numpy as np
 import pandas as pd
 
@@ -121,6 +122,23 @@ class RASP_Routines():
         
         return dl_mask, centroids, radiality
     
+    def count_spots(self, database, z_planes):
+        """
+        Counts spots per z plane
+    
+        Args:
+        - database is pandas array of spots
+        - z_planes is range of zplanes
+        """
+        columns = ['z', 'n_spots']
+        
+        spots_per_plane = np.zeros_like(z_planes)
+        for z in enumerate(z_planes):
+            spots_per_plane[z[0]] = len(database.z[database.z == z[1]+1])
+        n_spots = pd.DataFrame(data=np.vstack([z_planes+1, spots_per_plane]).T, 
+                               columns=columns)
+        return n_spots
+        
     def compute_spot_props(self, image, k1, k2, thres=0.05, large_thres=450., 
                            areathres=30., rdl=[50., 0., 0.], z=[0]):
         """
@@ -340,8 +358,8 @@ class RASP_Routines():
                     to_save.to_csv(os.path.join(analysis_directory, 
                     files[i].split(imtype)[0]+'.csv'), index=False)
                 else:
-                    to_save['filename'] = np.full_like(to_save.z.values, files[i], dtype='object')
-                    savename = os.path.join(analysis_directory, 'image_analysis.csv')
+                    to_save['image_filename'] = np.full_like(to_save.z.values, files[i], dtype='object')
+                    savename = os.path.join(analysis_directory, 'spot_analysis.csv')
                     if i != 0:
                         to_save.to_csv(savename, mode='a', header=False, index=False)
                     else:
@@ -354,8 +372,8 @@ class RASP_Routines():
                     to_save.to_csv(os.path.join(analysis_directory, 
                         files[i].split(imtype)[0]+'.csv'), index=False)
                 else:
-                    to_save['filename'] = np.full_like(to_save.z.values, files[i], dtype='object')
-                    savename = os.path.join(analysis_directory, 'image_analysis.csv')
+                    to_save['image_filename'] = np.full_like(to_save.z.values, files[i], dtype='object')
+                    savename = os.path.join(analysis_directory, 'spot_analysis.csv')
                     if i != 0:
                         to_save.to_csv(savename, mode='a', header=False, index=False)
                     else:
@@ -365,7 +383,7 @@ class RASP_Routines():
     def analyse_round_images(self, folder, imtype='.tif', thres=0.05, 
                              large_thres=450., gsigma=1.4, rwave=2., 
                              oligomer_string='C1', cell_string='C0',
-                             if_filter=True, im_start=1, one_savefile=False):
+                             if_filter=True, im_start=1, one_savefile=True):
         """
         analyses data in a folder specified,
         folder has "RoundN/SN" structure as in Lee Lab Cambridge Experiment
@@ -387,15 +405,12 @@ class RASP_Routines():
         per image but amalgamates them into one file
 
         """
-        files_list = os.listdir(folder)
-        files = np.sort([e for e in files_list if imtype in e])
+        r = float(os.path.split(folder)[1].split('Round')[1]) # get round for rsid later
         
         k1, k2 = A_F.create_kernel(gsigma, rwave) # create image processing kernels
         rdl = [self.steepness, self.integratedGrad, 0.]
         
-        # create analysis and analysis parameter directories
-        analysis_directory = os.path.abspath(folder)+'_analysis'
-        IO.make_directory(analysis_directory)
+        # create analysis parameter directory
         analysis_p_directory = os.path.abspath(folder)+'_analysisparameters'
 
         to_save = {'areathres': self.areathres, 'steepness': self.steepness, 
@@ -407,6 +422,66 @@ class RASP_Routines():
         IO.save_analysis_params(analysis_p_directory, 
                 to_save, gain_map=self.gain_map, offset_map=self.offset_map)
        
+        oligomer_files = [os.path.join(dirpath, f) for dirpath, dirnames, files in os.walk(folder)
+            for f in fnmatch.filter(files, '*'+oligomer_string+'*')]
+        oligomer_files = np.sort([e for e in oligomer_files if imtype in e])
 
+        
+        analysis_directory = os.path.abspath(folder)+'_analysis'
+        IO.make_directory(analysis_directory)
+        
+        for i in np.arange(len(oligomer_files)):
+            s = float(os.path.split(os.path.split(os.path.split(oligomer_files[i])[0])[0])[1].split('S')[1])/100
+            rsid = r + s
+            img = IO.read_tiff_tophotons(oligomer_files[i], 
+            QE=self.QE, gain_map=self.gain_map, offset_map=self.offset_map)
+            if len(img.shape) > 2: # if a z-stack
+                z_planes = self.get_infocus_planes(img, k1)
+                
+                to_save = self.compute_spot_props(img, 
+                k1, k2, thres=thres, large_thres=large_thres, 
+                areathres=self.areathres, rdl=rdl, z=z_planes)
+                
+                if one_savefile == False:
+                    directory = os.path.split(os.path.split(oligomer_files[i])[0])+'_analysis'
+                    IO.make_directory(directory)
+                    savefile = os.path.split(oligomer_files[i])[-1]
+                    to_save['rsid'] = np.full_like(to_save.z.values, rsid)
+                    to_save.to_csv(os.path.join(directory, 
+                    savefile+'.csv'), index=False)
+                else:
+                    to_save['rsid'] = np.full_like(to_save.z.values, rsid)
+                    to_save['image_filename'] = np.full_like(to_save.z.values, os.path.split(oligomer_files[i])[-1], dtype='object')
+                    savename = os.path.join(analysis_directory, 'spot_analysis.csv')
+                    savename_spot = os.path.join(analysis_directory, 'spot_numbers.csv')
+                    
+                    n_spots = self.count_spots(to_save, np.arange(z_planes[0], z_planes[1]))
+                    n_spots['rsid'] = np.full_like(n_spots.z.values, rsid)
+                    n_spots['image_filename'] = np.full_like(n_spots.z.values, os.path.split(oligomer_files[i])[-1], dtype='object')
 
+                    if i != 0:
+                        to_save.to_csv(savename, mode='a', header=False, index=False)
+                        n_spots.to_csv(savename_spot, mode='a', header=False, index=False)
+                    else:
+                        to_save.to_csv(savename, index=False)
+                        n_spots.to_csv(savename_spot, index=False)
+            else: # if not a z-stack
+                to_save = self.compute_spot_props(img, k1, k2, thres=thres,
+                large_thres=large_thres, areathres=self.areathres, rdl=rdl)
+                
+                if one_savefile == False:
+                    directory = os.path.split(os.path.split(oligomer_files[i])[0])+'_analysis'
+                    IO.make_directory(directory)
+                    to_save['rsid'] = np.full_like(to_save.z.values, rsid)
+                    to_save['image_filename'] = np.full_like(to_save.z.values, os.path.split(oligomer_files[i])[-1], dtype='object')
+                    savefile = os.path.split(oligomer_files[i])[-1]
+                    to_save.to_csv(os.path.join(directory, 
+                    savefile+'.csv'), index=False)
+                else:
+                    to_save['rsid'] = np.full_like(to_save.z.values, rsid)
+                    savename = os.path.join(analysis_directory, 'spot_analysis.csv')
+                    if i != 0:
+                        to_save.to_csv(savename, mode='a', header=False, index=False)
+                    else:
+                        to_save.to_csv(savename, index=False)
         return

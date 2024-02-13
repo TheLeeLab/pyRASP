@@ -11,5 +11,4 @@ The packages that are required to run this analysis are:
 	scipy
 	scikit-image
 	json
-
-
+	fnmatch
