@@ -271,7 +271,7 @@ class Analysis_Functions():
         first_in_focus = first_in_focus if first_in_focus <= last_in_focus else 1
         
         # Return indices for in-focus images
-        in_focus_indices = [first_in_focus, last_in_focus]
+        in_focus_indices = [first_in_focus, last_in_focus-1]
         return in_focus_indices
 
     

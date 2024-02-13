@@ -80,7 +80,7 @@ class RASP_Routines():
                 self.offset_map = 0.
             
             if type(self.gain_map) is not float and type(self.offset_map) is not float:
-                if self.gain_map.shape != self.offset_map:
+                if self.gain_map.shape != self.offset_map.shape:
                     print("Gain and Offset maps are not the same shapes. Defaulting to default gain (1) and offset (0) parameters.")
                     self.gain_map = 1.
                     self.offset_map = 0.
@@ -140,16 +140,23 @@ class RASP_Routines():
         columns = ['x', 'y', 'z', 'sum_intensity_in_photons', 'bg', 'zi', 'zf']
         if len(z) > 1:
             z_planes = np.arange(z[0], z[1])
-            for zp in np.arange(z_planes):
+            for zp in z_planes:
                 img_z = image[:, :, zp]
-                centroids, estimated_intensity, estimated_background = self.compute_spot_props(img_z, 
-                k1, k2, thres=thres, large_thres=large_thres, 
-                areathres=self.areathres, rdl=rdl)
+                large_mask = A_F.detect_large_features(img_z, large_thres)
+                img2, Gx, Gy, focusScore, cfactor = A_F.calculate_gradient_field(img_z, k1)
+                dl_mask, centroids, radiality, idxs = A_F.small_feature_kernel(img_z, 
+                large_mask, img2, Gx, Gy,
+                k2, thres, areathres, rdl)
+                estimated_intensity, estimated_background = A_F.estimate_intensity(img_z, centroids)
+                to_keep = ~np.isnan(estimated_intensity)
+                estimated_intensity = estimated_intensity[to_keep]
+                estimated_background = estimated_background[to_keep]
+                centroids = centroids[to_keep, :]    
                 dataarray = np.vstack([centroids[:, 0], centroids[:, 1], 
                 np.full_like(centroids[:, 0], zp+1), estimated_intensity, 
                 estimated_background, np.full_like(centroids[:, 0], 1+z_planes[0]),
-                np.full_like(centroids[:, 0], z_planes[1])])
-                if zp == 0:
+                np.full_like(centroids[:, 0], 1+z_planes[-1])])                
+                if zp == z_planes[0]:
                     to_save = pd.DataFrame(data=dataarray.T, columns=columns)
                 else:
                     to_save = pd.concat([to_save, pd.DataFrame(data=dataarray.T, columns=columns)])
@@ -312,7 +319,7 @@ class RASP_Routines():
                    'integratedGrad': self.integratedGrad, 'gaussian_sigma':
                        gsigma, 'ricker_sigma': rwave, 'thres': thres,
                        'large_thres': large_thres, 
-                       'infocus_thres': self.infocus_thres,
+                       'focus_score_diff': self.focus_score_diff,
                        'QE': self.QE}
         IO.save_analysis_params(analysis_p_directory, 
                 to_save, gain_map=self.gain_map, offset_map=self.offset_map)
@@ -333,8 +340,12 @@ class RASP_Routines():
                     to_save.to_csv(os.path.join(analysis_directory, 
                     files[i].split(imtype)[0]+'.csv'), index=False)
                 else:
+                    to_save['filename'] = np.full_like(to_save.z.values, files[i], dtype='object')
                     savename = os.path.join(analysis_directory, 'image_analysis.csv')
-                    to_save.to_csv(savename, mode='a', header=False, index=False)
+                    if i != 0:
+                        to_save.to_csv(savename, mode='a', header=False, index=False)
+                    else:
+                        to_save.to_csv(savename, index=False)
             else: # if not a z-stack
                 to_save = self.compute_spot_props(img, k1, k2, thres=thres,
                 large_thres=large_thres, areathres=self.areathres, rdl=rdl)
@@ -343,16 +354,21 @@ class RASP_Routines():
                     to_save.to_csv(os.path.join(analysis_directory, 
                         files[i].split(imtype)[0]+'.csv'), index=False)
                 else:
+                    to_save['filename'] = np.full_like(to_save.z.values, files[i], dtype='object')
                     savename = os.path.join(analysis_directory, 'image_analysis.csv')
-                    to_save.to_csv(savename, mode='a', header=False, index=False)                    
+                    if i != 0:
+                        to_save.to_csv(savename, mode='a', header=False, index=False)
+                    else:
+                        to_save.to_csv(savename, index=False)
         return
     
     def analyse_round_images(self, folder, imtype='.tif', thres=0.05, 
-                             large_thres=450., gsigma=1.4, rwave=2.,
+                             large_thres=450., gsigma=1.4, rwave=2., 
+                             oligomer_string='C1', cell_string='C0',
                              if_filter=True, im_start=1, one_savefile=False):
         """
         analyses data in a folder specified,
-        folder has "round/sampleN" structure as in Lee Lab Cambridge Experiment
+        folder has "RoundN/SN" structure as in Lee Lab Cambridge Experiment
         saves spots, locations, intensities and backgrounds in a folder created
         next to the folder analysed with _analysis string attached
         also writes a folder with _analysisparameters and saves analysis parameters
@@ -363,6 +379,8 @@ class RASP_Routines():
         - imtype (string). Type of images being analysed, default tif
         - gisgma (float). gaussian blurring parameter (default 1.4)
         - rwave (float). Ricker wavelent sigma (default 2.)
+        - oligomer_string (string). string for oligomer-containing data (default C1)
+        - cell string (string). string for cell-containing data (default C0)
         - if_filter (boolean). Filter images for focus (default True)
         - im_start (integer). Images to start from (default 1)
         - one_savefile (boolean). Parameter that, if true, doesn't save a file
@@ -384,7 +402,7 @@ class RASP_Routines():
                    'integratedGrad': self.integratedGrad, 'gaussian_sigma':
                        gsigma, 'ricker_sigma': rwave, 'thres': thres,
                        'large_thres': large_thres, 
-                       'infocus_thres': self.infocus_thres,
+                       'focus_score_diff': self.focus_score_diff,
                        'QE': self.QE}
         IO.save_analysis_params(analysis_p_directory, 
                 to_save, gain_map=self.gain_map, offset_map=self.offset_map)

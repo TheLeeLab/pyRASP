@@ -102,22 +102,18 @@ class IO_Functions():
         # specifying the 'tifffile' plugin explicitly
         image = io.imread(file_path, plugin='tifffile')
         if len(image.shape) > 2: # if image a stack
-            if type(gain_map) is not float:
-                gain_map = np.tile(gain_map, (image.shape[2], 1, 1))
-                gain_map = np.swapaxes(gain_map, 2, 0); gain_map = np.swapaxes(gain_map, 1, 0)
-            
-            if type(offset_map) is not float:
-                offset_map = np.tile(offset_map, (image.shape[2], 1, 1))
-                offset_map = np.swapaxes(offset_map, 2, 0); offset_map = np.swapaxes(offset_map, 1, 0)
-                
             if image.shape[0] < image.shape[-1]: # if stack is wrong way round
                 image = image.T
         data = np.asarray(np.swapaxes(image,0,1), dtype='double')
-        if data.shape != gain_map.shape:
+        if data.shape[:2] != gain_map.shape:
             print("Gain and offset map not compatible with image dimensions. Defaulting to gain of 1 and offset of 0.")
             gain_map = 1.
             offset_map = 0.
-        data = np.divide(np.divide(np.subtract(data, offset_map), gain_map), QE)
+        
+        if type(gain_map) is not float:
+            data = np.divide(np.divide(np.subtract(data, offset_map[:, :, np.newaxis]), gain_map[:, :, np.newaxis]), QE)
+        else:
+            data = np.divide(np.divide(np.subtract(data, offset_map), gain_map), QE)
         return data
     
     def write_tiff(self, volume, file_path, bit=16):
@@ -134,4 +130,4 @@ class IO_Functions():
         - The plugin is set to 'tifffile' and photometric to 'minisblack'.
         - Additional metadata specifying the software as 'Python' is included.
         """
-        io.imsave(file_path, volume, plugin='tifffile', photometric='minisblack', metadata={'Software': 'Python'})
+        io.imsave(file_path, volume, plugin='tifffile', photometric='minisblack', metadata={'Software': 'Python'}, check_contrast=False)
