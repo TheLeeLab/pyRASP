@@ -4,12 +4,12 @@ The package "pyRASP" (written in support of https://www.biorxiv.org/content/10.1
 
 The packages that are required to run this package are:
 
-``` os
+``` 
+	os
 	numpy
 	pandas
 	scipy
 	scikit-image
-	json'''
-
+	json
 
 
