@@ -93,7 +93,7 @@ class IO_Functions():
         - file_path (str): The path to the TIFF file to be read.
         - QR (float): QE of camera
         - gain_map (matrix, or float): gain map. Assumes units of ADU/photoelectrons
-        - offset_map (matrix, or float): offset map
+        - offset_map (matrix, or float): offset map. Assumes units of ADU
     
         Returns:
         - image (numpy.ndarray): The image data from the TIFF file.
@@ -114,7 +114,7 @@ class IO_Functions():
                 image = image.T
         data = np.asarray(np.swapaxes(image,0,1), dtype='double')
         if data.shape != gain_map.shape:
-            print("Gain and offset map not compaitable with image dimensions. Defaulting to gain of 1 and offset of 0.")
+            print("Gain and offset map not compatible with image dimensions. Defaulting to gain of 1 and offset of 0.")
             gain_map = 1.
             offset_map = 0.
         data = np.divide(np.divide(np.subtract(data, offset_map), gain_map), QE)
