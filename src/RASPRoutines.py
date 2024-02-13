@@ -137,7 +137,7 @@ class RASP_Routines():
         - z (array). z planes to image, default 0
         """
         
-        columns = ['x', 'y', 'z', 'sum_intensity', 'bg', 'zi', 'zf']
+        columns = ['x', 'y', 'z', 'sum_intensity_in_photons', 'bg', 'zi', 'zf']
         if len(z) > 1:
             z_planes = np.arange(z[0], z[1])
             for zp in np.arange(z_planes):

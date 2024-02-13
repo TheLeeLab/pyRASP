@@ -92,7 +92,7 @@ class IO_Functions():
         Args:
         - file_path (str): The path to the TIFF file to be read.
         - QR (float): QE of camera
-        - gain_map (matrix, or float): gain map
+        - gain_map (matrix, or float): gain map. Assumes units of ADU/photoelectrons
         - offset_map (matrix, or float): offset map
     
         Returns:
@@ -117,7 +117,7 @@ class IO_Functions():
             print("Gain and offset map not compaitable with image dimensions. Defaulting to gain of 1 and offset of 0.")
             gain_map = 1.
             offset_map = 0.
-        data = np.divide(np.multiply(np.subtract(data, offset_map), gain_map), QE)
+        data = np.divide(np.divide(np.subtract(data, offset_map), gain_map), QE)
         return data
     
     def write_tiff(self, volume, file_path, bit=16):
