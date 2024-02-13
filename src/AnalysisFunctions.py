@@ -264,7 +264,7 @@ class Analysis_Functions():
         transition_to_out_focus = np.where(dist2 == 1)[0]
     
         # Determine the first and last slices in focus
-        first_in_focus = 1 if len(transition_to_in_focus) == 0 else transition_to_in_focus[0]  # First slice in focus
+        first_in_focus = 0 if len(transition_to_in_focus) == 0 else transition_to_in_focus[0]  # First slice in focus
         last_in_focus = len(focus_scores) if len(transition_to_out_focus) == 0 else len(focus_scores) - transition_to_out_focus[-1] + 1  # Last slice in focus
         
         # Ensure consistency and handle cases where the first in-focus slice comes after the last

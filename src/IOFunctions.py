@@ -14,6 +14,23 @@ class IO_Functions():
         self = self
         return
     
+    def save_analysis_params(self, analysis_p_directory, to_save, gain_map=0, offset_map=0):
+        """
+        saves analysis parameters.
+    
+        Args:
+        - analysis_p_directory (str): The folder to save to.
+        - to_save (dict): dict to save of analysis parameters.
+        - gain_map (array): gain_map to save
+        - offset_map (array): offset_map to save
+    
+        """
+        self.make_directory(analysis_p_directory)
+        self.save_as_json(to_save, os.path.join(analysis_p_directory, 'analysis_params.json'))
+        self.write_tiff(gain_map, os.path.join(analysis_p_directory, 'gain_map.tif'))
+        self.write_tiff(offset_map, os.path.join(analysis_p_directory, 'offset_map.tif'))
+        return
+    
     def load_json(self, filename):
         """
         Loads data from a JSON file.
@@ -66,6 +83,42 @@ class IO_Functions():
             if image.shape[0] < image.shape[-1]: # if stack is wrong way round
                 image = image.T
         return np.asarray(np.swapaxes(image,0,1), dtype='double')
+    
+    def read_tiff_tophotons(self, file_path, QE=0.95, gain_map=1., offset_map=0.):
+        """
+        Read a TIFF file using the skimage library.
+        Use camera parameters to convert output to photons
+    
+        Args:
+        - file_path (str): The path to the TIFF file to be read.
+        - QR (float): QE of camera
+        - gain_map (matrix, or float): gain map
+        - offset_map (matrix, or float): offset map
+    
+        Returns:
+        - image (numpy.ndarray): The image data from the TIFF file.
+        """
+        # Use skimage's imread function to read the TIFF file
+        # specifying the 'tifffile' plugin explicitly
+        image = io.imread(file_path, plugin='tifffile')
+        if len(image.shape) > 2: # if image a stack
+            if type(gain_map) is not float:
+                gain_map = np.tile(gain_map, (image.shape[2], 1, 1))
+                gain_map = np.swapaxes(gain_map, 2, 0); gain_map = np.swapaxes(gain_map, 1, 0)
+            
+            if type(offset_map) is not float:
+                offset_map = np.tile(offset_map, (image.shape[2], 1, 1))
+                offset_map = np.swapaxes(offset_map, 2, 0); offset_map = np.swapaxes(offset_map, 1, 0)
+                
+            if image.shape[0] < image.shape[-1]: # if stack is wrong way round
+                image = image.T
+        data = np.asarray(np.swapaxes(image,0,1), dtype='double')
+        if data.shape != gain_map.shape:
+            print("Gain and offset map not compaitable with image dimensions. Defaulting to gain of 1 and offset of 0.")
+            gain_map = 1.
+            offset_map = 0.
+        data = np.divide(np.multiply(np.subtract(data, offset_map), gain_map), QE)
+        return data
     
     def write_tiff(self, volume, file_path, bit=16):
         """
