@@ -105,10 +105,11 @@ class IO_Functions():
             if image.shape[0] < image.shape[-1]: # if stack is wrong way round
                 image = image.T
         data = np.asarray(np.swapaxes(image,0,1), dtype='double')
-        if data.shape[:2] != gain_map.shape:
-            print("Gain and offset map not compatible with image dimensions. Defaulting to gain of 1 and offset of 0.")
-            gain_map = 1.
-            offset_map = 0.
+        if type(gain_map) is not float:
+            if data.shape[:2] != gain_map.shape:
+                print("Gain and offset map not compatible with image dimensions. Defaulting to gain of 1 and offset of 0.")
+                gain_map = 1.
+                offset_map = 0.
         
         if type(gain_map) is not float:
             data = np.divide(np.divide(np.subtract(data, offset_map[:, :, np.newaxis]), gain_map[:, :, np.newaxis]), QE)
