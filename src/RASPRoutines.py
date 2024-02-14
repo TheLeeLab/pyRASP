@@ -230,9 +230,10 @@ class RASP_Routines():
                     r1_neg = np.hstack([r1_neg, radiality[:,0]])
                     r2_neg = np.hstack([r1_neg, radiality[:,1]])
             else:
-                for j in np.arange(image.shape[2]):
-                    dl_mask, centroids, radiality = self.compute_image_props(image[:,:,j], k1, k2, thres, large_thres, self.areathres, rdl)
-                    if (i == 0) and (j == 0):
+                z_planes = self.get_infocus_planes(image, k1)
+                for j in enumerate(np.arange(z_planes[0], z_planes[1])):
+                    dl_mask, centroids, radiality = self.compute_image_props(image[:,:,j[1]], k1, k2, thres, large_thres, self.areathres, rdl)
+                    if (i == 0) and (j[0] == 0):
                         r1_neg = radiality[:,0]
                         r2_neg = radiality[:,1]
                     else:
