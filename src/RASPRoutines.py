@@ -3,14 +3,19 @@
 This class contains functions that collect analysis routines for RASP
 jsb92, 2024/02/08
 """
-from . import IOFunctions
-IO = IOFunctions.IO_Functions()
-from . import AnalysisFunctions
-A_F = AnalysisFunctions.Analysis_Functions()
 import os
 import fnmatch
 import numpy as np
 import pandas as pd
+import sys
+
+module_dir = os.path.dirname(__file__)
+sys.path.append(module_dir)
+import IOFunctions
+IO = IOFunctions.IO_Functions()
+import AnalysisFunctions
+A_F = AnalysisFunctions.Analysis_Functions()
+
 
 class RASP_Routines():
     def __init__(self, defaultarea=True, defaultrad=True, defaultsteep=True, defaultdfocus=True, defaultintfocus=True, defaultcameraparams=True):
@@ -249,6 +254,11 @@ class RASP_Routines():
         IO.save_as_json(to_save, os.path.join(self.defaultfolder, 'rad_neg.json'))
         self.steepness = rad_1
         self.integratedGrad = rad_2
+        print("Radiality calibrated using negative control"+
+              " images in "+str(folder)+". New steepness is "+
+              str(np.around(rad_1, 2))+" and new integrated gradient is "
+              +str(np.around(rad_2, 2))+". Parameters saved in "
+              +str(self.defaultfolder)+".")
         return
     
     def calibrate_area(self, folder, imtype='.tif', gsigma=1.4, rwave=2., large_thres=10000.):
@@ -300,6 +310,12 @@ class RASP_Routines():
         IO.save_as_json(to_save, os.path.join(self.defaultfolder,
                                               'areathres.json'))
         self.areathres = area_thresh
+        
+        print("Area threshold using bead"+
+              " images in "+str(folder)+". New area threshold is "+
+              str(np.around(area_thresh, 2))+
+              ". Parameters saved in "
+              +str(self.defaultfolder)+".")
         return
     
     def analyse_images(self, folder, imtype='.tif', thres=0.05, 
