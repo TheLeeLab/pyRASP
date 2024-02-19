@@ -274,7 +274,9 @@ class RASP_Routines():
     
     def analyse_images(self, folder, imtype='.tif', thres=0.05, 
                        large_thres=450., gsigma=1.4, rwave=2.,
-                       if_filter=True, im_start=1, one_savefile=False):
+                       oligomer_string='C1', cell_string='C0',
+                       if_filter=True, im_start=1, cell_analysis=True, 
+                       one_savefile=False):
         """
         analyses data from images in a specified folder,
         saves spots, locations, intensities and backgrounds in a folder created
@@ -287,14 +289,24 @@ class RASP_Routines():
         - imtype (string). Type of images being analysed, default tif
         - gisgma (float). gaussian blurring parameter (default 1.4)
         - rwave (float). Ricker wavelent sigma (default 2.)
+        - oligomer_string (string). string for oligomer-containing data (default C1)
+        - cell string (string). string for cell-containing data (default C0)
         - if_filter (boolean). Filter images for focus (default True)
         - im_start (integer). Images to start from (default 1)
         - one_savefile (boolean). Parameter that, if true, doesn't save a file
         per image but amalgamates them into one file
+        - cell_analysis (boolean). Parameter where script also analyses cell
+        images and computes colocalisation likelihood ratios.
 
         """
         files_list = os.listdir(folder)
         files = np.sort([e for e in files_list if imtype in e])
+        files = np.sort([e for e in files if oligomer_string in e])
+        
+        if cell_analysis == True:
+            cell_files = np.sort([e for e in files_list if imtype in e])
+            cell_files = np.sort([e for e in cell_files if cell_string in e])
+
         
         k1, k2 = A_F.create_kernel(gsigma, rwave) # create image processing kernels
         rdl = [self.steepness, self.integratedGrad, 0.]
@@ -309,6 +321,10 @@ class RASP_Routines():
                        gsigma, 'ricker_sigma': rwave, 'thres': thres,
                        'large_thres': large_thres, 
                        'focus_score_diff': self.focus_score_diff,
+                       'cell_sigma1': self.cell_sigma1,
+                       'cell_sigma2': self.cell_sigma2,
+                       'cell_threshold1': self.cell_threshold1,
+                       'cell_threshold2': self.cell_threshold2,
                        'QE': self.QE}
         IO.save_analysis_params(analysis_p_directory, 
                 to_save, gain_map=self.gain_map, offset_map=self.offset_map)
@@ -316,25 +332,53 @@ class RASP_Routines():
         for i in np.arange(len(files)):
             img = IO.read_tiff_tophotons(os.path.join(folder, files[i]), 
             QE=self.QE, gain_map=self.gain_map, offset_map=self.offset_map)
+            if cell_analysis == True:
+                img_cell = IO.read_tiff_tophotons(cell_files[i], 
+                QE=self.QE, gain_map=self.gain_map, offset_map=self.offset_map)
             if im_start > 1:
                 img = img[:, :, im_start:]
             if len(img.shape) > 2: # if a z-stack
                 z_planes = self.get_infocus_planes(img, k1)
                 
-                to_save = A_F.compute_spot_props(img, 
-                k1, k2, thres=thres, large_thres=large_thres, 
-                areathres=self.areathres, rdl=rdl, z=z_planes)
+                if cell_analysis == False:
+                    to_save = A_F.compute_spot_props(img, 
+                    k1, k2, thres=thres, large_thres=large_thres, 
+                    areathres=self.areathres, rdl=rdl, z=z_planes)
+                else:
+                    to_save, to_save_cell, cell_mask = A_F.compute_spot_and_cell_props(img, img_cell, k1, k2,
+                                        prot_thres=thres, large_prot_thres=large_thres, 
+                                        areathres=self.areathres, rdl=rdl, z=z_planes, 
+                                        cell_threshold1=self.cell_threshold1, 
+                                        cell_threshold2=self.cell_threshold1, 
+                                        cell_sigma1=self.cell_sigma1,
+                                        cell_sigma2=self.cell_sigma2)
                 
                 if one_savefile == False:
                     to_save.to_csv(os.path.join(analysis_directory, 
                     files[i].split(imtype)[0]+'.csv'), index=False)
+                    if cell_analysis == True:
+                        to_save_cell.to_csv(os.path.join(analysis_directory, 
+                        files[i].split(imtype)[0]+'_cell_analysis.csv'), index=False)
+                        IO.write_tiff(cell_mask, os.path.join(analysis_directory, 
+                        files[i].split(imtype)[0]+'_cellMask.tiff'), bit=np.uint8)
                 else:
                     to_save['image_filename'] = np.full_like(to_save.z.values, files[i], dtype='object')
                     savename = os.path.join(analysis_directory, 'spot_analysis.csv')
+                    
+                    if cell_analysis == True:
+                        to_save_cell['image_filename'] = np.full_like(to_save_cell.z.values, files[i], dtype='object')
+                        savename_cell = os.path.join(analysis_directory, 'cell_colocalisation_analysis.csv')
+                        IO.write_tiff(cell_mask, os.path.join(analysis_directory, 
+                        files[i].split(imtype)[0]+'_cellMask.tiff'), bit=np.uint8)
+
                     if i != 0:
                         to_save.to_csv(savename, mode='a', header=False, index=False)
+                        if cell_analysis == True:
+                            to_save_cell.to_csv(savename_cell, mode='a', header=False, index=False)
                     else:
                         to_save.to_csv(savename, index=False)
+                        if cell_analysis == True:
+                            to_save_cell.to_csv(savename_cell, index=False)
             else: # if not a z-stack
                 to_save = A_F.compute_spot_props(img, k1, k2, thres=thres,
                 large_thres=large_thres, areathres=self.areathres, rdl=rdl)
@@ -445,7 +489,7 @@ class RASP_Routines():
                     if cell_analysis == True:
                         to_save_cell['rsid'] = np.full_like(to_save_cell.z.values, rsid)
                         to_save_cell.to_csv(os.path.join(directory, 
-                        savefile+'_cellanalysis.csv'), index=False)
+                        savefile+'_cell_analysis.csv'), index=False)
                         IO.write_tiff(cell_mask, os.path.join(directory, 
                         savefile+'_cellMask.tiff'), bit=np.uint8)
                 else:
