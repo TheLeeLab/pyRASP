@@ -116,34 +116,16 @@ class Analysis_Functions():
         Tests which spots overlap with a given mask.
     
         Args:
-        - spot_indices (array): spot_N*n_pixels_per_spot array
+        - spot_indices (array): indices of spots
         - mask_indices (1-D array): indices of pixels in mask
     
         Returns:
         - n_spots_in_mask (float): number of spots that overlap with the mask.
         """
 
-        n_spots_in_mask = np.sum(np.in1d(spot_indices.ravel(), 
-                        mask_indices).reshape(spot_indices.shape), axis=1)
+        n_spots_in_mask = np.sum(np.in1d(spot_indices,mask_indices))
         return n_spots_in_mask
 
-    def centroid_to_indices(self, centroid, image_size, width=5, edge=1):
-        """
-        Convert centroid coordinates to pixel indices with dilation.
-    
-        Args:
-        - centroid (numpy.ndarray): Centroid coordinates (y, x).
-        - image_size (tuple): Image dimensions (height, width).
-    
-        Returns:
-        - pixel_indices_list (array): array of pixel indices after dilation.
-        """
-        centroid = np.asarray(centroid, dtype=int)
-        pixel_indices_list = []
-        for i in range(centroid.shape[0]):
-            pixel_indices_list.append(self.dilate_pixel(
-                np.ravel_multi_index((int(centroid[i, 0]), int(centroid[i, 1])), image_size, order='F'), image_size, width, edge))
-        return np.asarray(pixel_indices_list)
     
     def dilate_pixel(self, index, image_size, width=5, edge=1):
         """
@@ -290,52 +272,6 @@ class Analysis_Functions():
         # Return indices for in-focus images
         in_focus_indices = [first_in_focus, last_in_focus-1]
         return in_focus_indices
-
-    
-    def calculate_inside_ratio(self, cell_mask, spot_locations, plot_flag=0):
-        """
-        Calculate the ratio of spots inside the cell mask.
-    
-        Args:
-        - cell_mask (numpy.ndarray): Binary mask of the cell.
-        - spot_locations (numpy.ndarray): Locations of spots.
-        - plot_flag (int): Flag for plotting inside and outside points (0 or 1).
-    
-        Returns:
-        - inside_ratio (float): Ratio of spots inside the cell.
-        - expected_ratio (float): Expected inside ratio based on cell mask size.
-        """
-        import matplotlib.pyplot as plt
-
-        # Calculate the size of the cell mask
-        mask_size = cell_mask.shape
-        
-        # Convert spot locations to indices
-        spot_indices = np.ravel_multi_index((spot_locations[:, 1], spot_locations[:, 0]), mask_size)
-        
-        # Check if spots are inside or outside the cell mask
-        inside_mask = cell_mask[spot_indices] == 1
-        
-        # Separate points inside and outside the cell
-        inside_points = spot_locations[inside_mask]
-        outside_points = spot_locations[~inside_mask]
-        
-        # Calculate inside ratio: ratio of spots inside the cell
-        inside_ratio = len(inside_points) / len(spot_locations)
-        
-        # Calculate expected inside ratio based on cell mask size
-        expected_ratio = np.sum(cell_mask) / (mask_size[0] * mask_size[1])
-        
-        # Optionally plot inside and outside points
-        if plot_flag == 1:
-            plt.figure()
-            plt.imshow(cell_mask, cmap='gray')
-            plt.plot(inside_points[:, 0], inside_points[:, 1], '.', color='r', markersize=10, label='Inside')
-            plt.plot(outside_points[:, 0], outside_points[:, 1], '.', color='y', markersize=8, label='Outside')
-            plt.legend()
-            plt.show()
-        
-        return inside_ratio, expected_ratio
     
     def estimate_intensity(self, image, centroids):
         """
