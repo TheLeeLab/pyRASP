@@ -110,8 +110,24 @@ class Analysis_Functions():
             radiality[k, :] = [steepness, integrated_grad]
 
         return radiality
+    
+    def test_spot_mask_overlap(self, spot_indices, mask_indices):
+        """
+        Tests which spots overlap with a given mask.
+    
+        Args:
+        - spot_indices (array): spot_N*n_pixels_per_spot array
+        - mask_indices (1-D array): indices of pixels in mask
+    
+        Returns:
+        - n_spots_in_mask (float): number of spots that overlap with the mask.
+        """
 
-    def centroid_to_indices(self, centroid, image_size):
+        n_spots_in_mask = np.sum(np.in1d(spot_indices.ravel(), 
+                        mask_indices).reshape(spot_indices.shape), axis=1)
+        return n_spots_in_mask
+
+    def centroid_to_indices(self, centroid, image_size, width=5, edge=1):
         """
         Convert centroid coordinates to pixel indices with dilation.
     
@@ -120,14 +136,14 @@ class Analysis_Functions():
         - image_size (tuple): Image dimensions (height, width).
     
         Returns:
-        - pixel_indices_list (list): List of pixel indices after dilation.
+        - pixel_indices_list (array): array of pixel indices after dilation.
         """
         centroid = np.asarray(centroid, dtype=int)
         pixel_indices_list = []
         for i in range(centroid.shape[0]):
             pixel_indices_list.append(self.dilate_pixel(
-                np.ravel_multi_index((int(centroid[i, 1]), int(centroid[i, 0])), image_size, order='F'), image_size))
-        return pixel_indices_list
+                np.ravel_multi_index((int(centroid[i, 0]), int(centroid[i, 1])), image_size, order='F'), image_size, width, edge))
+        return np.asarray(pixel_indices_list)
     
     def dilate_pixel(self, index, image_size, width=5, edge=1):
         """
@@ -148,7 +164,8 @@ class Analysis_Functions():
         centroid = np.asarray(np.unravel_index(index, image_size, order='F'), dtype=int)
         x = x + int(centroid[0])
         y = y + int(centroid[1])
-        dilated_indices = np.ravel_multi_index(np.vstack([x, y]), image_size, order='F')
+                
+        dilated_indices = np.ravel_multi_index(np.vstack([x, y]), image_size, order='F', mode='wrap')
         return dilated_indices
     
     def create_kernel(self, background_sigma, wavelet_sigma):

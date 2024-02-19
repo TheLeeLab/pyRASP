@@ -1,0 +1,8 @@
+# requirements for pip packages, pinned at their 
+# specific versions tested, are given below.
+
+numpy==1.24.3
+pandas==2.1.1
+scikit-image==0.22.0
+scipy==1.11.2
+ipython==8.8.0
