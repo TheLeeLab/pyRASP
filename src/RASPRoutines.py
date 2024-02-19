@@ -156,143 +156,7 @@ class RASP_Routines():
         n_spots = pd.DataFrame(data=np.vstack([z_planes+1, spots_per_plane]).T, 
                                columns=columns)
         return n_spots
-    
-    def compute_spot_and_cell_props(self, image, image_cell, k1, k2, prot_thres=0.05, large_prot_thres=450., 
-                           areathres=30., rdl=[50., 0., 0.], z=[0], 
-                           cell_threshold1=200., cell_threshold2=200, cell_sigma1=2., cell_sigma2=40.):
-        """
-        Gets basic image properties (centroids, radiality)
-        from a single image and compare to a cell mask from another image channel
-    
-        Args:
-        - image (array). image of protein stain as numpy array
-        - image (array). image of cell stain as numpy array
-        - k1 (array). gaussian blur kernel
-        - k2 (array). ricker wavelet kernel
-        - prot_thres (float). percentage threshold for protein
-        - large_prot_thres (float). Protein threshold intensity
-        - areathres (float). area threshold
-        - rdl (array). radiality thresholds
-        - z (array). z planes to image, default 0
-        - cell_threshold1 (float). 1st cell intensity threshold
-        - cell_threshold2 (float). 2nd cell intensity threshold
-        - cell_sigma1 (float). cell blur value 1
-        - cell_sigma2 (float). cell blur value 2
-
-        """
         
-        columns = ['x', 'y', 'z', 'sum_intensity_in_photons', 'bg', 'zi', 'zf']
-        if len(z) > 1:
-            z_planes = np.arange(z[0], z[1])
-            cell_mask = np.zeros_like(image_cell, dtype=bool)
-            clr = np.zeros(image_cell.shape[2])
-            norm_std = np.zeros(image_cell.shape[2])
-            norm_CSR = np.zeros(image_cell.shape[2])
-            expected_spots = np.zeros(image_cell.shape[2])
-            n_iter = np.zeros(image_cell.shape[2])
-            
-            for zp in z_planes:
-                img_z = image[:, :, zp]
-                img_cell_z = image_cell[:, :, zp]
-                centroids, estimated_intensity, estimated_background = A_F.default_spotanalysis_routine(img_z,
-                k1, k2, prot_thres, large_prot_thres, areathres, rdl)
-                
-                cell_mask[:,:,zp] = A_F.detect_large_features(img_cell_z,
-                    cell_threshold1, cell_threshold2, cell_sigma1, cell_sigma2)
-                
-                image_size = img_z.shape
-                mask_coords = np.transpose((cell_mask[:,:,zp]>0).nonzero())
-                mask_indices = np.ravel_multi_index([mask_coords[:, 0], mask_coords[:, 1]], image_size)
-                spot_indices = np.ravel_multi_index(centroids.T, image_size, order='F')
-                clr[zp], norm_std[zp], norm_CSR[zp], expected_spots[zp], n_iter[zp] = A_F.calculate_spot_colocalisation_likelihood_ratio(spot_indices, mask_indices, image_size)
-                
-                dataarray = np.vstack([centroids[:, 0], centroids[:, 1], 
-                np.full_like(centroids[:, 0], zp+1), estimated_intensity, 
-                estimated_background, np.full_like(centroids[:, 0], 1+z_planes[0]),
-                np.full_like(centroids[:, 0], 1+z_planes[-1])])                
-                if zp == z_planes[0]:
-                    to_save = pd.DataFrame(data=dataarray.T, columns=columns)
-                else:
-                    to_save = pd.concat([to_save, pd.DataFrame(data=dataarray.T, columns=columns)])
-            to_save = to_save.reset_index(drop=True)
-            
-            dataarray_cell = np.vstack([clr, norm_std, norm_CSR, 
-                            expected_spots, n_iter, z_planes+1])
-            columns_cell = ['colocalisation_likelihood_ratio', 'std', 
-                            'CSR', 'n_iterations', 'z']
-            to_save_cell = pd.DataFrame(data=dataarray_cell.T, columns=columns_cell)
-        else:
-            centroids, estimated_intensity, estimated_background = A_F.default_spotanalysis_routine(image,
-            k1, k2, prot_thres, large_prot_thres, areathres, rdl)
-            
-            cell_mask = A_F.detect_large_features(image_cell,
-                    cell_threshold1, cell_threshold2, cell_sigma1, cell_sigma2)
-            
-            image_size = image.shape
-            mask_coords = np.transpose((cell_mask>0).nonzero())
-            mask_indices = np.ravel_multi_index([mask_coords[:, 0], mask_coords[:, 1]], image_size)
-            spot_indices = np.ravel_multi_index(centroids.T, image_size, order='F')
-
-            clr, norm_std, norm_CSR, expected_spots, n_iter = A_F.calculate_spot_colocalisation_likelihood_ratio(spot_indices, mask_indices, image_size)
-
-            dataarray = np.vstack([centroids[:, 0], centroids[:, 1], 
-            np.full_like(centroids[:, 0], 1), estimated_intensity, 
-            estimated_background, np.full_like(centroids[:, 0], 1),
-            np.full_like(centroids[:, 0], 1)])
-            to_save = pd.DataFrame(data=dataarray.T, columns=columns)
-            
-            dataarray_cell = np.vstack([clr, norm_std, norm_CSR, 
-                            expected_spots, n_iter])
-            columns_cell = ['colocalisation_likelihood_ratio', 'std', 
-                            'CSR', 'n_iterations']
-            to_save_cell = pd.DataFrame(data=dataarray_cell.T, columns=columns_cell)
-        return to_save, to_save_cell, cell_mask 
-        
-    def compute_spot_props(self, image, k1, k2, thres=0.05, large_thres=450., 
-                           areathres=30., rdl=[50., 0., 0.], z=[0]):
-        """
-        Gets basic image properties (centroids, radiality)
-        from a single image
-    
-        Args:
-        - image (array). image as numpy array
-        - k1 (array). gaussian blur kernel
-        - k2 (array). ricker wavelet kernel
-        - thres (float). percentage threshold
-        - areathres (float). area threshold
-        - rdl (array). radiality thresholds
-        - z (array). z planes to image, default 0
-        """
-        
-        columns = ['x', 'y', 'z', 'sum_intensity_in_photons', 'bg', 'zi', 'zf']
-        if len(z) > 1:
-            z_planes = np.arange(z[0], z[1])
-            for zp in z_planes:
-                img_z = image[:, :, zp]
-                centroids, estimated_intensity, estimated_background = A_F.default_spotanalysis_routine(img_z,
-                k1, k2, thres, large_thres, areathres, rdl)
-                
-                dataarray = np.vstack([centroids[:, 0], centroids[:, 1], 
-                np.full_like(centroids[:, 0], zp+1), estimated_intensity, 
-                estimated_background, np.full_like(centroids[:, 0], 1+z_planes[0]),
-                np.full_like(centroids[:, 0], 1+z_planes[-1])])                
-                if zp == z_planes[0]:
-                    to_save = pd.DataFrame(data=dataarray.T, columns=columns)
-                else:
-                    to_save = pd.concat([to_save, pd.DataFrame(data=dataarray.T, columns=columns)])
-            to_save = to_save.reset_index(drop=True)
-        else:
-            centroids, estimated_intensity, estimated_background = A_F.default_spotanalysis_routine(image,
-            k1, k2, thres, large_thres, areathres, rdl)
-            
-            dataarray = np.vstack([centroids[:, 0], centroids[:, 1], 
-            np.full_like(centroids[:, 0], 1), estimated_intensity, 
-            estimated_background, np.full_like(centroids[:, 0], 1),
-            np.full_like(centroids[:, 0], 1)])
-            to_save = pd.DataFrame(data=dataarray.T, columns=columns)
-            
-        return to_save
-
     def calibrate_radiality(self, folder, imtype='.tif', gsigma=1.4, rwave=2., large_thres=10000.):
         """
         Calibrates radility parameters. Given a folder of negative controls,
@@ -457,7 +321,7 @@ class RASP_Routines():
             if len(img.shape) > 2: # if a z-stack
                 z_planes = self.get_infocus_planes(img, k1)
                 
-                to_save = self.compute_spot_props(img, 
+                to_save = A_F.compute_spot_props(img, 
                 k1, k2, thres=thres, large_thres=large_thres, 
                 areathres=self.areathres, rdl=rdl, z=z_planes)
                 
@@ -472,7 +336,7 @@ class RASP_Routines():
                     else:
                         to_save.to_csv(savename, index=False)
             else: # if not a z-stack
-                to_save = self.compute_spot_props(img, k1, k2, thres=thres,
+                to_save = A_F.compute_spot_props(img, k1, k2, thres=thres,
                 large_thres=large_thres, areathres=self.areathres, rdl=rdl)
                 
                 if one_savefile == False:
@@ -559,11 +423,11 @@ class RASP_Routines():
                 z_planes = self.get_infocus_planes(img, k1)
                 
                 if cell_analysis == False:
-                    to_save = self.compute_spot_props(img, 
+                    to_save = A_F.compute_spot_props(img, 
                     k1, k2, thres=thres, large_thres=large_thres, 
                     areathres=self.areathres, rdl=rdl, z=z_planes)
                 else:
-                    to_save, to_save_cell, cell_mask = self.compute_spot_and_cell_props(img, img_cell, k1, k2,
+                    to_save, to_save_cell, cell_mask = A_F.compute_spot_and_cell_props(img, img_cell, k1, k2,
                                         prot_thres=thres, large_prot_thres=large_thres, 
                                         areathres=self.areathres, rdl=rdl, z=z_planes, 
                                         cell_threshold1=self.cell_threshold1, 
@@ -613,7 +477,7 @@ class RASP_Routines():
                         if cell_analysis == True:
                             to_save_cell.to_csv(savename_cell, index=False)
             else: # if not a z-stack
-                to_save = self.compute_spot_props(img, k1, k2, thres=thres,
+                to_save = A_F.compute_spot_props(img, k1, k2, thres=thres,
                 large_thres=large_thres, areathres=self.areathres, rdl=rdl)
                 
                 if one_savefile == False:
