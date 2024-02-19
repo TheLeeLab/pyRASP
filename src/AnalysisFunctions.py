@@ -111,13 +111,56 @@ class Analysis_Functions():
 
         return radiality
     
+    def default_spotanalysis_routine(self, image, k1, k2, thres=0.05, 
+                                     large_thres=450., areathres=30.,
+                                     rdl=[50., 0., 0.]):
+        """
+        Dasiy-chains analyses to get
+        basic image properties (centroids, radiality)
+        from a single image
+    
+        Args:
+        - image (array). image as numpy array
+        - k1 (array). gaussian blur kernel
+        - k2 (array). ricker wavelet kernel
+        - thres (float). percentage threshold
+        - areathres (float). area threshold
+        - rdl (array). radiality thresholds
+        """
+        large_mask = self.detect_large_features(image, large_thres)
+        img2, Gx, Gy, focusScore, cfactor = self.calculate_gradient_field(image, k1)
+        dl_mask, centroids, radiality, idxs = self.small_feature_kernel(image, 
+        large_mask, img2, Gx, Gy,
+        k2, thres, areathres, rdl)
+        estimated_intensity, estimated_background = self.estimate_intensity(image, centroids)
+        to_keep = ~np.isnan(estimated_intensity)
+        estimated_intensity = estimated_intensity[to_keep]
+        estimated_background = estimated_background[to_keep]
+        centroids = centroids[to_keep, :]    
+        return centroids, estimated_intensity, estimated_background
+    
+    def calculate_mask_fill(self, mask_indices, image_size):
+        """
+        calculate amount of image filled by mask.
+    
+        Args:
+        - mask_indices (1D array): indices of pixels in mask
+        - image_size (tuple): Image dimensions (height, width).
+    
+        Returns:
+        - mask_fill (float): proportion of image filled by mask.
+        """
+
+        mask_fill = np.divide(len(mask_indices), np.product(image_size))
+        return mask_fill
+    
     def test_spot_mask_overlap(self, spot_indices, mask_indices):
         """
         Tests which spots overlap with a given mask.
     
         Args:
-        - spot_indices (array): indices of spots
-        - mask_indices (1-D array): indices of pixels in mask
+        - spot_indices (1D array): indices of spots
+        - mask_indices (1D array): indices of pixels in mask
     
         Returns:
         - n_spots_in_mask (float): number of spots that overlap with the mask.

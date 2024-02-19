@@ -147,7 +147,7 @@ class RASP_Routines():
     def compute_spot_props(self, image, k1, k2, thres=0.05, large_thres=450., 
                            areathres=30., rdl=[50., 0., 0.], z=[0]):
         """
-        Gets basic image properties (dl_mask, centroids, radiality)
+        Gets basic image properties (centroids, radiality)
         from a single image
     
         Args:
@@ -165,16 +165,9 @@ class RASP_Routines():
             z_planes = np.arange(z[0], z[1])
             for zp in z_planes:
                 img_z = image[:, :, zp]
-                large_mask = A_F.detect_large_features(img_z, large_thres)
-                img2, Gx, Gy, focusScore, cfactor = A_F.calculate_gradient_field(img_z, k1)
-                dl_mask, centroids, radiality, idxs = A_F.small_feature_kernel(img_z, 
-                large_mask, img2, Gx, Gy,
-                k2, thres, areathres, rdl)
-                estimated_intensity, estimated_background = A_F.estimate_intensity(img_z, centroids)
-                to_keep = ~np.isnan(estimated_intensity)
-                estimated_intensity = estimated_intensity[to_keep]
-                estimated_background = estimated_background[to_keep]
-                centroids = centroids[to_keep, :]    
+                centroids, estimated_intensity, estimated_background = A_F.default_spotanalysis_routine(img_z,
+                k1, k2, thres, large_thres, areathres, rdl)
+                
                 dataarray = np.vstack([centroids[:, 0], centroids[:, 1], 
                 np.full_like(centroids[:, 0], zp+1), estimated_intensity, 
                 estimated_background, np.full_like(centroids[:, 0], 1+z_planes[0]),
@@ -185,16 +178,9 @@ class RASP_Routines():
                     to_save = pd.concat([to_save, pd.DataFrame(data=dataarray.T, columns=columns)])
             to_save = to_save.reset_index(drop=True)
         else:
-            large_mask = A_F.detect_large_features(image, large_thres)
-            img2, Gx, Gy, focusScore, cfactor = A_F.calculate_gradient_field(image, k1)
-            dl_mask, centroids, radiality, idxs = A_F.small_feature_kernel(image, 
-            large_mask, img2, Gx, Gy,
-            k2, thres, areathres, rdl)
-            estimated_intensity, estimated_background = A_F.estimate_intensity(image, centroids)
-            to_keep = ~np.isnan(estimated_intensity)
-            estimated_intensity = estimated_intensity[to_keep]
-            estimated_background = estimated_background[to_keep]
-            centroids = centroids[to_keep, :]
+            centroids, estimated_intensity, estimated_background = A_F.default_spotanalysis_routine(image,
+            k1, k2, thres, large_thres, areathres, rdl)
+            
             dataarray = np.vstack([centroids[:, 0], centroids[:, 1], 
             np.full_like(centroids[:, 0], 1), estimated_intensity, 
             estimated_background, np.full_like(centroids[:, 0], 1),
