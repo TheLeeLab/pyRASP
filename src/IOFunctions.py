@@ -27,8 +27,8 @@ class IO_Functions():
         """
         self.make_directory(analysis_p_directory)
         self.save_as_json(to_save, os.path.join(analysis_p_directory, 'analysis_params.json'))
-        self.write_tiff(gain_map, os.path.join(analysis_p_directory, 'gain_map.tif'))
-        self.write_tiff(offset_map, os.path.join(analysis_p_directory, 'offset_map.tif'))
+        self.write_tiff(gain_map, os.path.join(analysis_p_directory, 'gain_map.tif'), np.uint32)
+        self.write_tiff(offset_map, os.path.join(analysis_p_directory, 'offset_map.tif'), np.uint32)
         return
     
     def load_json(self, filename):
