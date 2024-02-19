@@ -10,7 +10,7 @@ from scipy.signal import convolve2d
 import skimage as ski
 from skimage.filters import gaussian
 from skimage.measure import label, regionprops_table
-from scipy.ndimage.morphology import binary_opening
+from scipy.ndimage import binary_opening, binary_closing, binary_fill_holes
 
 class Analysis_Functions():
     def __init__(self):
@@ -438,13 +438,16 @@ class Analysis_Functions():
         
         return inner_indices, outer_indices
     
-    def detect_large_features(self, image, threshold, sigma1=2., sigma2=60.):
+    def detect_large_features(self, image, threshold1, threshold2=0, sigma1=2., sigma2=60.):
         """
         Detects large features in an image based on a given threshold.
     
         Args:
         - image (numpy.ndarray): Original image.
-        - threshold (float): Threshold for determining features.
+        - threshold1 (float): Threshold for determining features. Only this is
+        used for the determination of large protein aggregates.
+        - threshold2 (float): Threshold for determining cell features. If above
+        0, gets used and cellular features are detected.
         - sigma1 (float): first gaussian blur width
         - sigma2 (float): second gaussian blur width
     
@@ -455,8 +458,22 @@ class Analysis_Functions():
         enhanced_image = gaussian(image, sigma=sigma1, truncate=2.) - gaussian(image, sigma=sigma2, truncate=2.)
     
         # Create a binary mask for large features based on the threshold
-        large_mask = enhanced_image > threshold
+        large_mask = enhanced_image > threshold1
         
+        if threshold2 > 0:
+            large_mask = binary_opening(large_mask, structure=ski.morphology.disk(1))
+            large_mask = binary_closing(large_mask, structure=ski.morphology.disk(5))
+            pixel_index_list, *rest = self.calculate_region_properties(self, large_mask)
+            idx1 = np.zeros_like(pixel_index_list, dtype=bool)
+            imcopy = np.copy(image)
+            for i in np.arange(len(pixel_index_list)):
+                idx1[i] = 1*(np.sum(imcopy[pixel_index_list[i][:,0], 
+                        pixel_index_list[i][:,1]] > 
+                        threshold2)/len(pixel_index_list[i][:,0]) > 0.1)
+            if len(idx1) > 0:
+                large_mask = self.create_filled_region(image.shape, pixel_index_list[idx1])
+                large_mask = binary_fill_holes(large_mask)
+
         return large_mask.astype(bool)
 
 
