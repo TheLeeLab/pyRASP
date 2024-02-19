@@ -18,7 +18,7 @@ A_F = AnalysisFunctions.Analysis_Functions()
 
 
 class RASP_Routines():
-    def __init__(self, defaultarea=True, defaultrad=True, defaultsteep=True, defaultdfocus=True, defaultintfocus=True, defaultcameraparams=True):
+    def __init__(self, defaultarea=True, defaultrad=True, defaultsteep=True, defaultdfocus=True, defaultintfocus=True, defaultcellparams=True, defaultcameraparams=True):
         """
         Initialises class.
     
@@ -67,6 +67,19 @@ class RASP_Routines():
                 self.focus_score_int = float(data['focus_score_int'])
             else:
                 self.focus_score_int = 390.
+                
+        if defaultcellparams == True:
+            if os.path.isfile(os.path.join(self.defaultfolder, 'default_cell_params.json')):
+                data = IO.load_json(os.path.join(self.defaultfolder, 'default_cell_params.json'))
+                self.cell_sigma1 = float(data['sigma1'])
+                self.cell_sigma2 = float(data['sigma2'])
+                self.cell_threshold1 = float(data['threshold1'])
+                self.cell_threshold2 = float(data['threshold1'])
+            else:
+                self.cell_sigma1 = 2.
+                self.cell_sigma2 = 40.
+                self.cell_threshold1 = 200.
+                self.cell_threshold2 = 200.
                 
         if defaultcameraparams == True:
             if os.path.isfile(os.path.join(self.defaultfolder, 'camera_params.json')):
@@ -143,6 +156,97 @@ class RASP_Routines():
         n_spots = pd.DataFrame(data=np.vstack([z_planes+1, spots_per_plane]).T, 
                                columns=columns)
         return n_spots
+    
+    def compute_spot_and_cell_props(self, image, image_cell, k1, k2, prot_thres=0.05, large_prot_thres=450., 
+                           areathres=30., rdl=[50., 0., 0.], z=[0], 
+                           cell_threshold1=200., cell_threshold2=200, cell_sigma1=2., cell_sigma2=40.):
+        """
+        Gets basic image properties (centroids, radiality)
+        from a single image and compare to a cell mask from another image channel
+    
+        Args:
+        - image (array). image of protein stain as numpy array
+        - image (array). image of cell stain as numpy array
+        - k1 (array). gaussian blur kernel
+        - k2 (array). ricker wavelet kernel
+        - prot_thres (float). percentage threshold for protein
+        - large_prot_thres (float). Protein threshold intensity
+        - areathres (float). area threshold
+        - rdl (array). radiality thresholds
+        - z (array). z planes to image, default 0
+        - cell_threshold1 (float). 1st cell intensity threshold
+        - cell_threshold2 (float). 2nd cell intensity threshold
+        - cell_sigma1 (float). cell blur value 1
+        - cell_sigma2 (float). cell blur value 2
+
+        """
+        
+        columns = ['x', 'y', 'z', 'sum_intensity_in_photons', 'bg', 'zi', 'zf']
+        if len(z) > 1:
+            z_planes = np.arange(z[0], z[1])
+            cell_mask = np.zeros_like(image_cell, dtype=bool)
+            clr = np.zeros(image_cell.shape[2])
+            norm_std = np.zeros(image_cell.shape[2])
+            norm_CSR = np.zeros(image_cell.shape[2])
+            expected_spots = np.zeros(image_cell.shape[2])
+            n_iter = np.zeros(image_cell.shape[2])
+            
+            for zp in z_planes:
+                img_z = image[:, :, zp]
+                img_cell_z = image_cell[:, :, zp]
+                centroids, estimated_intensity, estimated_background = A_F.default_spotanalysis_routine(img_z,
+                k1, k2, prot_thres, large_prot_thres, areathres, rdl)
+                
+                cell_mask[:,:,zp] = A_F.detect_large_features(img_cell_z,
+                    cell_threshold1, cell_threshold2, cell_sigma1, cell_sigma2)
+                
+                image_size = img_z.shape
+                mask_coords = np.transpose((cell_mask[:,:,zp]>0).nonzero())
+                mask_indices = np.ravel_multi_index([mask_coords[:, 0], mask_coords[:, 1]], image_size)
+                spot_indices = np.ravel_multi_index(centroids.T, image_size, order='F')
+                clr[zp], norm_std[zp], norm_CSR[zp], expected_spots[zp], n_iter[zp] = A_F.calculate_spot_colocalisation_likelihood_ratio(spot_indices, mask_indices, image_size)
+                
+                dataarray = np.vstack([centroids[:, 0], centroids[:, 1], 
+                np.full_like(centroids[:, 0], zp+1), estimated_intensity, 
+                estimated_background, np.full_like(centroids[:, 0], 1+z_planes[0]),
+                np.full_like(centroids[:, 0], 1+z_planes[-1])])                
+                if zp == z_planes[0]:
+                    to_save = pd.DataFrame(data=dataarray.T, columns=columns)
+                else:
+                    to_save = pd.concat([to_save, pd.DataFrame(data=dataarray.T, columns=columns)])
+            to_save = to_save.reset_index(drop=True)
+            
+            dataarray_cell = np.vstack([clr, norm_std, norm_CSR, 
+                            expected_spots, n_iter, z_planes+1])
+            columns_cell = ['colocalisation_likelihood_ratio', 'std', 
+                            'CSR', 'n_iterations', 'z']
+            to_save_cell = pd.DataFrame(data=dataarray_cell.T, columns=columns_cell)
+        else:
+            centroids, estimated_intensity, estimated_background = A_F.default_spotanalysis_routine(image,
+            k1, k2, prot_thres, large_prot_thres, areathres, rdl)
+            
+            cell_mask = A_F.detect_large_features(image_cell,
+                    cell_threshold1, cell_threshold2, cell_sigma1, cell_sigma2)
+            
+            image_size = image.shape
+            mask_coords = np.transpose((cell_mask>0).nonzero())
+            mask_indices = np.ravel_multi_index([mask_coords[:, 0], mask_coords[:, 1]], image_size)
+            spot_indices = np.ravel_multi_index(centroids.T, image_size, order='F')
+
+            clr, norm_std, norm_CSR, expected_spots, n_iter = A_F.calculate_spot_colocalisation_likelihood_ratio(spot_indices, mask_indices, image_size)
+
+            dataarray = np.vstack([centroids[:, 0], centroids[:, 1], 
+            np.full_like(centroids[:, 0], 1), estimated_intensity, 
+            estimated_background, np.full_like(centroids[:, 0], 1),
+            np.full_like(centroids[:, 0], 1)])
+            to_save = pd.DataFrame(data=dataarray.T, columns=columns)
+            
+            dataarray_cell = np.vstack([clr, norm_std, norm_CSR, 
+                            expected_spots, n_iter])
+            columns_cell = ['colocalisation_likelihood_ratio', 'std', 
+                            'CSR', 'n_iterations']
+            to_save_cell = pd.DataFrame(data=dataarray_cell.T, columns=columns_cell)
+        return to_save, to_save_cell, cell_mask 
         
     def compute_spot_props(self, image, k1, k2, thres=0.05, large_thres=450., 
                            areathres=30., rdl=[50., 0., 0.], z=[0]):
@@ -386,7 +490,7 @@ class RASP_Routines():
     def analyse_round_images(self, folder, imtype='.tif', thres=0.05, 
                              large_thres=450., gsigma=1.4, rwave=2., 
                              oligomer_string='C1', cell_string='C0',
-                             if_filter=True, im_start=1, one_savefile=True):
+                             if_filter=True, im_start=1, cell_analysis=False, one_savefile=True):
         """
         analyses data in a folder specified,
         folder has "RoundN/SN" structure as in Lee Lab Cambridge Experiment
@@ -406,7 +510,8 @@ class RASP_Routines():
         - im_start (integer). Images to start from (default 1)
         - one_savefile (boolean). Parameter that, if true, doesn't save a file
         per image but amalgamates them into one file
-
+        - cell_analysis (boolean). Parameter where script also analyses cell
+        images and computes colocalisation likelihood ratios.
         """
         r = float(os.path.split(folder)[1].split('Round')[1]) # get round for rsid later
         
@@ -421,6 +526,10 @@ class RASP_Routines():
                        gsigma, 'ricker_sigma': rwave, 'thres': thres,
                        'large_thres': large_thres, 
                        'focus_score_diff': self.focus_score_diff,
+                       'cell_sigma1': self.cell_sigma1,
+                       'cell_sigma2': self.cell_sigma2,
+                       'cell_threshold1': self.cell_threshold1,
+                       'cell_threshold2': self.cell_threshold2,
                        'QE': self.QE}
         IO.save_analysis_params(analysis_p_directory, 
                 to_save, gain_map=self.gain_map, offset_map=self.offset_map)
@@ -428,7 +537,11 @@ class RASP_Routines():
         oligomer_files = [os.path.join(dirpath, f) for dirpath, dirnames, files in os.walk(folder)
             for f in fnmatch.filter(files, '*'+oligomer_string+'*')]
         oligomer_files = np.sort([e for e in oligomer_files if imtype in e])
-
+        if cell_analysis == True:
+            cell_files = [os.path.join(dirpath, f) for dirpath, dirnames, files in os.walk(folder)
+                for f in fnmatch.filter(files, '*'+cell_string+'*')]
+            cell_files = np.sort([e for e in cell_files if imtype in e])
+    
         
         analysis_directory = os.path.abspath(folder)+'_analysis'
         IO.make_directory(analysis_directory)
@@ -438,12 +551,25 @@ class RASP_Routines():
             rsid = r + s
             img = IO.read_tiff_tophotons(oligomer_files[i], 
             QE=self.QE, gain_map=self.gain_map, offset_map=self.offset_map)
+            if cell_analysis == True:
+                img_cell = IO.read_tiff_tophotons(cell_files[i], 
+                QE=self.QE, gain_map=self.gain_map, offset_map=self.offset_map)
+
             if len(img.shape) > 2: # if a z-stack
                 z_planes = self.get_infocus_planes(img, k1)
                 
-                to_save = self.compute_spot_props(img, 
-                k1, k2, thres=thres, large_thres=large_thres, 
-                areathres=self.areathres, rdl=rdl, z=z_planes)
+                if cell_analysis == False:
+                    to_save = self.compute_spot_props(img, 
+                    k1, k2, thres=thres, large_thres=large_thres, 
+                    areathres=self.areathres, rdl=rdl, z=z_planes)
+                else:
+                    to_save, to_save_cell, cell_mask = self.compute_spot_and_cell_props(img, img_cell, k1, k2,
+                                        prot_thres=thres, large_prot_thres=large_thres, 
+                                        areathres=self.areathres, rdl=rdl, z=z_planes, 
+                                        cell_threshold1=self.cell_threshold1, 
+                                        cell_threshold2=self.cell_threshold1, 
+                                        cell_sigma1=self.cell_sigma1,
+                                        cell_sigma2=self.cell_sigma2)
                 
                 if one_savefile == False:
                     directory = os.path.split(os.path.split(oligomer_files[i])[0])+'_analysis'
@@ -452,12 +578,26 @@ class RASP_Routines():
                     to_save['rsid'] = np.full_like(to_save.z.values, rsid)
                     to_save.to_csv(os.path.join(directory, 
                     savefile+'.csv'), index=False)
+                    if cell_analysis == True:
+                        to_save_cell['rsid'] = np.full_like(to_save_cell.z.values, rsid)
+                        to_save_cell.to_csv(os.path.join(directory, 
+                        savefile+'_cellanalysis.csv'), index=False)
+                        IO.write_tiff(cell_mask, os.path.join(directory, 
+                        savefile+'_cellMask.tiff'), bit=np.uint8)
                 else:
                     to_save['rsid'] = np.full_like(to_save.z.values, rsid)
                     to_save['image_filename'] = np.full_like(to_save.z.values, os.path.split(oligomer_files[i])[-1], dtype='object')
                     savename = os.path.join(analysis_directory, 'spot_analysis.csv')
                     savename_spot = os.path.join(analysis_directory, 'spot_numbers.csv')
-                    
+                    if cell_analysis == True:
+                        savename_cell = os.path.join(analysis_directory, 'cell_colocalisation_analysis.csv')
+                        to_save_cell['rsid'] = np.full_like(to_save_cell.z.values, rsid)
+                        to_save_cell['image_filename'] = np.full_like(to_save_cell.z.values, os.path.split(oligomer_files[i])[-1], dtype='object')
+                        savefile = os.path.split(oligomer_files[i])[-1]
+                        directory = os.path.split(os.path.split(oligomer_files[i])[0])+'_cellMasks'
+                        IO.write_tiff(cell_mask, os.path.join(directory, 
+                                                              savefile+'_cellMask.tiff'), bit=np.uint8)
+                        
                     n_spots = self.count_spots(to_save, np.arange(z_planes[0], z_planes[1]))
                     n_spots['rsid'] = np.full_like(n_spots.z.values, rsid)
                     n_spots['image_filename'] = np.full_like(n_spots.z.values, os.path.split(oligomer_files[i])[-1], dtype='object')
@@ -465,9 +605,13 @@ class RASP_Routines():
                     if i != 0:
                         to_save.to_csv(savename, mode='a', header=False, index=False)
                         n_spots.to_csv(savename_spot, mode='a', header=False, index=False)
+                        if cell_analysis == True:
+                            to_save_cell.to_csv(savename_cell, mode='a', header=False, index=False)
                     else:
                         to_save.to_csv(savename, index=False)
                         n_spots.to_csv(savename_spot, index=False)
+                        if cell_analysis == True:
+                            to_save_cell.to_csv(savename_cell, index=False)
             else: # if not a z-stack
                 to_save = self.compute_spot_props(img, k1, k2, thres=thres,
                 large_thres=large_thres, areathres=self.areathres, rdl=rdl)

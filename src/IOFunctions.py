@@ -117,7 +117,7 @@ class IO_Functions():
             data = np.divide(np.divide(np.subtract(data, offset_map), gain_map), QE)
         return data
     
-    def write_tiff(self, volume, file_path, bit=16):
+    def write_tiff(self, volume, file_path, bit=np.uint16):
         """
         Write a TIFF file using the skimage library.
     
@@ -131,4 +131,4 @@ class IO_Functions():
         - The plugin is set to 'tifffile' and photometric to 'minisblack'.
         - Additional metadata specifying the software as 'Python' is included.
         """
-        io.imsave(file_path, volume, plugin='tifffile', photometric='minisblack', metadata={'Software': 'Python'}, check_contrast=False)
+        io.imsave(file_path, np.asarray(volume, bit=bit), plugin='tifffile', bigtiff=True, photometric='minisblack', metadata={'Software': 'Python'}, check_contrast=False)
