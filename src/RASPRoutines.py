@@ -32,7 +32,8 @@ class RASP_Routines():
         """
 
         self = self
-        self.defaultfolder = 'default_analysis_parameters'
+        self.defaultfolder = os.path.join(os.path.split(module_dir)[0],
+                            'default_analysis_parameters')
         if defaultarea == True:
             if os.path.isfile(os.path.join(self.defaultfolder, 'areathres.json')):
                 data = IO.load_json(os.path.join(self.defaultfolder, 'areathres.json'))
