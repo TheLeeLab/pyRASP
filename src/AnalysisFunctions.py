@@ -155,8 +155,12 @@ class Analysis_Functions():
             CSR = np.hstack([CSR, CSR_new]) # stack
             meanCSR = np.divide(np.mean(CSR), expected_spots) # should be close to 1
             CSR_diff = np.abs(meanCSR - 1.)
-        norm_CSR = np.divide(np.mean(CSR), expected_spots) # should be close to 1
-        norm_std = np.divide(np.std(CSR), np.mean(CSR)) # std dev (normalised)
+        if (expected_spots > 0) and (np.mean(CSR) > 0):    
+            norm_CSR = np.divide(np.mean(CSR), expected_spots) # should be close to 1
+            norm_std = np.divide(np.std(CSR), np.mean(CSR)) # std dev (normalised)
+        else:
+            norm_CSR = np.NAN
+            norm_std = np.NAN
         return colocalisation_likelihood_ratio, norm_std, norm_CSR, expected_spots, n_iter
     
     def default_spotanalysis_routine(self, image, k1, k2, thres=0.05, 
@@ -464,7 +468,7 @@ class Analysis_Functions():
         if threshold2 > 0:
             large_mask = binary_opening(large_mask, structure=ski.morphology.disk(1))
             large_mask = binary_closing(large_mask, structure=ski.morphology.disk(5))
-            pixel_index_list, *rest = self.calculate_region_properties(self, large_mask)
+            pixel_index_list, *rest = self.calculate_region_properties(large_mask)
             idx1 = np.zeros_like(pixel_index_list, dtype=bool)
             imcopy = np.copy(image)
             for i in np.arange(len(pixel_index_list)):
@@ -605,7 +609,7 @@ class Analysis_Functions():
                 image_size = img_z.shape
                 mask_coords = np.transpose((cell_mask[:,:,zp]>0).nonzero())
                 mask_indices = np.ravel_multi_index([mask_coords[:, 0], mask_coords[:, 1]], image_size)
-                spot_indices = np.ravel_multi_index(centroids.T, image_size, order='F')
+                spot_indices = np.ravel_multi_index(np.asarray(centroids.T, dtype=int), image_size, order='F')
                 clr[zp], norm_std[zp], norm_CSR[zp], expected_spots[zp], n_iter[zp] = self.calculate_spot_colocalisation_likelihood_ratio(spot_indices, mask_indices, image_size)
                 
                 dataarray = np.vstack([centroids[:, 0], centroids[:, 1], 
@@ -618,10 +622,12 @@ class Analysis_Functions():
                     to_save = pd.concat([to_save, pd.DataFrame(data=dataarray.T, columns=columns)])
             to_save = to_save.reset_index(drop=True)
             
+            zps = np.zeros_like(clr)
+            zps[z_planes[0]:z_planes[-1]+1] = z_planes+1
             dataarray_cell = np.vstack([clr, norm_std, norm_CSR, 
-                            expected_spots, n_iter, z_planes+1])
+                            expected_spots, n_iter, zps])
             columns_cell = ['colocalisation_likelihood_ratio', 'std', 
-                            'CSR', 'n_iterations', 'z']
+                            'CSR', 'expected_spots', 'n_iterations', 'z']
             to_save_cell = pd.DataFrame(data=dataarray_cell.T, columns=columns_cell)
         else:
             centroids, estimated_intensity, estimated_background = self.default_spotanalysis_routine(image,
@@ -646,7 +652,7 @@ class Analysis_Functions():
             dataarray_cell = np.vstack([clr, norm_std, norm_CSR, 
                             expected_spots, n_iter])
             columns_cell = ['colocalisation_likelihood_ratio', 'std', 
-                            'CSR', 'n_iterations']
+                            'CSR', 'expected_spots', 'n_iterations']
             to_save_cell = pd.DataFrame(data=dataarray_cell.T, columns=columns_cell)
         return to_save, to_save_cell, cell_mask 
 

@@ -133,4 +133,8 @@ class IO_Functions():
         - The plugin is set to 'tifffile' and photometric to 'minisblack'.
         - Additional metadata specifying the software as 'Python' is included.
         """
+        if len(volume.shape) > 2: # if image a stack
+            if volume.shape[-1] < volume.shape[0]: # if stack is wrong way round
+                volume = volume.T
+            volume = np.asarray(np.swapaxes(volume,1,2), dtype='double')
         io.imsave(file_path, np.asarray(volume, dtype=bit), plugin='tifffile', bigtiff=True, photometric='minisblack', metadata={'Software': 'Python'}, check_contrast=False)

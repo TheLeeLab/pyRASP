@@ -294,10 +294,10 @@ class RASP_Routines():
         - cell string (string). string for cell-containing data (default C0)
         - if_filter (boolean). Filter images for focus (default True)
         - im_start (integer). Images to start from (default 1)
-        - one_savefile (boolean). Parameter that, if true, doesn't save a file
-        per image but amalgamates them into one file
         - cell_analysis (boolean). Parameter where script also analyses cell
         images and computes colocalisation likelihood ratios.
+        - one_savefile (boolean). Parameter that, if true, doesn't save a file
+        per image but amalgamates them into one file
 
         """
         files_list = os.listdir(folder)
@@ -334,7 +334,7 @@ class RASP_Routines():
             img = IO.read_tiff_tophotons(os.path.join(folder, files[i]), 
             QE=self.QE, gain_map=self.gain_map, offset_map=self.offset_map)
             if cell_analysis == True:
-                img_cell = IO.read_tiff_tophotons(cell_files[i], 
+                img_cell = IO.read_tiff_tophotons(os.path.join(folder, cell_files[i]), 
                 QE=self.QE, gain_map=self.gain_map, offset_map=self.offset_map)
             if im_start > 1:
                 img = img[:, :, im_start:]
@@ -365,7 +365,10 @@ class RASP_Routines():
                 else:
                     to_save['image_filename'] = np.full_like(to_save.z.values, files[i], dtype='object')
                     savename = os.path.join(analysis_directory, 'spot_analysis.csv')
-                    
+                    savename_spot = os.path.join(analysis_directory, 'spot_numbers.csv')
+                    n_spots = self.count_spots(to_save, np.arange(z_planes[0], z_planes[1]))
+                    n_spots['image_filename'] = np.full_like(n_spots.z.values, files[i], dtype='object')
+
                     if cell_analysis == True:
                         to_save_cell['image_filename'] = np.full_like(to_save_cell.z.values, files[i], dtype='object')
                         savename_cell = os.path.join(analysis_directory, 'cell_colocalisation_analysis.csv')
@@ -374,10 +377,12 @@ class RASP_Routines():
 
                     if i != 0:
                         to_save.to_csv(savename, mode='a', header=False, index=False)
+                        n_spots.to_csv(savename_spot, mode='a', header=False, index=False)
                         if cell_analysis == True:
                             to_save_cell.to_csv(savename_cell, mode='a', header=False, index=False)
                     else:
                         to_save.to_csv(savename, index=False)
+                        n_spots.to_csv(savename_spot, index=False)
                         if cell_analysis == True:
                             to_save_cell.to_csv(savename_cell, index=False)
             else: # if not a z-stack
@@ -451,9 +456,9 @@ class RASP_Routines():
                 for f in fnmatch.filter(files, '*'+cell_string+'*')]
             cell_files = np.sort([e for e in cell_files if imtype in e])
     
-        
-        analysis_directory = os.path.abspath(folder)+'_analysis'
-        IO.make_directory(analysis_directory)
+        if one_savefile == True:
+            analysis_directory = os.path.abspath(folder)+'_analysis'
+            IO.make_directory(analysis_directory)
         
         for i in np.arange(len(oligomer_files)):
             s = float(os.path.split(os.path.split(os.path.split(oligomer_files[i])[0])[0])[1].split('S')[1])/100
@@ -481,7 +486,7 @@ class RASP_Routines():
                                         cell_sigma2=self.cell_sigma2)
                 
                 if one_savefile == False:
-                    directory = os.path.split(os.path.split(oligomer_files[i])[0])+'_analysis'
+                    directory = os.path.split(os.path.split(oligomer_files[i])[0])[0]+'_analysis'
                     IO.make_directory(directory)
                     savefile = os.path.split(oligomer_files[i])[-1]
                     to_save['rsid'] = np.full_like(to_save.z.values, rsid)
@@ -502,8 +507,9 @@ class RASP_Routines():
                         savename_cell = os.path.join(analysis_directory, 'cell_colocalisation_analysis.csv')
                         to_save_cell['rsid'] = np.full_like(to_save_cell.z.values, rsid)
                         to_save_cell['image_filename'] = np.full_like(to_save_cell.z.values, os.path.split(oligomer_files[i])[-1], dtype='object')
-                        savefile = os.path.split(oligomer_files[i])[-1]
-                        directory = os.path.split(os.path.split(oligomer_files[i])[0])+'_cellMasks'
+                        savefile = os.path.split(cell_files[i])[-1]
+                        directory = os.path.split(os.path.split(oligomer_files[i])[0])[0]+'_cellMasks'
+                        IO.make_directory(directory)
                         IO.write_tiff(cell_mask, os.path.join(directory, 
                                                               savefile+'_cellMask.tiff'), bit=np.uint8)
                         
