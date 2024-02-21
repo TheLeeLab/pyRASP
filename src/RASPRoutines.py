@@ -18,14 +18,14 @@ A_F = AnalysisFunctions.Analysis_Functions()
 
 
 class RASP_Routines():
-    def __init__(self, defaultarea=True, defaultrad=True, defaultsteep=True, defaultdfocus=True, defaultintfocus=True, defaultcellparams=True, defaultcameraparams=True):
+    def __init__(self, defaultarea=True, defaultrad=True, defaultflat=True, defaultdfocus=True, defaultintfocus=True, defaultcellparams=True, defaultcameraparams=True):
         """
         Initialises class.
     
         Args:
         - defaultarea (boolean). If True, uses area default for analysis later
         - defaultrad (boolean). If True, uses radiality default for analysis later
-        - defaultsteep (boolean). If True, uses flatness default for analysis later
+        - defaultflat (boolean). If True, uses flatness default for analysis later
         - defaultdfocus (boolean). If True, uses differential infocus default for analysis later
         - defaultintfocus (boolean). If True, uses integral infocus default for analysis later
         - defaultcameraparams (boolean). If True, uses camera parameters in folder for analysis later
@@ -48,7 +48,7 @@ class RASP_Routines():
             else:
                 self.integratedGrad = 0.
                 
-        if defaultsteep == True:
+        if defaultflat == True:
             if os.path.isfile(os.path.join(self.defaultfolder, 'rad_neg.json')):
                 data = IO.load_json(os.path.join(self.defaultfolder, 'rad_neg.json'))
                 self.flatness = float(data['flatness'])
