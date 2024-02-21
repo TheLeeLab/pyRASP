@@ -630,7 +630,7 @@ class Analysis_Functions():
             to_save = to_save.reset_index(drop=True)
             
             zps = np.zeros_like(clr)
-            zps[z_planes[0]:z_planes[-1]+1] = z_planes+1
+            zps[z_planes] = z_planes+1
             dataarray_cell = np.vstack([clr, norm_std, norm_CSR, 
                             expected_spots, n_iter, zps])
             columns_cell = ['colocalisation_likelihood_ratio', 'std', 

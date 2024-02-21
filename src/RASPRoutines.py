@@ -407,7 +407,9 @@ class RASP_Routines():
                              if_filter=True, im_start=1, cell_analysis=False, one_savefile=True):
         """
         analyses data in a folder specified,
-        folder has "RoundN/SN" structure as in Lee Lab Cambridge Experiment
+        folder has either "Round" in the title
+        or multiple rounds below; 
+        structure as in Lee Lab Cambridge Experiment
         saves spots, locations, intensities and backgrounds in a folder created
         next to the folder analysed with _analysis string attached
         also writes a folder with _analysisparameters and saves analysis parameters
