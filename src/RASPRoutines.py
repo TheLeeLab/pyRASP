@@ -25,7 +25,7 @@ class RASP_Routines():
         Args:
         - defaultarea (boolean). If True, uses area default for analysis later
         - defaultrad (boolean). If True, uses radiality default for analysis later
-        - defaultsteep (boolean). If True, uses steepness default for analysis later
+        - defaultsteep (boolean). If True, uses flatness default for analysis later
         - defaultdfocus (boolean). If True, uses differential infocus default for analysis later
         - defaultintfocus (boolean). If True, uses integral infocus default for analysis later
         - defaultcameraparams (boolean). If True, uses camera parameters in folder for analysis later
@@ -51,9 +51,9 @@ class RASP_Routines():
         if defaultsteep == True:
             if os.path.isfile(os.path.join(self.defaultfolder, 'rad_neg.json')):
                 data = IO.load_json(os.path.join(self.defaultfolder, 'rad_neg.json'))
-                self.steepness = float(data['steepness'])
+                self.flatness = float(data['flatness'])
             else:
-                self.steepness = 1.
+                self.flatness = 1.
                 
         if defaultdfocus == True:
             if os.path.isfile(os.path.join(self.defaultfolder, 'infocus.json')):
@@ -162,7 +162,7 @@ class RASP_Routines():
         """
         Calibrates radility parameters. Given a folder of negative controls,
         analyses them and saves the radiality parameter to the .json file, as
-        well as writing it to the current class radiality and steepness values
+        well as writing it to the current class radiality and flatness values
     
         Args:
         - folder (string). Folder containing negative control tifs
@@ -203,14 +203,14 @@ class RASP_Routines():
         rad_1 = np.percentile(r1_neg, accepted_ratio)
         rad_2 = np.percentile(r2_neg, 100.-accepted_ratio)
         
-        to_save = {'steepness' : rad_1, 'integratedGrad' : rad_2}
+        to_save = {'flatness' : rad_1, 'integratedGrad' : rad_2}
         
         IO.make_directory(self.defaultfolder)
         IO.save_as_json(to_save, os.path.join(self.defaultfolder, 'rad_neg.json'))
-        self.steepness = rad_1
+        self.flatness = rad_1
         self.integratedGrad = rad_2
         print("Radiality calibrated using negative control"+
-              " images in "+str(folder)+". New steepness is "+
+              " images in "+str(folder)+". New flatness is "+
               str(np.around(rad_1, 2))+" and new integrated gradient is "
               +str(np.around(rad_2, 2))+". Parameters saved in "
               +str(self.defaultfolder)+".")
@@ -220,7 +220,7 @@ class RASP_Routines():
         """
         Calibrates area threshold. Given a folder of bead images,
         analyses them and saves the radiality parameter to the .json file, as
-        well as writing it to the current class radiality and steepness values
+        well as writing it to the current class radiality and flatness values
     
         Args:
         - folder (string). Folder containing bead (bright) control tifs
@@ -235,7 +235,7 @@ class RASP_Routines():
         accepted_ratio = 95.; # perc. of CDF we'll use
         areathres = 1000. # arbitrarily high area threshold for this calibration
         thres = 0.05 # threshold is 0.05
-        rdl = [self.steepness, self.integratedGrad, 0.]
+        rdl = [self.flatness, self.integratedGrad, 0.]
         for i in np.arange(len(files)):
             file_path = os.path.join(folder, files[i])
             image = IO.read_tiff(file_path)
@@ -305,14 +305,14 @@ class RASP_Routines():
             cell_files = self.file_search(folder, cell_string, imtype)
 
         k1, k2 = A_F.create_kernel(gsigma, rwave) # create image processing kernels
-        rdl = [self.steepness, self.integratedGrad, 0.]
+        rdl = [self.flatness, self.integratedGrad, 0.]
         
         # create analysis and analysis parameter directories
         analysis_directory = os.path.abspath(folder)+'_analysis'
         IO.make_directory(analysis_directory)
         analysis_p_directory = os.path.abspath(folder)+'_analysisparameters'
 
-        to_save = {'areathres': self.areathres, 'steepness': self.steepness, 
+        to_save = {'areathres': self.areathres, 'flatness': self.flatness, 
                    'integratedGrad': self.integratedGrad, 'gaussian_sigma':
                        gsigma, 'ricker_sigma': rwave, 'thres': thres,
                        'large_thres': large_thres, 
@@ -523,7 +523,7 @@ class RASP_Routines():
         # create analysis parameter directory
         analysis_p_directory = os.path.abspath(folder)+'_analysisparameters'
 
-        to_save = {'areathres': self.areathres, 'steepness': self.steepness, 
+        to_save = {'areathres': self.areathres, 'flatness': self.flatness, 
                    'integratedGrad': self.integratedGrad, 'gaussian_sigma':
                        gsigma, 'ricker_sigma': rwave, 'thres': thres,
                        'large_thres': large_thres, 
@@ -641,7 +641,7 @@ class RASP_Routines():
         images and computes colocalisation likelihood ratios.
         """
         k1, k2 = A_F.create_kernel(gsigma, rwave) # create image processing kernels
-        rdl = [self.steepness, self.integratedGrad, 0.]
+        rdl = [self.flatness, self.integratedGrad, 0.]
 
         if 'Round' in folder:
             self.analyse_round_subfolder(folder, k1, k2, rdl, imtype, thres, 

@@ -106,9 +106,9 @@ class Analysis_Functions():
             
             g2 = np.sqrt(np.add(np.square(gradient_x[xy_r2[:,0], xy_r2[:,1]]), np.square(gradient_y[xy_r2[:,0], xy_r2[:,1]])))
 
-            steepness = np.mean(np.divide(img[xy_r2[:,0], xy_r2[:,1]], r0))
+            flatness = np.mean(np.divide(img[xy_r2[:,0], xy_r2[:,1]], r0))
             integrated_grad = np.sum(g2)
-            radiality[k, :] = [steepness, integrated_grad]
+            radiality[k, :] = [flatness, integrated_grad]
 
         return radiality
     
