@@ -112,6 +112,24 @@ class Analysis_Functions():
 
         return radiality
     
+    def generate_mask_and_spot_indices(self, mask, centroids, image_size):
+        """
+        makes mask and spot indices from xy coordinates
+    
+        Args:
+        - mask (2D array): boolean matrix
+        - centroids (2D array): xy centroid coordinates
+        - image_size (tuple): Image dimensions (height, width).
+        
+        Returns:
+        mask_indices (1D array): indices of mask
+        spot_indices (1D array): indices of spots
+        """
+        mask_coords = np.transpose((mask>0).nonzero())
+        mask_indices = np.ravel_multi_index([mask_coords[:, 0], mask_coords[:, 1]], image_size)
+        spot_indices = np.ravel_multi_index(centroids.T, image_size, order='F')
+        return mask_indices, spot_indices
+    
     def calculate_spot_colocalisation_likelihood_ratio(self, spot_indices, mask_indices, image_size, tol=0.01, n_iter=100):
         """
         gets spot colocalisation likelihood ratio, as well as reporting error
@@ -595,14 +613,13 @@ class Analysis_Functions():
         """
         
         columns = ['x', 'y', 'z', 'sum_intensity_in_photons', 'bg', 'zi', 'zf']
+        columns_cell = ['colocalisation_likelihood_ratio', 'std', 
+                            'CSR', 'expected_spots', 'n_iterations', 'z']
+
         if len(z) > 1:
             z_planes = np.arange(z[0], z[1])
             cell_mask = np.zeros_like(image_cell, dtype=bool)
-            clr = np.zeros(image_cell.shape[2])
-            norm_std = np.zeros(image_cell.shape[2])
-            norm_CSR = np.zeros(image_cell.shape[2])
-            expected_spots = np.zeros(image_cell.shape[2])
-            n_iter = np.zeros(image_cell.shape[2])
+            clr, norm_std, norm_CSR, expected_spots, n_iter = self.gen_CSRmats(image_cell.shape[2])
             
             for zp in z_planes:
                 img_z = image[:, :, zp]
@@ -614,28 +631,20 @@ class Analysis_Functions():
                     cell_threshold1, cell_threshold2, cell_sigma1, cell_sigma2)
                 
                 image_size = img_z.shape
-                mask_coords = np.transpose((cell_mask[:,:,zp]>0).nonzero())
-                mask_indices = np.ravel_multi_index([mask_coords[:, 0], mask_coords[:, 1]], image_size)
-                spot_indices = np.ravel_multi_index(np.asarray(centroids.T, dtype=int), image_size, order='F')
+                mask_indices, spot_indices = self.generate_mask_and_spot_indices(cell_mask[:,:,zp], centroids, image_size)
+
                 clr[zp], norm_std[zp], norm_CSR[zp], expected_spots[zp], n_iter[zp] = self.calculate_spot_colocalisation_likelihood_ratio(spot_indices, mask_indices, image_size)
                 
-                dataarray = np.vstack([centroids[:, 0], centroids[:, 1], 
-                np.full_like(centroids[:, 0], zp+1), estimated_intensity, 
-                estimated_background, np.full_like(centroids[:, 0], 1+z_planes[0]),
-                np.full_like(centroids[:, 0], 1+z_planes[-1])])                
                 if zp == z_planes[0]:
-                    to_save = pd.DataFrame(data=dataarray.T, columns=columns)
+                    to_save = to_save = self.make_datarray_spot(centroids, 
+                    estimated_intensity, estimated_background, columns, int(zp), z_planes)
                 else:
-                    to_save = pd.concat([to_save, pd.DataFrame(data=dataarray.T, columns=columns)])
+                    to_save = pd.concat([to_save, self.make_datarray_spot(centroids, 
+                    estimated_intensity, estimated_background, columns, int(zp), z_planes)])
             to_save = to_save.reset_index(drop=True)
             
-            zps = np.zeros_like(clr)
-            zps[z_planes] = z_planes+1
-            dataarray_cell = np.vstack([clr, norm_std, norm_CSR, 
-                            expected_spots, n_iter, zps])
-            columns_cell = ['colocalisation_likelihood_ratio', 'std', 
-                            'CSR', 'expected_spots', 'n_iterations', 'z']
-            to_save_cell = pd.DataFrame(data=dataarray_cell.T, columns=columns_cell)
+            to_save_cell = self.make_datarray_cell(clr, norm_std,
+                        norm_CSR, expected_spots, n_iter, columns_cell, z_planes)
         else:
             centroids, estimated_intensity, estimated_background = self.default_spotanalysis_routine(image,
             k1, k2, prot_thres, large_prot_thres, areathres, rdl)
@@ -644,23 +653,15 @@ class Analysis_Functions():
                     cell_threshold1, cell_threshold2, cell_sigma1, cell_sigma2)
             
             image_size = image.shape
-            mask_coords = np.transpose((cell_mask>0).nonzero())
-            mask_indices = np.ravel_multi_index([mask_coords[:, 0], mask_coords[:, 1]], image_size)
-            spot_indices = np.ravel_multi_index(centroids.T, image_size, order='F')
+            mask_indices, spot_indices = self.generate_mask_and_spot_indices(cell_mask, centroids, image_size)
 
             clr, norm_std, norm_CSR, expected_spots, n_iter = self.calculate_spot_colocalisation_likelihood_ratio(spot_indices, mask_indices, image_size)
 
-            dataarray = np.vstack([centroids[:, 0], centroids[:, 1], 
-            np.full_like(centroids[:, 0], 1), estimated_intensity, 
-            estimated_background, np.full_like(centroids[:, 0], 1),
-            np.full_like(centroids[:, 0], 1)])
-            to_save = pd.DataFrame(data=dataarray.T, columns=columns)
+            to_save = self.make_datarray_spot(centroids, 
+                estimated_intensity, estimated_background, columns[:-2])
             
-            dataarray_cell = np.vstack([clr, norm_std, norm_CSR, 
-                            expected_spots, n_iter])
-            columns_cell = ['colocalisation_likelihood_ratio', 'std', 
-                            'CSR', 'expected_spots', 'n_iterations']
-            to_save_cell = pd.DataFrame(data=dataarray_cell.T, columns=columns_cell)
+            to_save_cell = self.make_datarray_cell(clr, norm_std, norm_CSR, 
+                                expected_spots, n_iter, columns_cell[:-1])
         return to_save, to_save_cell, cell_mask 
 
     def compute_spot_props(self, image, k1, k2, thres=0.05, large_thres=450., 
@@ -687,23 +688,94 @@ class Analysis_Functions():
                 centroids, estimated_intensity, estimated_background = self.default_spotanalysis_routine(img_z,
                 k1, k2, thres, large_thres, areathres, rdl)
                 
-                dataarray = np.vstack([centroids[:, 0], centroids[:, 1], 
-                np.full_like(centroids[:, 0], zp+1), estimated_intensity, 
-                estimated_background, np.full_like(centroids[:, 0], 1+z_planes[0]),
-                np.full_like(centroids[:, 0], 1+z_planes[-1])])                
                 if zp == z_planes[0]:
-                    to_save = pd.DataFrame(data=dataarray.T, columns=columns)
+                    to_save = to_save = self.make_datarray_spot(centroids, 
+                    estimated_intensity, estimated_background, columns, int(zp), z_planes)
                 else:
-                    to_save = pd.concat([to_save, pd.DataFrame(data=dataarray.T, columns=columns)])
+                    to_save = pd.concat([to_save, self.make_datarray_spot(centroids, 
+                    estimated_intensity, estimated_background, columns, int(zp), z_planes)])
             to_save = to_save.reset_index(drop=True)
         else:
             centroids, estimated_intensity, estimated_background = self.default_spotanalysis_routine(image,
             k1, k2, thres, large_thres, areathres, rdl)
             
-            dataarray = np.vstack([centroids[:, 0], centroids[:, 1], 
-            np.full_like(centroids[:, 0], 1), estimated_intensity, 
-            estimated_background, np.full_like(centroids[:, 0], 1),
-            np.full_like(centroids[:, 0], 1)])
-            to_save = pd.DataFrame(data=dataarray.T, columns=columns)
+            to_save = self.make_datarray_spot(centroids, 
+                estimated_intensity, estimated_background, columns[:-2])
             
         return to_save
+
+    def gen_CSRmats(self, image_z_shape):
+        """
+        Generates empty matrices for the CSR
+    
+        Args:
+        - image_z_shape (int). shape of new array
+
+        Returns:
+        - clr (ndarray). empty array
+        - norm_std (ndarray). empty array
+        - norm_CSR (ndarray). empty array
+        - expected_spots (ndarray). empty array
+        - n_iter (ndarray). empty array
+        
+        """
+
+        clr = np.zeros(image_z_shape)
+        norm_std = np.zeros(image_z_shape)
+        norm_CSR = np.zeros(image_z_shape)
+        expected_spots = np.zeros(image_z_shape)
+        n_iter = np.zeros(image_z_shape)
+        return clr, norm_std, norm_CSR, expected_spots, n_iter
+    
+    def make_datarray_spot(self, centroids, estimated_intensity, estimated_background, columns, zp='none', z_planes=0):
+        """
+        makes a datarray in pandas for spot information
+    
+        Args:
+        - centroids (ndarray): centroid positions
+        - estimated_intensity (ndarray): estimated intensities
+        - estimated_background (ndarray): estimated backgrounds
+        - columns (list of strings): column labels
+        - zp (string or int): if int, gives out z-plane version of datarray
+        - z_planes: z_planes to put in array (if needed)
+        
+        Returns:
+        - to_save (pandas DataArray) pandas array to save
+        
+        """
+        if isinstance(zp, str):
+            dataarray = np.vstack([centroids[:, 0], centroids[:, 1], 
+            np.full_like(centroids[:, 0], 1), estimated_intensity, 
+            estimated_background])
+        elif isinstance(zp, int):
+            dataarray = np.vstack([centroids[:, 0], centroids[:, 1], 
+            np.full_like(centroids[:, 0], zp+1), estimated_intensity, 
+            estimated_background, np.full_like(centroids[:, 0], 1+z_planes[0]),
+            np.full_like(centroids[:, 0], 1+z_planes[-1])])                
+        return pd.DataFrame(data=dataarray.T, columns=columns)
+    
+    def make_datarray_cell(self, clr, norm_std, norm_CSR, expected_spots, n_iter, columns, z_planes='none'):
+        """
+        makes a datarray in pandas for cell information
+    
+        Args:
+        - clr (ndarray): colocalisation likelihood ratios
+        - estimated_intensity (ndarray): estimated intensities
+        - estimated_background (ndarray): estimated backgrounds
+        - columns (list of strings): column labels
+        - zp (string or int): if int, gives out z-plane version of datarray
+        - z_planes: z_planes to put in array (if needed)
+        
+        Returns:
+        - to_save (pandas DataArray) pandas array to save
+        
+        """
+        if isinstance(z_planes, str):
+            dataarray_cell = np.vstack([clr, norm_std, norm_CSR, 
+                            expected_spots, n_iter])
+        else:
+            zps = np.zeros_like(clr)
+            zps[z_planes] = z_planes+1
+            dataarray_cell = np.vstack([clr, norm_std, norm_CSR, 
+                            expected_spots, n_iter, zps])
+        return pd.DataFrame(data=dataarray_cell.T, columns=columns)
