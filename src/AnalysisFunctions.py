@@ -135,33 +135,40 @@ class Analysis_Functions():
         n_spots = len(spot_indices) # get number of spots
         mask_fill = self.calculate_mask_fill(mask_indices, image_size) # get mask_fill
         expected_spots = np.multiply(mask_fill, n_spots) # get expected number of spots
-        nspots_in_mask = self.test_spot_mask_overlap(spot_indices, mask_indices) # get nspots in mask
-        colocalisation_likelihood_ratio = np.divide(nspots_in_mask, expected_spots) # generate colocalisation likelihood ratio
-        
-        random_spot_locations = np.random.choice(possible_indices, size=(n_iter, n_spots)) # get random spot locations
-        CSR = np.zeros([n_iter]) # generate CSR array to fill in
-        
-        for i in np.arange(n_iter):
-            CSR[i] = self.test_spot_mask_overlap(random_spot_locations[i, :], mask_indices)
-        
-        meanCSR = np.divide(np.mean(CSR), expected_spots) # should be close to 1
-        CSR_diff = np.abs(meanCSR - 1.)
-        while CSR_diff > tol: # do 100 more tests iteratively until convergence
-            n_iter = n_iter + 100 # add 100 iterations
-            CSR_new = np.zeros([100])
-            random_spot_locations = np.random.choice(possible_indices, size=(100, n_spots)) # get random spot locations
-            for i in np.arange(100):
-                CSR_new[i] = self.test_spot_mask_overlap(random_spot_locations[i, :], mask_indices)
-            CSR = np.hstack([CSR, CSR_new]) # stack
-            meanCSR = np.divide(np.mean(CSR), expected_spots) # should be close to 1
-            CSR_diff = np.abs(meanCSR - 1.)
-        if (expected_spots > 0) and (np.mean(CSR) > 0):    
-            norm_CSR = np.divide(np.mean(CSR), expected_spots) # should be close to 1
-            norm_std = np.divide(np.std(CSR), np.mean(CSR)) # std dev (normalised)
-        else:
+        if np.isclose(expected_spots, 0., atol=1e-4):
+            n_iter = 0
+            colocalisation_likelihood_ratio = np.NAN
             norm_CSR = np.NAN
             norm_std = np.NAN
-        return colocalisation_likelihood_ratio, norm_std, norm_CSR, expected_spots, n_iter
+            return colocalisation_likelihood_ratio, norm_std, norm_CSR, expected_spots, n_iter
+        else:
+            nspots_in_mask = self.test_spot_mask_overlap(spot_indices, mask_indices) # get nspots in mask
+            colocalisation_likelihood_ratio = np.divide(nspots_in_mask, expected_spots) # generate colocalisation likelihood ratio
+            
+            random_spot_locations = np.random.choice(possible_indices, size=(n_iter, n_spots)) # get random spot locations
+            CSR = np.zeros([n_iter]) # generate CSR array to fill in
+            
+            for i in np.arange(n_iter):
+                CSR[i] = self.test_spot_mask_overlap(random_spot_locations[i, :], mask_indices)
+            
+            meanCSR = np.divide(np.nanmean(CSR), expected_spots) # should be close to 1
+            CSR_diff = np.abs(meanCSR - 1.)
+            while CSR_diff > tol: # do 100 more tests iteratively until convergence
+                n_iter = n_iter + 100 # add 100 iterations
+                CSR_new = np.zeros([100])
+                random_spot_locations = np.random.choice(possible_indices, size=(100, n_spots)) # get random spot locations
+                for i in np.arange(100):
+                    CSR_new[i] = self.test_spot_mask_overlap(random_spot_locations[i, :], mask_indices)
+                CSR = np.hstack([CSR, CSR_new]) # stack
+                meanCSR = np.divide(np.nanmean(CSR), expected_spots) # should be close to 1
+                CSR_diff = np.abs(meanCSR - 1.)
+            if (expected_spots > 0) and (np.mean(CSR) > 0):    
+                norm_CSR = np.divide(np.nanmean(CSR), expected_spots) # should be close to 1
+                norm_std = np.divide(np.nanstd(CSR), np.nanmean(CSR)) # std dev (normalised)
+            else:
+                norm_CSR = np.NAN
+                norm_std = np.NAN
+            return colocalisation_likelihood_ratio, norm_std, norm_CSR, expected_spots, n_iter
     
     def default_spotanalysis_routine(self, image, k1, k2, thres=0.05, 
                                      large_thres=450., areathres=30.,
