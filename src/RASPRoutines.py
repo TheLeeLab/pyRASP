@@ -652,7 +652,7 @@ class RASP_Routines():
             folders = np.sort([e for e in os.listdir(folder) if 'Round' in e])
             if len(folders) > 0:
                 for f in folders:
-                    self.analyse_round_subfolder(f, k1, k2, rdl, imtype, thres, 
+                    self.analyse_round_subfolder(os.path.join(folder, f), k1, k2, rdl, imtype, thres, 
                                              large_thres, gsigma, rwave, 
                                              oligomer_string, cell_string,
                                              if_filter, im_start, 
