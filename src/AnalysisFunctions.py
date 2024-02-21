@@ -131,7 +131,7 @@ class Analysis_Functions():
         expected_spots (float): number of spots we expect based on mask % of image
         n_iter (int): how many iterations it took to converge
         """
-        possible_indices = np.arange(0, np.product(image_size)) # get list of where is possible to exist in an image
+        possible_indices = np.arange(0, np.prod(image_size)) # get list of where is possible to exist in an image
         n_spots = len(spot_indices) # get number of spots
         mask_fill = self.calculate_mask_fill(mask_indices, image_size) # get mask_fill
         expected_spots = np.multiply(mask_fill, n_spots) # get expected number of spots
@@ -209,7 +209,7 @@ class Analysis_Functions():
         - mask_fill (float): proportion of image filled by mask.
         """
 
-        mask_fill = np.divide(len(mask_indices), np.product(image_size))
+        mask_fill = np.divide(len(mask_indices), np.prod(image_size))
         return mask_fill
     
     def test_spot_mask_overlap(self, spot_indices, mask_indices):
