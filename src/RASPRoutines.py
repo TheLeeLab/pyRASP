@@ -274,9 +274,11 @@ class RASP_Routines():
         self.areathres = area_thresh
         self.d = self.d
         
-        print("Area threshold using bead"+
+        print("Area threshold using beads"+
               " images in "+str(folder)+". New area threshold is "+
               str(np.around(area_thresh, 2))+
+              " new radiality radius calibrated and is "+
+              str(int(self.d))+
               ". Parameters saved in "
               +str(self.defaultfolder)+".")
         return

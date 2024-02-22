@@ -14,8 +14,8 @@ import skimage.draw as draw
 from scipy.ndimage import binary_opening, binary_closing, binary_fill_holes
 import pandas as pd
 import pathos
-from pathos.pools import ThreadPool
-cpu_number = int(pathos.helpers.cpu_count()-2)
+from pathos.multiprocessing import ProcessingPool as Pool
+cpu_number = int(pathos.helpers.cpu_count()/2)
 
 class Analysis_Functions():
     def __init__(self):
@@ -51,7 +51,7 @@ class Analysis_Functions():
                                       mode='edge')
                 filtered_image[:, :, channel] = convolve2d(image_padded, kernel,
                                                                mode='valid')
-            pool = ThreadPool(cpu_number); pool.restart()
+            pool = Pool(nodes=cpu_number); pool.restart()
             pool.map(n_channel_convolve, np.arange(image.shape[2]))
             pool.close(); pool.terminate()
         else:
@@ -111,7 +111,7 @@ class Analysis_Functions():
             integrated_grad = np.sum(g2)
             radiality[index, :] = [flatness, integrated_grad]
             
-        pool = ThreadPool(cpu_number); pool.restart()
+        pool = Pool(nodes=cpu_number); pool.restart()
         pool.map(radiality_extract, np.arange(len(pil_small)))
         pool.close(); pool.terminate()
 
@@ -433,7 +433,7 @@ class Analysis_Functions():
                 estimated_intensity[index] = np.NAN
                 estimated_background[index] = np.NAN
                 
-        pool = ThreadPool(cpu_number); pool.restart()
+        pool = Pool(nodes=cpu_number); pool.restart()
         pool.map(go_through_spots, np.arange(len(indices)))
         pool.close(); pool.terminate()
        
@@ -512,7 +512,7 @@ class Analysis_Functions():
                         pixel_index_list[i][:,1]] > 
                         threshold2)/len(pixel_index_list[i][:,0]) > 0.1)
             
-            pool = ThreadPool(cpu_number); pool.restart()
+            pool = Pool(nodes=cpu_number); pool.restart()
             pool.map(second_thresholding_step, np.arange(len(pixel_index_list)))
             pool.close(); pool.terminate()
                 
