@@ -164,7 +164,7 @@ class Analysis_Functions():
             colocalisation_likelihood_ratio = np.NAN
             norm_CSR = np.NAN
             norm_std = np.NAN
-            return colocalisation_likelihood_ratio, norm_std, norm_CSR, expected_spots, n_iter
+            return colocalisation_likelihood_ratio, norm_std, norm_CSR, expected_spots, n_iter_rec
         else:
             nspots_in_mask = self.test_spot_mask_overlap(spot_indices, mask_indices) # get nspots in mask
             colocalisation_likelihood_ratio = np.divide(nspots_in_mask, expected_spots) # generate colocalisation likelihood ratio
@@ -177,8 +177,8 @@ class Analysis_Functions():
             
             meanCSR = np.divide(np.nanmean(CSR), expected_spots) # should be close to 1
             CSR_diff = np.abs(meanCSR - 1.)
-            while CSR_diff > tol: # do 100 more tests iteratively until convergence
-                n_iter_rec = n_iter_rec + n_iter # add 100 iterations
+            while CSR_diff > tol: # do n_iter more tests iteratively until convergence
+                n_iter_rec = n_iter_rec + n_iter # add n_iter iterations
                 CSR_new = np.zeros([n_iter])
                 random_spot_locations = np.random.choice(possible_indices, size=(n_iter, n_spots)) # get random spot locations
                 for i in np.arange(n_iter):
@@ -506,10 +506,16 @@ class Analysis_Functions():
             pixel_index_list, *rest = self.calculate_region_properties(large_mask)
             idx1 = np.zeros_like(pixel_index_list, dtype=bool)
             imcopy = np.copy(image)
-            for i in np.arange(len(pixel_index_list)):
+            
+            def second_thresholding_step(i):
                 idx1[i] = 1*(np.sum(imcopy[pixel_index_list[i][:,0], 
                         pixel_index_list[i][:,1]] > 
                         threshold2)/len(pixel_index_list[i][:,0]) > 0.1)
+            
+            pool = ThreadPool(cpu_number); pool.restart()
+            pool.map(second_thresholding_step, np.arange(len(pixel_index_list)))
+            pool.close(); pool.terminate()
+                
             if len(idx1) > 0:
                 large_mask = self.create_filled_region(image.shape, pixel_index_list[idx1])
                 large_mask = binary_fill_holes(large_mask)
