@@ -18,12 +18,13 @@ A_F = AnalysisFunctions.Analysis_Functions()
 
 
 class RASP_Routines():
-    def __init__(self, defaultarea=True, defaultrad=True, defaultflat=True, defaultdfocus=True, defaultintfocus=True, defaultcellparams=True, defaultcameraparams=True):
+    def __init__(self, defaultarea=True, defaultd=True, defaultrad=True, defaultflat=True, defaultdfocus=True, defaultintfocus=True, defaultcellparams=True, defaultcameraparams=True):
         """
         Initialises class.
     
         Args:
         - defaultarea (boolean). If True, uses area default for analysis later
+        - defaultd (boolean). If True, uses default pixel radius for analysis later
         - defaultrad (boolean). If True, uses radiality default for analysis later
         - defaultflat (boolean). If True, uses flatness default for analysis later
         - defaultdfocus (boolean). If True, uses differential infocus default for analysis later
@@ -39,6 +40,13 @@ class RASP_Routines():
                 self.areathres = float(data['areathres'])
             else:
                 self.areathres = 30.
+            
+        if defaultd == True:
+            if os.path.isfile(os.path.join(self.defaultfolder, 'areathres.json')):
+                data = IO.load_json(os.path.join(self.defaultfolder, 'areathres.json'))
+                self.areathres = float(data['d'])
+            else:
+                self.areathres = 2.
         
         if defaultrad == True:
             if os.path.isfile(os.path.join(self.defaultfolder, 'rad_neg.json')):

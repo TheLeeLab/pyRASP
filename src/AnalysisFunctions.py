@@ -76,7 +76,7 @@ class Analysis_Functions():
     
         return filtered_image, gradient_x, gradient_y, focus_score, concentration_factor
 
-    def calculate_radiality(self, pil_small, img, gradient_x, gradient_y):
+    def calculate_radiality(self, pil_small, img, gradient_x, gradient_y, d=2):
         """
         Calculate radiality measures based on pixel neighborhoods and gradients.
 
@@ -85,7 +85,7 @@ class Analysis_Functions():
         - img (numpy.ndarray): The input image.
         - gradient_x (numpy.ndarray): X-gradient of the image.
         - gradient_y (numpy.ndarray): Y-gradient of the image.
-
+        - d (integer): pixel ring size
         Returns:
         - radiality (numpy.ndarray): Radiality measures.
         """
@@ -103,7 +103,7 @@ class Analysis_Functions():
             pil_t = pil_small[index]
             r0, mi = np.max(img[pil_t[:,0], pil_t[:,1]]), np.argmax(img[pil_t[:,0], pil_t[:,1]])
             xy = pil_t[mi]
-            xy_r2 = radiality_pixel_indices(xy)
+            xy_r2 = radiality_pixel_indices(xy, d)
             
             g2 = np.sqrt(np.add(np.square(gradient_x[xy_r2[:,0], xy_r2[:,1]]), np.square(gradient_y[xy_r2[:,0], xy_r2[:,1]])))
 
