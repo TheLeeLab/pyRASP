@@ -196,7 +196,7 @@ class Analysis_Functions():
     
     def default_spotanalysis_routine(self, image, k1, k2, thres=0.05, 
                                      large_thres=450., areathres=30.,
-                                     rdl=[50., 0., 0.]):
+                                     rdl=[50., 0., 0.], d=2):
         """
         Daisy-chains analyses to get
         basic image properties (centroids, radiality)
@@ -220,7 +220,7 @@ class Analysis_Functions():
         img2, Gx, Gy, focusScore, cfactor = self.calculate_gradient_field(image, k1)
         dl_mask, centroids, radiality, idxs = self.small_feature_kernel(image, 
         large_mask, img2, Gx, Gy,
-        k2, thres, areathres, rdl)
+        k2, thres, areathres, rdl, d)
         estimated_intensity, estimated_background = self.estimate_intensity(image, centroids)
         to_keep = ~np.isnan(estimated_intensity)
         estimated_intensity = estimated_intensity[to_keep]
@@ -550,7 +550,7 @@ class Analysis_Functions():
         pixel_index_list = props['coords']
         return pixel_index_list, areas, centroids
 
-    def small_feature_kernel(self, img, large_mask, img2, Gx, Gy, k2, thres, area_thres, rdl):
+    def small_feature_kernel(self, img, large_mask, img2, Gx, Gy, k2, thres, area_thres, rdl, d=2):
         """
         Find small features in an image and determine diffraction-limited (dl) and non-diffraction-limited (ndl) features.
     
@@ -564,6 +564,7 @@ class Analysis_Functions():
         - thres (float): Converting real-valued image into a binary mask.
         - area_thres (float): The maximum area in pixels a diffraction-limited object can be.
         - rdl (list): Radiality threshold [min_radiality, max_radiality, area].
+        - d (integer): pixel radius
     
         Returns:
         - dl_mask (numpy.ndarray): Binary mask for diffraction-limited (dl) features.
@@ -593,7 +594,7 @@ class Analysis_Functions():
     
         pil_small = pixel_idx_list[idxs]
         centroids = centroids[idxs]
-        radiality = self.calculate_radiality(pil_small, img2, Gx, Gy)
+        radiality = self.calculate_radiality(pil_small, img2, Gx, Gy, d)
     
         idxs = np.logical_and(radiality[:, 0] <= rdl[0], radiality[:, 1] >= rdl[1])
         centroids = np.floor(centroids[idxs])
@@ -606,7 +607,8 @@ class Analysis_Functions():
 
     def compute_spot_and_cell_props(self, image, image_cell, k1, k2, prot_thres=0.05, large_prot_thres=450., 
                            areathres=30., rdl=[50., 0., 0.], z=[0], 
-                           cell_threshold1=200., cell_threshold2=200, cell_sigma1=2., cell_sigma2=40.):
+                           cell_threshold1=200., cell_threshold2=200, 
+                           cell_sigma1=2., cell_sigma2=40., d=2):
         """
         Gets basic image properties (centroids, radiality)
         from a single image and compare to a cell mask from another image channel
@@ -625,7 +627,7 @@ class Analysis_Functions():
         - cell_threshold2 (float). 2nd cell intensity threshold
         - cell_sigma1 (float). cell blur value 1
         - cell_sigma2 (float). cell blur value 2
-
+        - d (integer). pixel radius value
         """
         
         columns = ['x', 'y', 'z', 'sum_intensity_in_photons', 'bg', 'zi', 'zf']
@@ -641,7 +643,7 @@ class Analysis_Functions():
                 img_z = image[:, :, zp]
                 img_cell_z = image_cell[:, :, zp]
                 centroids, estimated_intensity, estimated_background = self.default_spotanalysis_routine(img_z,
-                k1, k2, prot_thres, large_prot_thres, areathres, rdl)
+                k1, k2, prot_thres, large_prot_thres, areathres, rdl, d)
                 
                 cell_mask[:,:,zp] = self.detect_large_features(img_cell_z,
                     cell_threshold1, cell_threshold2, cell_sigma1, cell_sigma2)
@@ -663,7 +665,7 @@ class Analysis_Functions():
                         norm_CSR, expected_spots, n_iter, columns_cell, z_planes)
         else:
             centroids, estimated_intensity, estimated_background = self.default_spotanalysis_routine(image,
-            k1, k2, prot_thres, large_prot_thres, areathres, rdl)
+            k1, k2, prot_thres, large_prot_thres, areathres, rdl, d)
             
             cell_mask = self.detect_large_features(image_cell,
                     cell_threshold1, cell_threshold2, cell_sigma1, cell_sigma2)
@@ -681,7 +683,7 @@ class Analysis_Functions():
         return to_save, to_save_cell, cell_mask 
 
     def compute_spot_props(self, image, k1, k2, thres=0.05, large_thres=450., 
-                           areathres=30., rdl=[50., 0., 0.], z=[0]):
+                           areathres=30., rdl=[50., 0., 0.], z=[0], d=2):
         """
         Gets basic image properties (centroids, radiality)
         from a single image
@@ -694,6 +696,7 @@ class Analysis_Functions():
         - areathres (float). area threshold
         - rdl (array). radiality thresholds
         - z (array). z planes to image, default 0
+        - d (int). Pixel radius value
         """
         
         columns = ['x', 'y', 'z', 'sum_intensity_in_photons', 'bg', 'zi', 'zf']
@@ -702,7 +705,7 @@ class Analysis_Functions():
             for zp in z_planes:
                 img_z = image[:, :, zp]
                 centroids, estimated_intensity, estimated_background = self.default_spotanalysis_routine(img_z,
-                k1, k2, thres, large_thres, areathres, rdl)
+                k1, k2, thres, large_thres, areathres, rdl, d)
                 
                 if zp == z_planes[0]:
                     to_save = to_save = self.make_datarray_spot(centroids, 
@@ -713,7 +716,7 @@ class Analysis_Functions():
             to_save = to_save.reset_index(drop=True)
         else:
             centroids, estimated_intensity, estimated_background = self.default_spotanalysis_routine(image,
-            k1, k2, thres, large_thres, areathres, rdl)
+            k1, k2, thres, large_thres, areathres, rdl, d)
             
             to_save = self.make_datarray_spot(centroids, 
                 estimated_intensity, estimated_background, columns[:-2])

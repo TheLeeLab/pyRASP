@@ -44,9 +44,9 @@ class RASP_Routines():
         if defaultd == True:
             if os.path.isfile(os.path.join(self.defaultfolder, 'areathres.json')):
                 data = IO.load_json(os.path.join(self.defaultfolder, 'areathres.json'))
-                self.areathres = float(data['d'])
+                self.d = float(data['d'])
             else:
-                self.areathres = 2.
+                self.d = 2.
         
         if defaultrad == True:
             if os.path.isfile(os.path.join(self.defaultfolder, 'rad_neg.json')):
@@ -126,7 +126,7 @@ class RASP_Routines():
         z_planes = A_F.infocus_indices(focus_score, self.focus_score_diff)
         return z_planes
     
-    def compute_image_props(self, image, k1, k2, thres=0.05, large_thres=450., areathres=30., rdl=[50., 0., 0.]):
+    def compute_image_props(self, image, k1, k2, thres=0.05, large_thres=450., areathres=30., rdl=[50., 0., 0.], d=2):
         """
         Gets basic image properties (dl_mask, centroids, radiality)
         from a single image
@@ -144,7 +144,7 @@ class RASP_Routines():
         img2, Gx, Gy, focusScore, cfactor = A_F.calculate_gradient_field(image, k1)
         dl_mask, centroids, radiality, idxs = A_F.small_feature_kernel(image, 
         large_mask, img2, Gx, Gy,
-        k2, thres, areathres, rdl)
+        k2, thres, areathres, rdl, d)
         
         return dl_mask, centroids, radiality
     
@@ -189,7 +189,7 @@ class RASP_Routines():
             file_path = os.path.join(folder, files[i])
             image = IO.read_tiff(file_path)
             if len(image.shape) < 3:
-                dl_mask, centroids, radiality = self.compute_image_props(image, k1, k2, thres, large_thres, self.areathres, rdl)
+                dl_mask, centroids, radiality = self.compute_image_props(image, k1, k2, thres, large_thres, self.areathres, rdl, self.d)
                 if i == 0:
                     r1_neg = radiality[:,0]
                     r2_neg = radiality[:,1]
@@ -199,7 +199,7 @@ class RASP_Routines():
             else:
                 z_planes = self.get_infocus_planes(image, k1)
                 for j in enumerate(np.arange(z_planes[0], z_planes[1])):
-                    dl_mask, centroids, radiality = self.compute_image_props(image[:,:,j[1]], k1, k2, thres, large_thres, self.areathres, rdl)
+                    dl_mask, centroids, radiality = self.compute_image_props(image[:,:,j[1]], k1, k2, thres, large_thres, self.areathres, rdl, self.d)
                     if (i == 0) and (j[0] == 0):
                         r1_neg = radiality[:,0]
                         r2_neg = radiality[:,1]
@@ -248,7 +248,7 @@ class RASP_Routines():
             image = IO.read_tiff(file_path)
             if len(image.shape) < 3:
                 dl_mask, centroids, radiality = self.compute_image_props(image, 
-                            k1, k2, thres, large_thres, areathres, rdl)
+                            k1, k2, thres, large_thres, areathres, rdl, self.d)
                 pixel_index_list, areas, centroids = A_F.calculate_region_properties(dl_mask)
                 if i == 0:
                     a_neg = areas
@@ -257,7 +257,7 @@ class RASP_Routines():
             else:
                 for j in np.arange(image.shape[2]):
                     dl_mask, centroids, radiality = self.compute_image_props(image, 
-                            k1, k2, thres, large_thres, areathres, rdl)
+                            k1, k2, thres, large_thres, areathres, rdl, self.d)
                     pixel_index_list, areas, centroids = A_F.calculate_region_properties(dl_mask)
                     if (i == 0) and (j == 0):
                         a_neg = areas
@@ -266,12 +266,13 @@ class RASP_Routines():
 
         area_thresh = int(np.ceil(np.percentile(a_neg, accepted_ratio)))
         
-        to_save = {'areathres' : area_thresh}
+        to_save = {'areathres' : area_thresh, 'd': self.d}
         
         IO.make_directory(self.defaultfolder)
         IO.save_as_json(to_save, os.path.join(self.defaultfolder,
                                               'areathres.json'))
         self.areathres = area_thresh
+        self.d = self.d
         
         print("Area threshold using bead"+
               " images in "+str(folder)+". New area threshold is "+
@@ -346,7 +347,7 @@ class RASP_Routines():
                 if cell_analysis == False:
                     to_save = A_F.compute_spot_props(img, 
                     k1, k2, thres=thres, large_thres=large_thres, 
-                    areathres=self.areathres, rdl=rdl, z=z_planes)
+                    areathres=self.areathres, rdl=rdl, z=z_planes, d=self.d)
                 else:
                     to_save, to_save_cell, cell_mask = A_F.compute_spot_and_cell_props(img, img_cell, k1, k2,
                                         prot_thres=thres, large_prot_thres=large_thres, 
@@ -354,7 +355,8 @@ class RASP_Routines():
                                         cell_threshold1=self.cell_threshold1, 
                                         cell_threshold2=self.cell_threshold1, 
                                         cell_sigma1=self.cell_sigma1,
-                                        cell_sigma2=self.cell_sigma2)
+                                        cell_sigma2=self.cell_sigma2,
+                                        d=self.d)
                 
                 if one_savefile == False:
                     to_save.to_csv(os.path.join(analysis_directory, 
@@ -389,7 +391,7 @@ class RASP_Routines():
                             to_save_cell.to_csv(savename_cell, index=False)
             else: # if not a z-stack
                 to_save = A_F.compute_spot_props(img, k1, k2, thres=thres,
-                large_thres=large_thres, areathres=self.areathres, rdl=rdl)
+                large_thres=large_thres, areathres=self.areathres, rdl=rdl, d=self.d)
                 
                 if one_savefile == False:
                     to_save.to_csv(os.path.join(analysis_directory, 
@@ -569,7 +571,7 @@ class RASP_Routines():
                 if cell_analysis == False:
                     to_save = A_F.compute_spot_props(img, 
                     k1, k2, thres=thres, large_thres=large_thres, 
-                    areathres=self.areathres, rdl=rdl, z=z_planes)
+                    areathres=self.areathres, rdl=rdl, z=z_planes, d=self.d)
                 else:
                     to_save, to_save_cell, cell_mask = A_F.compute_spot_and_cell_props(img, img_cell, k1, k2,
                                         prot_thres=thres, large_prot_thres=large_thres, 
@@ -577,7 +579,8 @@ class RASP_Routines():
                                         cell_threshold1=self.cell_threshold1, 
                                         cell_threshold2=self.cell_threshold1, 
                                         cell_sigma1=self.cell_sigma1,
-                                        cell_sigma2=self.cell_sigma2)
+                                        cell_sigma2=self.cell_sigma2,
+                                        d=self.d)
                 
                 file = oligomer_files[i]
                 directory = os.path.split(os.path.split(file)[0])[0]+'_analysis'
@@ -599,7 +602,8 @@ class RASP_Routines():
                             to_save, rsid, z_planes, i, False)
             else: # if not a z-stack
                 to_save = A_F.compute_spot_props(img, k1, k2, thres=thres,
-                large_thres=large_thres, areathres=self.areathres, rdl=rdl)
+                large_thres=large_thres, areathres=self.areathres, rdl=rdl,
+                d=self.d)
                 
                 if one_savefile == False:
                     directory = os.path.split(os.path.split(oligomer_files[i])[0])+'_analysis'
