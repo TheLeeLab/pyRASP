@@ -30,7 +30,6 @@ class RASP_Routines():
         - defaultintfocus (boolean). If True, uses integral infocus default for analysis later
         - defaultcameraparams (boolean). If True, uses camera parameters in folder for analysis later
         """
-
         self = self
         self.defaultfolder = os.path.join(os.path.split(module_dir)[0],
                             'default_analysis_parameters')
