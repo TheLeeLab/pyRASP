@@ -10,8 +10,12 @@ from scipy.signal import convolve2d
 import skimage as ski
 from skimage.filters import gaussian
 from skimage.measure import label, regionprops_table
+import skimage.draw as draw
 from scipy.ndimage import binary_opening, binary_closing, binary_fill_holes
 import pandas as pd
+import pathos
+from pathos.pools import ThreadPool
+cpu_number = int(pathos.helpers.cpu_count()-2)
 
 class Analysis_Functions():
     def __init__(self):
@@ -40,13 +44,16 @@ class Analysis_Functions():
     
         # Low-pass filtering using convolution
         if len(image.shape) > 2:
-            for channel in range(image.shape[2]):
+            def n_channel_convolve(channel):
                 image_padded = np.pad(image[:, :, channel], (
                     (kernel.shape[0] // 2, kernel.shape[0] // 2),
                     (kernel.shape[1] // 2, kernel.shape[1] // 2)),
                                       mode='edge')
                 filtered_image[:, :, channel] = convolve2d(image_padded, kernel,
                                                                mode='valid')
+            pool = ThreadPool(cpu_number); pool.restart()
+            pool.map(n_channel_convolve, np.arange(image.shape[2]))
+            pool.close(); pool.terminate()
         else:
             image_padded = np.pad(image, (
                 (kernel.shape[0] // 2, kernel.shape[0] // 2),
@@ -88,18 +95,12 @@ class Analysis_Functions():
         def radiality_pixel_indices(xy, d=2):
             x = xy[0]
             y = xy[1]
-            add_array_1 = np.arange(-d+1, d)
-            add_array_2 = np.full(len(add_array_1), d)
-            add_array_3 = np.full(len(add_array_1), -d)
-            add_array_x = np.hstack([add_array_1, add_array_2, add_array_3, add_array_1])
-            add_array_y = np.hstack([add_array_2, add_array_1, add_array_1, add_array_3])
-            
-            x2 = add_array_x+x
-            y2 = add_array_y+y
+            x2, y2 = draw.circle_perimeter(x,y,d)
             xy_r2 = np.vstack([x2, y2]).T
             return xy_r2
 
-        for k, pil_t in enumerate(pil_small):
+        def radiality_extract(index):
+            pil_t = pil_small[index]
             r0, mi = np.max(img[pil_t[:,0], pil_t[:,1]]), np.argmax(img[pil_t[:,0], pil_t[:,1]])
             xy = pil_t[mi]
             xy_r2 = radiality_pixel_indices(xy)
@@ -108,7 +109,11 @@ class Analysis_Functions():
 
             flatness = np.mean(np.divide(img[xy_r2[:,0], xy_r2[:,1]], r0))
             integrated_grad = np.sum(g2)
-            radiality[k, :] = [flatness, integrated_grad]
+            radiality[index, :] = [flatness, integrated_grad]
+            
+        pool = ThreadPool(cpu_number); pool.restart()
+        pool.map(radiality_extract, np.arange(len(pil_small)))
+        pool.close(); pool.terminate()
 
         return radiality
     
@@ -149,12 +154,13 @@ class Analysis_Functions():
         expected_spots (float): number of spots we expect based on mask % of image
         n_iter (int): how many iterations it took to converge
         """
+        n_iter_rec = n_iter
         possible_indices = np.arange(0, np.prod(image_size)) # get list of where is possible to exist in an image
         n_spots = len(spot_indices) # get number of spots
         mask_fill = self.calculate_mask_fill(mask_indices, image_size) # get mask_fill
         expected_spots = np.multiply(mask_fill, n_spots) # get expected number of spots
         if np.isclose(expected_spots, 0., atol=1e-4):
-            n_iter = 0
+            n_iter_rec = 0
             colocalisation_likelihood_ratio = np.NAN
             norm_CSR = np.NAN
             norm_std = np.NAN
@@ -172,10 +178,10 @@ class Analysis_Functions():
             meanCSR = np.divide(np.nanmean(CSR), expected_spots) # should be close to 1
             CSR_diff = np.abs(meanCSR - 1.)
             while CSR_diff > tol: # do 100 more tests iteratively until convergence
-                n_iter = n_iter + 100 # add 100 iterations
-                CSR_new = np.zeros([100])
-                random_spot_locations = np.random.choice(possible_indices, size=(100, n_spots)) # get random spot locations
-                for i in np.arange(100):
+                n_iter_rec = n_iter_rec + n_iter # add 100 iterations
+                CSR_new = np.zeros([n_iter])
+                random_spot_locations = np.random.choice(possible_indices, size=(n_iter, n_spots)) # get random spot locations
+                for i in np.arange(n_iter):
                     CSR_new[i] = self.test_spot_mask_overlap(random_spot_locations[i, :], mask_indices)
                 CSR = np.hstack([CSR, CSR_new]) # stack
                 meanCSR = np.divide(np.nanmean(CSR), expected_spots) # should be close to 1
@@ -186,7 +192,7 @@ class Analysis_Functions():
             else:
                 norm_CSR = np.NAN
                 norm_std = np.NAN
-            return colocalisation_likelihood_ratio, norm_std, norm_CSR, expected_spots, n_iter
+            return colocalisation_likelihood_ratio, norm_std, norm_CSR, expected_spots, n_iter_rec
     
     def default_spotanalysis_routine(self, image, k1, k2, thres=0.05, 
                                      large_thres=450., areathres=30.,
@@ -417,16 +423,20 @@ class Analysis_Functions():
         estimated_intensity = np.zeros(len(indices), dtype=float)  # Estimated sum intensity per oligomer
         estimated_background = np.zeros(len(indices), dtype=float)  # Estimated background per oligomer
     
-        for k, index in enumerate(indices):
-            in_pixels, out_pixels = self.intensity_pixel_indices(index, image_size)
+        def go_through_spots(index):
+            in_pixels, out_pixels = self.intensity_pixel_indices(indices[index], image_size)
             x_in, y_in = np.unravel_index(in_pixels, image_size, order='F')
             x_out, y_out = np.unravel_index(out_pixels, image_size, order='F')
-            estimated_background[k] = np.mean(image[y_out, x_out])
-            estimated_intensity[k] = np.sum(np.subtract(image[y_in, x_in], estimated_background[k]))
-            if estimated_intensity[k] < 0:
-                estimated_intensity[k] = np.NAN
-                estimated_background[k] = np.NAN
-        
+            estimated_background[index] = np.mean(image[y_out, x_out])
+            estimated_intensity[index] = np.sum(np.subtract(image[y_in, x_in], estimated_background[index]))
+            if estimated_intensity[index] < 0:
+                estimated_intensity[index] = np.NAN
+                estimated_background[index] = np.NAN
+                
+        pool = ThreadPool(cpu_number); pool.restart()
+        pool.map(go_through_spots, np.arange(len(indices)))
+        pool.close(); pool.terminate()
+       
         return estimated_intensity, estimated_background
     
     def intensity_pixel_indices(self, index, image_size):

@@ -6,3 +6,4 @@ pandas==2.1.1
 scikit-image==0.22.0
 scipy==1.11.2
 ipython==8.21.0
+pathos==0.3.2
