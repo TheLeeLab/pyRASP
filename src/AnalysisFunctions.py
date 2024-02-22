@@ -14,7 +14,7 @@ import skimage.draw as draw
 from scipy.ndimage import binary_opening, binary_closing, binary_fill_holes
 import pandas as pd
 import pathos
-from pathos.multiprocessing import ProcessingPool as Pool
+from pathos.pools import ThreadPool as Pool
 cpu_number = int(pathos.helpers.cpu_count()/2)
 
 class Analysis_Functions():
