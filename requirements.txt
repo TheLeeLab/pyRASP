@@ -7,3 +7,4 @@ scikit-image==0.22.0
 scipy==1.11.2
 ipython==8.21.0
 pathos==0.3.2
+matplotlib==3.8.0

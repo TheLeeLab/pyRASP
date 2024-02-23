@@ -230,7 +230,6 @@ class RASP_Routines():
         plt.tight_layout()
         plt.show(block=False)
         
-        
         to_save = {'flatness' : rad_1, 'integratedGrad' : rad_2}
         
         IO.make_directory(self.defaultfolder)
