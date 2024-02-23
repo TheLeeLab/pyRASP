@@ -93,8 +93,8 @@ class Analysis_Functions():
 
         # Function to generate indices of pixels at a specific distance from the center
         def radiality_pixel_indices(xy, d=2):
-            x = xy[0]
-            y = xy[1]
+            x = int(xy[0])
+            y = int(xy[1])
             x2, y2 = draw.circle_perimeter(x,y,d)
             xy_r2 = np.vstack([x2, y2]).T
             return xy_r2

@@ -44,9 +44,9 @@ class RASP_Routines():
         if defaultd == True:
             if os.path.isfile(os.path.join(self.defaultfolder, 'areathres.json')):
                 data = IO.load_json(os.path.join(self.defaultfolder, 'areathres.json'))
-                self.d = float(data['d'])
+                self.d = int(data['d'])
             else:
-                self.d = 2.
+                self.d = int(2.)
         
         if defaultrad == True:
             if os.path.isfile(os.path.join(self.defaultfolder, 'rad_neg.json')):
