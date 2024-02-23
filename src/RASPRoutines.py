@@ -215,18 +215,21 @@ class RASP_Routines():
         
         import matplotlib.pyplot as plt
         fig, axs = plt.subplots(1, 2)
-        axs[0].hist(r1_neg, 100);
+        axs[0].hist(r1_neg, 100, color='#808080', density=True);
         ylim0, ylim1 = axs[0].get_ylim()[0], axs[0].get_ylim()[1]
-        axs[0].vlines(rad_1, ylim0, ylim1, color='k')
+        axs[0].vlines(rad_1, ylim0, ylim1, color='k', label='accept values below')
         axs[0].set_ylim([ylim0, ylim1])
         axs[0].set_xlabel('flatness metric')
-        
-        axs[1].hist(r2_neg, 100);
+        axs[0].set_ylabel('probability density') 
+        axs[0].legend(loc='best', frameon=False)
+               
+        axs[1].hist(r2_neg, 100, color='#808080', density=True);
         ylim0, ylim1 = axs[1].get_ylim()[0], axs[1].get_ylim()[1]
-        axs[1].vlines(rad_2, ylim0, ylim1, color='k')
+        axs[1].vlines(rad_2, ylim0, ylim1, color='k', label='accept values above')
         axs[1].set_xlabel('integrated gradient metric')
         axs[1].set_xlim([0, np.max(r2_neg)])
         axs[1].set_ylim([ylim0, ylim1])
+        axs[1].legend(loc='best', frameon=False)
         plt.tight_layout()
         plt.show(block=False)
         
