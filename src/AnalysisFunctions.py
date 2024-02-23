@@ -89,18 +89,17 @@ class Analysis_Functions():
         radiality = np.zeros((len(pil_small), 2))
 
         # Function to generate indices of pixels at a specific distance from the center
-        def radiality_pixel_indices(xy, d=2):
+        def radiality_pixel_indices(xy, image_size, d=2):
             x = int(xy[0])
             y = int(xy[1])
-            x2, y2 = draw.circle_perimeter(x,y,d)
-            xy_r2 = np.vstack([x2, y2]).T
-            return xy_r2
+            xy_r = np.asarray(np.unravel_index(np.unique(np.ravel_multi_index(np.asarray(draw.circle_perimeter(x,y,d)), image_size, order='F')), image_size, order='F')).T
+            return xy_r
 
         for index in np.arange(len(pil_small)):
             pil_t = pil_small[index]
             r0, mi = np.max(img[pil_t[:,0], pil_t[:,1]]), np.argmax(img[pil_t[:,0], pil_t[:,1]])
             xy = pil_t[mi]
-            xy_r2 = radiality_pixel_indices(xy, d)
+            xy_r2 = radiality_pixel_indices(xy, img.shape, d)
             
             g2 = np.sqrt(np.add(np.square(gradient_x[xy_r2[:,0], xy_r2[:,1]]), np.square(gradient_y[xy_r2[:,0], xy_r2[:,1]])))
 

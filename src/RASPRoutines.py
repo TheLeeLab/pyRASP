@@ -126,7 +126,7 @@ class RASP_Routines():
         z_planes = A_F.infocus_indices(focus_score, self.focus_score_diff)
         return z_planes
     
-    def compute_image_props(self, image, k1, k2, thres=0.05, large_thres=450., areathres=30., rdl=[50., 0., 0.], d=2):
+    def compute_image_props(self, image, k1, k2, thres=0.05, large_thres=450., areathres=30., rdl=[50., 0., 0.], d=2, calib=False):
         """
         Gets basic image properties (dl_mask, centroids, radiality)
         from a single image
@@ -138,9 +138,13 @@ class RASP_Routines():
         - thres (float). percentage threshold
         - areathres (float). area threshold
         - rdl (array). radiality thresholds
+        - calib (bool). If True, for radiality calibration
    
         """
-        large_mask = A_F.detect_large_features(image, large_thres)
+        if calib == True:
+            large_mask = np.full_like(image, False)
+        else:
+            large_mask = A_F.detect_large_features(image, large_thres)
         img2, Gx, Gy, focusScore, cfactor = A_F.calculate_gradient_field(image, k1)
         dl_mask, centroids, radiality, idxs = A_F.small_feature_kernel(image, 
         large_mask, img2, Gx, Gy,
@@ -165,7 +169,7 @@ class RASP_Routines():
                                columns=columns)
         return n_spots
         
-    def calibrate_radiality(self, folder, imtype='.tif', gsigma=1.4, rwave=2., large_thres=10000.):
+    def calibrate_radiality(self, folder, imtype='.tif', gsigma=1.4, rwave=2., accepted_ratio=0.2):
         """
         Calibrates radility parameters. Given a folder of negative controls,
         analyses them and saves the radiality parameter to the .json file, as
@@ -176,39 +180,56 @@ class RASP_Routines():
         - imtype (string). Type of images being analysed, default tif
         - gsigma (float). gaussian blurring parameter (default 1.4)
         - rwave (float). Ricker wavelent sigma (default 2.)
-        - large_thres (float). threshold for large objects.
+        - accepted_ratio (float). Percentage accepted of false positives
         """
         files_list = os.listdir(folder)
         files = np.sort([e for e in files_list if imtype in e])
         
         k1, k2 = A_F.create_kernel(gsigma, rwave) # create image processing kernels
-        accepted_ratio = 0.2; # perc. false positives accepted per dimension
-        rdl = [1000., 0., 0.]
+        rdl = [0., 0., 0.]
         thres = 0.05
         for i in np.arange(len(files)):
             file_path = os.path.join(folder, files[i])
             image = IO.read_tiff(file_path)
             if len(image.shape) < 3:
-                dl_mask, centroids, radiality = self.compute_image_props(image, k1, k2, thres, large_thres, self.areathres, rdl, self.d)
+                dl_mask, centroids, radiality = self.compute_image_props(image, k1, k2, thres, 10000., self.areathres, rdl, self.d, calib=True)
                 if i == 0:
                     r1_neg = radiality[:,0]
                     r2_neg = radiality[:,1]
                 else:
                     r1_neg = np.hstack([r1_neg, radiality[:,0]])
-                    r2_neg = np.hstack([r1_neg, radiality[:,1]])
+                    r2_neg = np.hstack([r2_neg, radiality[:,1]])
             else:
                 z_planes = self.get_infocus_planes(image, k1)
                 for j in enumerate(np.arange(z_planes[0], z_planes[1])):
-                    dl_mask, centroids, radiality = self.compute_image_props(image[:,:,j[1]], k1, k2, thres, large_thres, self.areathres, rdl, self.d)
+                    dl_mask, centroids, radiality = self.compute_image_props(image[:,:,j[1]], k1, k2, thres, 10000., self.areathres, rdl, self.d, calib=True)
                     if (i == 0) and (j[0] == 0):
                         r1_neg = radiality[:,0]
                         r2_neg = radiality[:,1]
                     else:
                         r1_neg = np.hstack([r1_neg, radiality[:,0]])
-                        r2_neg = np.hstack([r1_neg, radiality[:,1]])
+                        r2_neg = np.hstack([r2_neg, radiality[:,1]])
 
         rad_1 = np.percentile(r1_neg, accepted_ratio)
         rad_2 = np.percentile(r2_neg, 100.-accepted_ratio)
+        
+        import matplotlib.pyplot as plt
+        fig, axs = plt.subplots(1, 2)
+        axs[0].hist(r1_neg, 100);
+        ylim0, ylim1 = axs[0].get_ylim()[0], axs[0].get_ylim()[1]
+        axs[0].vlines(rad_1, ylim0, ylim1, color='k')
+        axs[0].set_ylim([ylim0, ylim1])
+        axs[0].set_xlabel('flatness metric')
+        
+        axs[1].hist(r2_neg, 100);
+        ylim0, ylim1 = axs[1].get_ylim()[0], axs[1].get_ylim()[1]
+        axs[1].vlines(rad_2, ylim0, ylim1, color='k')
+        axs[1].set_xlabel('integrated gradient metric')
+        axs[1].set_xlim([0, np.max(r2_neg)])
+        axs[1].set_ylim([ylim0, ylim1])
+        plt.tight_layout()
+        plt.show(block=False)
+        
         
         to_save = {'flatness' : rad_1, 'integratedGrad' : rad_2}
         
