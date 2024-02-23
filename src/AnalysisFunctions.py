@@ -6,7 +6,7 @@ jsb92, 2024/01/02
 """
 import numpy as np
 from scipy.signal import gaussian as gauss
-from scipy.signal import convolve2d
+from scipy.signal import fftconvolve
 import skimage as ski
 from skimage.filters import gaussian
 from skimage.measure import label, regionprops_table
@@ -15,7 +15,7 @@ from scipy.ndimage import binary_opening, binary_closing, binary_fill_holes
 import pandas as pd
 import pathos
 from pathos.pools import ThreadPool as Pool
-cpu_number = int(pathos.helpers.cpu_count()/2)
+cpu_number = int(pathos.helpers.cpu_count()*0.75)
 
 class Analysis_Functions():
     def __init__(self):
@@ -44,22 +44,19 @@ class Analysis_Functions():
     
         # Low-pass filtering using convolution
         if len(image.shape) > 2:
-            def n_channel_convolve(channel):
+            for channel in np.arange(image.shape[2]):
                 image_padded = np.pad(image[:, :, channel], (
                     (kernel.shape[0] // 2, kernel.shape[0] // 2),
                     (kernel.shape[1] // 2, kernel.shape[1] // 2)),
                                       mode='edge')
-                filtered_image[:, :, channel] = convolve2d(image_padded, kernel,
+                filtered_image[:, :, channel] = fftconvolve(image_padded, kernel,
                                                                mode='valid')
-            pool = Pool(nodes=cpu_number); pool.restart()
-            pool.map(n_channel_convolve, np.arange(image.shape[2]))
-            pool.close(); pool.terminate()
         else:
             image_padded = np.pad(image, (
                 (kernel.shape[0] // 2, kernel.shape[0] // 2),
                 (kernel.shape[1] // 2, kernel.shape[1] // 2)),
                                   mode='edge')
-            filtered_image[:, :] = convolve2d(image_padded, kernel,
+            filtered_image[:, :] = fftconvolve(image_padded, kernel,
                                                            mode='valid')
         # Gradient calculation
         if len(image.shape) > 2:
@@ -99,7 +96,7 @@ class Analysis_Functions():
             xy_r2 = np.vstack([x2, y2]).T
             return xy_r2
 
-        def radiality_extract(index):
+        for index in np.arange(len(pil_small)):
             pil_t = pil_small[index]
             r0, mi = np.max(img[pil_t[:,0], pil_t[:,1]]), np.argmax(img[pil_t[:,0], pil_t[:,1]])
             xy = pil_t[mi]
@@ -110,10 +107,6 @@ class Analysis_Functions():
             flatness = np.mean(np.divide(img[xy_r2[:,0], xy_r2[:,1]], r0))
             integrated_grad = np.sum(g2)
             radiality[index, :] = [flatness, integrated_grad]
-            
-        pool = Pool(nodes=cpu_number); pool.restart()
-        pool.map(radiality_extract, np.arange(len(pil_small)))
-        pool.close(); pool.terminate()
 
         return radiality
     
@@ -421,30 +414,23 @@ class Analysis_Functions():
         image_size = image.shape
         indices = np.ravel_multi_index(centroids.T, image_size, order='F')
         estimated_intensity = np.zeros(len(indices), dtype=float)  # Estimated sum intensity per oligomer
-        estimated_background = np.zeros(len(indices), dtype=float)  # Estimated background per oligomer
-    
-        def go_through_spots(index):
-            in_pixels, out_pixels = self.intensity_pixel_indices(indices[index], image_size)
-            x_in, y_in = np.unravel_index(in_pixels, image_size, order='F')
-            x_out, y_out = np.unravel_index(out_pixels, image_size, order='F')
-            estimated_background[index] = np.mean(image[y_out, x_out])
-            estimated_intensity[index] = np.sum(np.subtract(image[y_in, x_in], estimated_background[index]))
-            if estimated_intensity[index] < 0:
-                estimated_intensity[index] = np.NAN
-                estimated_background[index] = np.NAN
-                
-        pool = Pool(nodes=cpu_number); pool.restart()
-        pool.map(go_through_spots, np.arange(len(indices)))
-        pool.close(); pool.terminate()
+        
+        x_in, y_in, x_out, y_out = self.intensity_pixel_indices(centroids, image_size)
+        
+        estimated_background = np.mean(image[y_out, x_out], axis=0)
+        estimated_intensity = np.sum(np.subtract(image[y_in, x_in], estimated_background), axis=0)
+        
+        estimated_intensity[estimated_intensity < 0] = np.NAN
+        estimated_background[estimated_background < 0] = np.NAN
        
         return estimated_intensity, estimated_background
     
-    def intensity_pixel_indices(self, index, image_size):
+    def intensity_pixel_indices(self, centroid_loc, image_size):
         """
         Calculate pixel indices for inner and outer regions around the given index.
     
         Args:
-        - index (int): Index of the pixel.
+        - centroid_loc (2D array): xy location of the pixel.
         - image_size (tuple): Size of the image.
     
         Returns:
@@ -464,19 +450,13 @@ class Analysis_Functions():
         x_outer, y_outer = np.where(outer_ind)
         x_outer = x_outer-int(outer_ind.shape[0]/2)
         y_outer = y_outer-int(outer_ind.shape[1]/2)
+                
+        x_inner = np.tile(x_inner, (len(centroid_loc[:, 0]),1)).T + centroid_loc[:, 0]
+        y_inner = np.tile(y_inner, (len(centroid_loc[:, 1]),1)).T + centroid_loc[:, 1]
+        x_outer = np.tile(x_outer, (len(centroid_loc[:, 0]),1)).T + centroid_loc[:, 0]
+        y_outer = np.tile(y_outer, (len(centroid_loc[:, 1]),1)).T + centroid_loc[:, 1]
         
-        centroid = np.asarray(np.unravel_index(index, image_size, order='F'), dtype=int)
-        
-        x_inner = x_inner + centroid[0]
-        y_inner = y_inner + centroid[1]
-        x_outer = x_outer + centroid[0]
-        y_outer = y_outer + centroid[1]
-        
-        inner_indices = np.ravel_multi_index(np.vstack([x_inner, y_inner]), image_size, order='F')
-        
-        outer_indices = np.ravel_multi_index(np.vstack([x_outer, y_outer]), image_size, order='F')
-        
-        return inner_indices, outer_indices
+        return x_inner, y_inner, x_outer, y_outer
     
     def detect_large_features(self, image, threshold1, threshold2=0, sigma1=2., sigma2=60.):
         """
@@ -507,15 +487,11 @@ class Analysis_Functions():
             idx1 = np.zeros_like(pixel_index_list, dtype=bool)
             imcopy = np.copy(image)
             
-            def second_thresholding_step(i):
+            for i in np.arange(len(pixel_index_list)):
                 idx1[i] = 1*(np.sum(imcopy[pixel_index_list[i][:,0], 
                         pixel_index_list[i][:,1]] > 
                         threshold2)/len(pixel_index_list[i][:,0]) > 0.1)
             
-            pool = Pool(nodes=cpu_number); pool.restart()
-            pool.map(second_thresholding_step, np.arange(len(pixel_index_list)))
-            pool.close(); pool.terminate()
-                
             if len(idx1) > 0:
                 large_mask = self.create_filled_region(image.shape, pixel_index_list[idx1])
                 large_mask = binary_fill_holes(large_mask)
@@ -572,11 +548,9 @@ class Analysis_Functions():
         - radiality (numpy.ndarray): Radiality value for all features (before the filtering based on the radiality).
         - idxs (numpy.ndarray): Indices for objects that satisfy the decision boundary.
         """
-        img1 = img - img2
-        img1 = np.maximum(img1, 0)
-        pad_size = [(sz - 1) // 2 for sz in k2.shape]
-        img1 = np.pad(img1, pad_size, mode='edge')
-        img1 = convolve2d(img1, k2, mode='valid')
+        img1 = np.maximum(np.subtract(img, img2), 0)
+        pad_size = np.subtract(np.asarray(k2.shape), 1) // 2
+        img1 = fftconvolve(np.pad(img1, pad_size, mode='edge'), k2, mode='valid')
     
         BW = np.zeros_like(img1, dtype=bool)
         if thres < 1:
@@ -639,10 +613,13 @@ class Analysis_Functions():
             cell_mask = np.zeros_like(image_cell, dtype=bool)
             clr, norm_std, norm_CSR, expected_spots, n_iter = self.gen_CSRmats(image_cell.shape[2])
             
-            for zp in z_planes:
+            centroids = {} # do this so can parallelise
+            estimated_intensity = {}
+            estimated_background = {}
+            def analyse_zplanes(zp):
                 img_z = image[:, :, zp]
                 img_cell_z = image_cell[:, :, zp]
-                centroids, estimated_intensity, estimated_background = self.default_spotanalysis_routine(img_z,
+                centroids[zp], estimated_intensity[zp], estimated_background[zp] = self.default_spotanalysis_routine(img_z,
                 k1, k2, prot_thres, large_prot_thres, areathres, rdl, d)
                 
                 cell_mask[:,:,zp] = self.detect_large_features(img_cell_z,
@@ -653,12 +630,12 @@ class Analysis_Functions():
 
                 clr[zp], norm_std[zp], norm_CSR[zp], expected_spots[zp], n_iter[zp] = self.calculate_spot_colocalisation_likelihood_ratio(spot_indices, mask_indices, image_size)
                 
-                if zp == z_planes[0]:
-                    to_save = to_save = self.make_datarray_spot(centroids, 
-                    estimated_intensity, estimated_background, columns, int(zp), z_planes)
-                else:
-                    to_save = pd.concat([to_save, self.make_datarray_spot(centroids, 
-                    estimated_intensity, estimated_background, columns, int(zp), z_planes)])
+            pool = Pool(nodes=cpu_number); pool.restart()
+            pool.map(analyse_zplanes, z_planes)
+            pool.close(); pool.terminate()
+            
+            to_save = self.make_datarray_spot(centroids, 
+            estimated_intensity, estimated_background, columns, z_planes)
             to_save = to_save.reset_index(drop=True)
             
             to_save_cell = self.make_datarray_cell(clr, norm_std,
@@ -702,17 +679,19 @@ class Analysis_Functions():
         columns = ['x', 'y', 'z', 'sum_intensity_in_photons', 'bg', 'zi', 'zf']
         if len(z) > 1:
             z_planes = np.arange(z[0], z[1])
-            for zp in z_planes:
-                img_z = image[:, :, zp]
-                centroids, estimated_intensity, estimated_background = self.default_spotanalysis_routine(img_z,
+            centroids = {}
+            estimated_intensity = {}
+            estimated_background = {}
+            def analyse_zplanes(zp):
+                centroids[zp], estimated_intensity[zp], estimated_background[zp] = self.default_spotanalysis_routine(image[:, :, zp],
                 k1, k2, thres, large_thres, areathres, rdl, d)
                 
-                if zp == z_planes[0]:
-                    to_save = to_save = self.make_datarray_spot(centroids, 
-                    estimated_intensity, estimated_background, columns, int(zp), z_planes)
-                else:
-                    to_save = pd.concat([to_save, self.make_datarray_spot(centroids, 
-                    estimated_intensity, estimated_background, columns, int(zp), z_planes)])
+            pool = Pool(nodes=cpu_number); pool.restart()
+            pool.map(analyse_zplanes, z_planes)
+            pool.close(); pool.terminate()
+                
+            to_save = self.make_datarray_spot(centroids, 
+            estimated_intensity, estimated_background, columns, z_planes)
             to_save = to_save.reset_index(drop=True)
         else:
             centroids, estimated_intensity, estimated_background = self.default_spotanalysis_routine(image,
@@ -746,7 +725,7 @@ class Analysis_Functions():
         n_iter = np.zeros(image_z_shape)
         return clr, norm_std, norm_CSR, expected_spots, n_iter
     
-    def make_datarray_spot(self, centroids, estimated_intensity, estimated_background, columns, zp='none', z_planes=0):
+    def make_datarray_spot(self, centroids, estimated_intensity, estimated_background, columns, z_planes=0):
         """
         makes a datarray in pandas for spot information
     
@@ -755,22 +734,30 @@ class Analysis_Functions():
         - estimated_intensity (ndarray): estimated intensities
         - estimated_background (ndarray): estimated backgrounds
         - columns (list of strings): column labels
-        - zp (string or int): if int, gives out z-plane version of datarray
-        - z_planes: z_planes to put in array (if needed)
+        - z_planes: z_planes to put in array (if needed); if int, assumes only
+        one z-plane
         
         Returns:
         - to_save (pandas DataArray) pandas array to save
         
         """
-        if isinstance(zp, str):
+        if isinstance(z_planes, int):
             dataarray = np.vstack([centroids[:, 0], centroids[:, 1], 
             np.full_like(centroids[:, 0], 1), estimated_intensity, 
             estimated_background])
-        elif isinstance(zp, int):
-            dataarray = np.vstack([centroids[:, 0], centroids[:, 1], 
-            np.full_like(centroids[:, 0], zp+1), estimated_intensity, 
-            estimated_background, np.full_like(centroids[:, 0], 1+z_planes[0]),
-            np.full_like(centroids[:, 0], 1+z_planes[-1])])                
+        else:
+            for z in z_planes:
+                if z == z_planes[0]:
+                    dataarray = np.vstack([centroids[z][:, 0], centroids[z][:, 1], 
+                    np.full_like(centroids[z][:, 0], z+1), estimated_intensity[z], 
+                    estimated_background[z], np.full_like(centroids[z][:, 0], 1+z_planes[0]),
+                    np.full_like(centroids[z][:, 0], 1+z_planes[-1])]) 
+                else:
+                    da = np.vstack([centroids[z][:, 0], centroids[z][:, 1], 
+                    np.full_like(centroids[z][:, 0], z+1), estimated_intensity[z], 
+                    estimated_background[z], np.full_like(centroids[z][:, 0], 1+z_planes[0]),
+                    np.full_like(centroids[z][:, 0], 1+z_planes[-1])]) 
+                    dataarray = np.hstack([dataarray, da])
         return pd.DataFrame(data=dataarray.T, columns=columns)
     
     def make_datarray_cell(self, clr, norm_std, norm_CSR, expected_spots, n_iter, columns, z_planes='none'):

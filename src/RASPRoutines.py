@@ -322,7 +322,7 @@ class RASP_Routines():
         IO.make_directory(analysis_directory)
         analysis_p_directory = os.path.abspath(folder)+'_analysisparameters'
 
-        to_save = {'areathres': self.areathres, 'flatness': self.flatness, 
+        to_save = {'areathres': self.areathres, 'flatness': self.flatness, 'd': self.d,
                    'integratedGrad': self.integratedGrad, 'gaussian_sigma':
                        gsigma, 'ricker_sigma': rwave, 'thres': thres,
                        'large_thres': large_thres, 
@@ -534,10 +534,10 @@ class RASP_Routines():
         # create analysis parameter directory
         analysis_p_directory = os.path.abspath(folder)+'_analysisparameters'
 
-        to_save = {'areathres': self.areathres, 'flatness': self.flatness, 
-                   'integratedGrad': self.integratedGrad, 'gaussian_sigma':
-                       gsigma, 'ricker_sigma': rwave, 'thres': thres,
-                       'large_thres': large_thres, 
+        to_save = {'areathres': self.areathres, 'flatness': self.flatness,
+                   'd': self.d, 'integratedGrad': self.integratedGrad,
+                   'gaussian_sigma': gsigma, 'ricker_sigma': rwave, 
+                   'thres': thres, 'large_thres': large_thres, 
                        'focus_score_diff': self.focus_score_diff,
                        'cell_sigma1': self.cell_sigma1,
                        'cell_sigma2': self.cell_sigma2,
@@ -663,6 +663,7 @@ class RASP_Routines():
                                      if_filter, im_start, cell_analysis, one_savefile)
         else:
             folders = np.sort([e for e in os.listdir(folder) if 'Round' in e])
+            folders = np.sort([e for e in folders if 2 > len(e.split('_'))]) # remove any folders that aren't just roundN
             if len(folders) > 0:
                 for f in folders:
                     self.analyse_round_subfolder(os.path.join(folder, f), k1, k2, rdl, imtype, thres, 
