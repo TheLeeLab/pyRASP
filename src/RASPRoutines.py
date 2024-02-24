@@ -143,7 +143,7 @@ class RASP_Routines():
                                columns=columns)
         return n_spots
         
-    def calibrate_radiality(self, folder, imtype='.tif', gsigma=1.4, rwave=2., accepted_ratio=0.2):
+    def calibrate_radiality(self, folder, imtype='.tif', gsigma=1.4, rwave=2., accepted_ratio=1):
         """
         Calibrates radility parameters. Given a folder of negative controls,
         analyses them and saves the radiality parameter to the .json file, as
