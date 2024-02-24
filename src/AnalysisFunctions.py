@@ -86,26 +86,23 @@ class Analysis_Functions():
         Returns:
         - radiality (numpy.ndarray): Radiality measures.
         """
-        radiality = np.zeros((len(pil_small), 2))
-
-        # Function to generate indices of pixels at a specific distance from the center
-        def radiality_pixel_indices(xy, image_size, d=2):
-            x = int(xy[0])
-            y = int(xy[1])
-            xy_r = np.asarray(np.unravel_index(np.unique(np.ravel_multi_index(np.asarray(draw.circle_perimeter(x,y,d)), image_size, order='F')), image_size, order='F')).T
-            return xy_r
-
+        xy = np.zeros([len(pil_small), 2])
+        r0 = np.zeros(len(pil_small))
         for index in np.arange(len(pil_small)):
             pil_t = pil_small[index]
-            r0, mi = np.max(img[pil_t[:,0], pil_t[:,1]]), np.argmax(img[pil_t[:,0], pil_t[:,1]])
-            xy = pil_t[mi]
-            xy_r2 = radiality_pixel_indices(xy, img.shape, d)
+            r0[index], mi = np.max(img[pil_t[:,0], pil_t[:,1]]), np.argmax(img[pil_t[:,0], pil_t[:,1]])
+            xy[index, :] = pil_t[mi]
             
-            g2 = np.sqrt(np.add(np.square(gradient_x[xy_r2[:,0], xy_r2[:,1]]), np.square(gradient_y[xy_r2[:,0], xy_r2[:,1]])))
+        xy_default = np.asarray(np.unravel_index(np.unique(np.ravel_multi_index(np.asarray(draw.circle_perimeter(5,5,d)), img.shape, order='F')), img.shape, order='F')).T - 5
+        x = np.asarray(np.tile(xy_default[:, 0], (len(pil_small), 1)).T + xy[:,0], dtype=int).T
+        y = np.asarray(np.tile(xy_default[:, 1], (len(pil_small), 1)).T + xy[:,1], dtype=int).T
+        
+        
+        g2 = np.sqrt(np.add(np.square(gradient_x[x, y]), np.square(gradient_y[x, y])))
 
-            flatness = np.mean(np.divide(img[xy_r2[:,0], xy_r2[:,1]], r0))
-            integrated_grad = np.sum(g2)
-            radiality[index, :] = [flatness, integrated_grad]
+        flatness = np.mean(np.divide(img[x, y].T, r0), axis=0)
+        integrated_grad = np.sum(g2, axis=1)
+        radiality = np.vstack([flatness, integrated_grad]).T
 
         return radiality
     
