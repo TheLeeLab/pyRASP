@@ -125,33 +125,7 @@ class RASP_Routines():
         na, na, na, focus_score, na = A_F.calculate_gradient_field(image, kernel)
         z_planes = A_F.infocus_indices(focus_score, self.focus_score_diff)
         return z_planes
-    
-    def compute_image_props(self, image, k1, k2, thres=0.05, large_thres=450., areathres=30., rdl=[50., 0., 0.], d=2, calib=False):
-        """
-        Gets basic image properties (dl_mask, centroids, radiality)
-        from a single image
-    
-        Args:
-        - image (array). image as numpy array
-        - k1 (array). gaussian blur kernel
-        - k2 (array). ricker wavelet kernel
-        - thres (float). percentage threshold
-        - areathres (float). area threshold
-        - rdl (array). radiality thresholds
-        - calib (bool). If True, for radiality calibration
-   
-        """
-        if calib == True:
-            large_mask = np.full_like(image, False)
-        else:
-            large_mask = A_F.detect_large_features(image, large_thres)
-        img2, Gx, Gy, focusScore, cfactor = A_F.calculate_gradient_field(image, k1)
-        dl_mask, centroids, radiality, idxs = A_F.small_feature_kernel(image, 
-        large_mask, img2, Gx, Gy,
-        k2, thres, areathres, rdl, d)
         
-        return dl_mask, centroids, radiality
-    
     def count_spots(self, database, z_planes):
         """
         Counts spots per z plane
@@ -192,7 +166,7 @@ class RASP_Routines():
             file_path = os.path.join(folder, files[i])
             image = IO.read_tiff(file_path)
             if len(image.shape) < 3:
-                dl_mask, centroids, radiality = self.compute_image_props(image, k1, k2, thres, 10000., self.areathres, rdl, self.d, calib=True)
+                dl_mask, centroids, radiality = A_F.compute_image_props(image, k1, k2, thres, 10000., self.areathres, rdl, self.d, calib=True)
                 if i == 0:
                     r1_neg = radiality[:,0]
                     r2_neg = radiality[:,1]
@@ -201,14 +175,15 @@ class RASP_Routines():
                     r2_neg = np.hstack([r2_neg, radiality[:,1]])
             else:
                 z_planes = self.get_infocus_planes(image, k1)
-                for j in enumerate(np.arange(z_planes[0], z_planes[1])):
-                    dl_mask, centroids, radiality = self.compute_image_props(image[:,:,j[1]], k1, k2, thres, 10000., self.areathres, rdl, self.d, calib=True)
-                    if (i == 0) and (j[0] == 0):
-                        r1_neg = radiality[:,0]
-                        r2_neg = radiality[:,1]
+                z_planes = np.arange(z_planes[0], z_planes[-1])
+                dl_mask, centroids, radiality = A_F.compute_image_props(image, k1, k2, thres, 10000., self.areathres, rdl, self.d, z_planes=z_planes, calib=True)
+                for z in enumerate(z_planes):
+                    if (i == 0) and (z[0] == 0):
+                        r1_neg = radiality[z[1]][:,0]
+                        r2_neg = radiality[z[1]][:,1]
                     else:
-                        r1_neg = np.hstack([r1_neg, radiality[:,0]])
-                        r2_neg = np.hstack([r2_neg, radiality[:,1]])
+                        r1_neg = np.hstack([r1_neg, radiality[z[1]][:,0]])
+                        r2_neg = np.hstack([r2_neg, radiality[z[1]][:,1]])
 
         rad_1 = np.percentile(r1_neg, accepted_ratio)
         rad_2 = np.percentile(r2_neg, 100.-accepted_ratio)
@@ -217,7 +192,7 @@ class RASP_Routines():
         fig, axs = plt.subplots(1, 2)
         axs[0].hist(r1_neg, 100, color='#808080', density=True);
         ylim0, ylim1 = axs[0].get_ylim()[0], axs[0].get_ylim()[1]
-        axs[0].vlines(rad_1, ylim0, ylim1, color='k', label='accept values below')
+        axs[0].vlines(rad_1, ylim0, ylim1, color='k', label='threshold', ls='--')
         axs[0].set_ylim([ylim0, ylim1])
         axs[0].set_xlabel('flatness metric')
         axs[0].set_ylabel('probability density') 
@@ -225,7 +200,7 @@ class RASP_Routines():
                
         axs[1].hist(r2_neg, 100, color='#808080', density=True);
         ylim0, ylim1 = axs[1].get_ylim()[0], axs[1].get_ylim()[1]
-        axs[1].vlines(rad_2, ylim0, ylim1, color='k', label='accept values above')
+        axs[1].vlines(rad_2, ylim0, ylim1, color='k', label='threshold', ls='--')
         axs[1].set_xlabel('integrated gradient metric')
         axs[1].set_xlim([0, np.max(r2_neg)])
         axs[1].set_ylim([ylim0, ylim1])
@@ -270,7 +245,7 @@ class RASP_Routines():
             file_path = os.path.join(folder, files[i])
             image = IO.read_tiff(file_path)
             if len(image.shape) < 3:
-                dl_mask, centroids, radiality = self.compute_image_props(image, 
+                dl_mask, centroids, radiality = A_F.compute_image_props(image, 
                             k1, k2, thres, large_thres, areathres, rdl, self.d)
                 pixel_index_list, areas, centroids = A_F.calculate_region_properties(dl_mask)
                 if i == 0:
@@ -278,10 +253,10 @@ class RASP_Routines():
                 else:
                     a_neg = np.hstack([a_neg, areas])
             else:
+                dl_mask, centroids, radiality = A_F.compute_image_props(image, 
+                    k1, k2, thres, large_thres, areathres, rdl, self.d, z_planes=np.arange(image.shape[2]))
                 for j in np.arange(image.shape[2]):
-                    dl_mask, centroids, radiality = self.compute_image_props(image, 
-                            k1, k2, thres, large_thres, areathres, rdl, self.d)
-                    pixel_index_list, areas, centroids = A_F.calculate_region_properties(dl_mask)
+                    pixel_index_list, areas, centroids = A_F.calculate_region_properties(dl_mask[:,:,j])
                     if (i == 0) and (j == 0):
                         a_neg = areas
                     else:
