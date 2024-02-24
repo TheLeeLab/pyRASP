@@ -176,14 +176,15 @@ class RASP_Routines():
             else:
                 z_planes = self.get_infocus_planes(image, k1)
                 z_planes = np.arange(z_planes[0], z_planes[-1])
-                dl_mask, centroids, radiality = A_F.compute_image_props(image, k1, k2, thres, 10000., self.areathres, rdl, self.d, z_planes=z_planes, calib=True)
-                for z in enumerate(z_planes):
-                    if (i == 0) and (z[0] == 0):
-                        r1_neg = radiality[z[1]][:,0]
-                        r2_neg = radiality[z[1]][:,1]
-                    else:
-                        r1_neg = np.hstack([r1_neg, radiality[z[1]][:,0]])
-                        r2_neg = np.hstack([r2_neg, radiality[z[1]][:,1]])
+                if len(z_planes) != 0: # if there are images we want to analyse
+                    dl_mask, centroids, radiality = A_F.compute_image_props(image, k1, k2, thres, 10000., self.areathres, rdl, self.d, z_planes=z_planes, calib=True)
+                    for z in enumerate(z_planes):
+                        if (i == 0) and (z[0] == 0):
+                            r1_neg = radiality[z[1]][:,0]
+                            r2_neg = radiality[z[1]][:,1]
+                        else:
+                            r1_neg = np.hstack([r1_neg, radiality[z[1]][:,0]])
+                            r2_neg = np.hstack([r2_neg, radiality[z[1]][:,1]])
 
         rad_1 = np.percentile(r1_neg, accepted_ratio)
         rad_2 = np.percentile(r2_neg, 100.-accepted_ratio)
@@ -196,6 +197,7 @@ class RASP_Routines():
         axs[0].set_ylim([ylim0, ylim1])
         axs[0].set_xlabel('flatness metric')
         axs[0].set_ylabel('probability density') 
+        axs[0].grid(True,which="both",ls="--",c='gray', lw=0.25, alpha=0.25)  
         axs[0].legend(loc='best', frameon=False)
                
         axs[1].hist(r2_neg, 100, color='#808080', density=True);
@@ -205,6 +207,7 @@ class RASP_Routines():
         axs[1].set_xlim([0, np.max(r2_neg)])
         axs[1].set_ylim([ylim0, ylim1])
         axs[1].legend(loc='best', frameon=False)
+        axs[1].grid(True,which="both",ls="--",c='gray', lw=0.25, alpha=0.25)  
         plt.tight_layout()
         plt.show(block=False)
         

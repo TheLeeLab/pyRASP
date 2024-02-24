@@ -576,7 +576,7 @@ class Analysis_Functions():
         return dl_mask, centroids, radiality, idxs
 
     def compute_spot_and_cell_props(self, image, image_cell, k1, k2, prot_thres=0.05, large_prot_thres=450., 
-                           areathres=30., rdl=[50., 0., 0.], z=[0], 
+                           areathres=30., rdl=[50., 0., 0.], z=0, 
                            cell_threshold1=200., cell_threshold2=200, 
                            cell_sigma1=2., cell_sigma2=40., d=2):
         """
@@ -604,7 +604,7 @@ class Analysis_Functions():
         columns_cell = ['colocalisation_likelihood_ratio', 'std', 
                             'CSR', 'expected_spots', 'n_iterations', 'z']
 
-        if len(z) > 1:
+        if not isinstance(z, int):
             z_planes = np.arange(z[0], z[1])
             cell_mask = np.zeros_like(image_cell, dtype=bool)
             clr, norm_std, norm_CSR, expected_spots, n_iter = self.gen_CSRmats(image_cell.shape[2])
@@ -656,7 +656,7 @@ class Analysis_Functions():
         return to_save, to_save_cell, cell_mask 
 
     def compute_spot_props(self, image, k1, k2, thres=0.05, large_thres=450., 
-                           areathres=30., rdl=[50., 0., 0.], z=[0], d=2):
+                           areathres=30., rdl=[50., 0., 0.], z=0, d=2):
         """
         Gets basic image properties (centroids, radiality)
         from a single image
@@ -673,7 +673,7 @@ class Analysis_Functions():
         """
         
         columns = ['x', 'y', 'z', 'sum_intensity_in_photons', 'bg', 'zi', 'zf']
-        if len(z) > 1:
+        if not isinstance(z, int):
             z_planes = np.arange(z[0], z[1])
             centroids = {}
             estimated_intensity = {}
@@ -698,7 +698,7 @@ class Analysis_Functions():
             
         return to_save
     
-    def compute_image_props(self, image, k1, k2, thres=0.05, large_thres=450., areathres=30., rdl=[50., 0., 0.], d=2, z_planes=[0], calib=False):
+    def compute_image_props(self, image, k1, k2, thres=0.05, large_thres=450., areathres=30., rdl=[50., 0., 0.], d=2, z_planes=0, calib=False):
         """
         Gets basic image properties (dl_mask, centroids, radiality)
         from a single image
@@ -715,25 +715,7 @@ class Analysis_Functions():
         - calib (bool). If True, for radiality calibration
    
         """
-        if len(z_planes) > 1:
-            radiality = {}
-            centroids = {}
-            dl_mask = np.zeros_like(image)
-            def run_over_z(z):
-                if calib == True:
-                    large_mask = np.full_like(image[:,:,z], False)
-                else:
-                    large_mask = self.detect_large_features(image[:,:,z], large_thres)
-                img2, Gx, Gy, focusScore, cfactor = self.calculate_gradient_field(image[:,:,z], k1)
-                dl_mask[:,:,z], centroids[z], radiality[z], idxs = self.small_feature_kernel(image[:,:,z], 
-                large_mask, img2, Gx, Gy,
-                k2, thres, areathres, rdl, d)
-                
-            pool = Pool(nodes=cpu_number); pool.restart()
-            pool.map(run_over_z, z_planes)
-            pool.close(); pool.terminate()
-            
-        else:
+        if isinstance(z_planes, int):
             if calib == True:
                 large_mask = np.full_like(image, False)
             else:
@@ -742,7 +724,28 @@ class Analysis_Functions():
             dl_mask, centroids, radiality, idxs = self.small_feature_kernel(image, 
             large_mask, img2, Gx, Gy,
             k2, thres, areathres, rdl, d)
-        
+            
+        else:
+            radiality = {}
+            centroids = {}
+            dl_mask = np.zeros_like(image)
+            img2 = np.zeros_like(image)
+            Gx = np.zeros_like(image)
+            Gy = np.zeros_like(image)
+            def run_over_z(z):
+                if calib == True:
+                    large_mask = np.full_like(image[:,:,z], False)
+                else:
+                    large_mask = self.detect_large_features(image[:,:,z], large_thres)
+                img2[:,:,z], Gx[:,:,z], Gy[:,:,z], focusScore, cfactor = self.calculate_gradient_field(image[:,:,z], k1)
+                dl_mask[:,:,z], centroids[z], radiality[z], idxs = self.small_feature_kernel(image[:,:,z], 
+                large_mask, img2[:,:,z], Gx[:,:,z], Gy[:,:,z],
+                k2, thres, areathres, rdl, d)
+                
+            pool = Pool(nodes=cpu_number); pool.restart()
+            pool.map(run_over_z, z_planes)
+            pool.close(); pool.terminate()
+                    
         return dl_mask, centroids, radiality
 
     def gen_CSRmats(self, image_z_shape):
