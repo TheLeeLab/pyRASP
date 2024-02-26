@@ -440,7 +440,7 @@ class RASP_Routines():
                     else:
                         to_save.to_csv(savename, index=False)
             if disp == True:
-                print("Analysed image", files[i], "data saved in", savename)
+                print("Analysed image", os.path.split(files[i])[-1], "data saved in", analysis_directory)
         return
     
     def save_analysis_results(self, directory, file, to_save, 
@@ -662,7 +662,7 @@ class RASP_Routines():
                     else:
                         to_save.to_csv(savename, index=False)
             if disp == True:
-                print("Analysed image", oligomer_files[i], "data saved in", analysis_directory)
+                print("Analysed image", os.path.split(oligomer_files[i])[-1], "data saved in", analysis_directory)
 
         return
     
