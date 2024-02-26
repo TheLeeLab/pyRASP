@@ -348,7 +348,7 @@ class RASP_Routines():
 
         k1, k2 = A_F.create_kernel(gsigma, rwave) # create image processing kernels
         rdl = [self.flatness, self.integratedGrad, 0.]
-        
+
         # create analysis and analysis parameter directories
         analysis_directory = os.path.abspath(folder)+'_analysis'
         IO.make_directory(analysis_directory)
