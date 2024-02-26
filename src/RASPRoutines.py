@@ -189,27 +189,19 @@ class RASP_Routines():
         rad_1 = np.percentile(r1_neg, accepted_ratio)
         rad_2 = np.percentile(r2_neg, 100.-accepted_ratio)
         
-        import matplotlib.pyplot as plt
-        fig, axs = plt.subplots(1, 2)
-        axs[0].hist(r1_neg, 100, color='#808080', density=True);
-        ylim0, ylim1 = axs[0].get_ylim()[0], axs[0].get_ylim()[1]
-        axs[0].vlines(rad_1, ylim0, ylim1, color='k', label='threshold', ls='--')
-        axs[0].set_ylim([ylim0, ylim1])
-        axs[0].set_xlabel('flatness metric')
-        axs[0].set_ylabel('probability density') 
-        axs[0].grid(True,which="both",ls="--",c='gray', lw=0.25, alpha=0.25)  
-        axs[0].legend(loc='best', frameon=False)
-               
-        axs[1].hist(r2_neg, 100, color='#808080', density=True);
-        ylim0, ylim1 = axs[1].get_ylim()[0], axs[1].get_ylim()[1]
-        axs[1].vlines(rad_2, ylim0, ylim1, color='k', label='threshold', ls='--')
-        axs[1].set_xlabel('integrated gradient metric')
-        axs[1].set_xlim([0, np.max(r2_neg)])
-        axs[1].set_ylim([ylim0, ylim1])
-        axs[1].legend(loc='best', frameon=False)
-        axs[1].grid(True,which="both",ls="--",c='gray', lw=0.25, alpha=0.25)  
-        plt.tight_layout()
-        plt.show(block=False)
+        def bincalculator(data):
+            """ bincalculator function
+            # reads in data and generates bins according to Freedman-Diaconis rule
+            # ================INPUTS============= 
+            # data is data to be histogrammed
+            # ================OUTPUT============= 
+            # bins """
+            N = len(data)
+            sigma = np.std(data)
+        
+            binwidth = np.multiply(np.multiply(np.power(N, np.divide(-1,3)), sigma), 3.5)
+            bins = np.linspace(np.min(data), np.max(data), int((np.max(data) - np.min(data))/binwidth)+1)
+            return bins
         
         to_save = {'flatness' : rad_1, 'integratedGrad' : rad_2}
         
@@ -222,6 +214,29 @@ class RASP_Routines():
               str(np.around(rad_1, 2))+" and new integrated gradient is "
               +str(np.around(rad_2, 2))+". Parameters saved in "
               +str(self.defaultfolder)+".")
+        
+        import matplotlib.pyplot as plt
+        fig, axs = plt.subplots(1, 2)
+        axs[0].hist(r1_neg, bins=bincalculator(r1_neg), color='#808080', density=True);
+        ylim0, ylim1 = axs[0].get_ylim()[0], axs[0].get_ylim()[1]
+        axs[0].vlines(rad_1, ylim0, ylim1, color='k', label='threshold', ls='--')
+        axs[0].set_ylim([ylim0, ylim1])
+        axs[0].set_xlabel('flatness metric')
+        axs[0].set_ylabel('probability density') 
+        axs[0].grid(True,which="both",ls="--",c='gray', lw=0.25, alpha=0.25)  
+        axs[0].legend(loc='best', frameon=False)
+               
+        axs[1].hist(r2_neg, bins=bincalculator(r2_neg), color='#808080', density=True);
+        ylim0, ylim1 = axs[1].get_ylim()[0], axs[1].get_ylim()[1]
+        axs[1].vlines(rad_2, ylim0, ylim1, color='k', label='threshold', ls='--')
+        axs[1].set_xlabel('integrated gradient metric')
+        axs[1].set_xlim([0, np.max(r2_neg)])
+        axs[1].set_ylim([ylim0, ylim1])
+        axs[1].legend(loc='best', frameon=False)
+        axs[1].grid(True,which="both",ls="--",c='gray', lw=0.25, alpha=0.25)  
+        plt.tight_layout()
+        plt.show(block=False)
+
         return
     
     def calibrate_area(self, folder, imtype='.tif', gsigma=1.4, rwave=2., large_thres=10000.):
@@ -266,7 +281,7 @@ class RASP_Routines():
                         a_neg = np.hstack([a_neg, areas])
 
         area_thresh = int(np.ceil(np.percentile(a_neg, accepted_ratio)))
-        
+                
         to_save = {'areathres' : area_thresh, 'd': self.d}
         
         IO.make_directory(self.defaultfolder)
@@ -282,13 +297,28 @@ class RASP_Routines():
               str(int(self.d))+
               ". Parameters saved in "
               +str(self.defaultfolder)+".")
+        
+        import matplotlib.pyplot as plt
+        fig, axs = plt.subplots(1, 1)
+        axs.ecdf(a_neg, color='k');
+        xlim0, xlim1 = axs.get_xlim()[0], axs.get_xlim()[1]
+        axs.hlines(accepted_ratio/100., xlim0, xlim1, color='k', label='threshold', ls='--')
+        axs.set_ylim([0, 1])
+        axs.set_xlim([xlim0, xlim1])
+        axs.set_xlabel('puncta area (pixel)')
+        axs.set_ylabel('probability ') 
+        axs.grid(True,which="both",ls="--",c='gray', lw=0.25, alpha=0.25)  
+        axs.legend(loc='lower right', frameon=False)
+        plt.tight_layout()
+        plt.show(block=False)
+
         return
     
     def analyse_images(self, folder, imtype='.tif', thres=0.05, 
                        large_thres=450., gsigma=1.4, rwave=2.,
                        oligomer_string='C1', cell_string='C0',
                        if_filter=True, im_start=1, cell_analysis=True, 
-                       one_savefile=False):
+                       one_savefile=False, disp=True):
         """
         analyses data from images in a specified folder,
         saves spots, locations, intensities and backgrounds in a folder created
@@ -309,6 +339,7 @@ class RASP_Routines():
         images and computes colocalisation likelihood ratios.
         - one_savefile (boolean). Parameter that, if true, doesn't save a file
         per image but amalgamates them into one file
+        - disp (boolean). If true, prints when analysed an image stack.
 
         """
         files = self.file_search(folder, oligomer_string, imtype)
@@ -362,8 +393,9 @@ class RASP_Routines():
                                         d=self.d)
                 
                 if one_savefile == False:
-                    to_save.to_csv(os.path.join(analysis_directory, 
-                    files[i].split(imtype)[0]+'.csv'), index=False)
+                    savename = os.path.join(analysis_directory, 
+                    files[i].split(imtype)[0]+'.csv')
+                    to_save.to_csv(savename, index=False)
                     if cell_analysis == True:
                         to_save_cell.to_csv(os.path.join(analysis_directory, 
                         files[i].split(imtype)[0]+'_cell_analysis.csv'), index=False)
@@ -397,8 +429,9 @@ class RASP_Routines():
                 large_thres=large_thres, areathres=self.areathres, rdl=rdl, d=self.d)
                 
                 if one_savefile == False:
-                    to_save.to_csv(os.path.join(analysis_directory, 
-                        files[i].split(imtype)[0]+'.csv'), index=False)
+                    savename = os.path.join(analysis_directory, 
+                        files[i].split(imtype)[0]+'.csv')
+                    to_save.to_csv(savename, index=False)
                 else:
                     to_save['image_filename'] = np.full_like(to_save.z.values, files[i], dtype='object')
                     savename = os.path.join(analysis_directory, 'spot_analysis.csv')
@@ -406,6 +439,8 @@ class RASP_Routines():
                         to_save.to_csv(savename, mode='a', header=False, index=False)
                     else:
                         to_save.to_csv(savename, index=False)
+            if disp == True:
+                print("Analysed image", files[i], "data saved in", savename)
         return
     
     def save_analysis_results(self, directory, file, to_save, 
@@ -501,7 +536,8 @@ class RASP_Routines():
     def analyse_round_subfolder(self, folder, k1, k2, rdl, imtype='.tif', thres=0.05, 
                              large_thres=450., gsigma=1.4, rwave=2., 
                              oligomer_string='C1', cell_string='C0',
-                             if_filter=True, im_start=1, cell_analysis=False, one_savefile=True):
+                             if_filter=True, im_start=1, cell_analysis=False, 
+                             one_savefile=True, disp=True):
         """
         analyses data in a folder specified,
         folder has either "Round" in the title
@@ -528,6 +564,7 @@ class RASP_Routines():
         per image but amalgamates them into one file
         - cell_analysis (boolean). Parameter where script also analyses cell
         images and computes colocalisation likelihood ratios.
+        - disp (boolean). If True, outputs a message saying analysed image.
         """
 
         r = float(os.path.split(folder)[1].split('Round')[1]) # get round for rsid later
@@ -614,8 +651,9 @@ class RASP_Routines():
                     to_save['rsid'] = np.full_like(to_save.z.values, rsid)
                     to_save['image_filename'] = np.full_like(to_save.z.values, os.path.split(oligomer_files[i])[-1], dtype='object')
                     savefile = os.path.split(oligomer_files[i])[-1]
-                    to_save.to_csv(os.path.join(directory, 
-                    savefile+'.csv'), index=False)
+                    savename = os.path.join(directory, 
+                    savefile+'.csv')
+                    to_save.to_csv(savename, index=False)
                 else:
                     to_save['rsid'] = np.full_like(to_save.z.values, rsid)
                     savename = os.path.join(analysis_directory, 'spot_analysis.csv')
@@ -623,6 +661,8 @@ class RASP_Routines():
                         to_save.to_csv(savename, mode='a', header=False, index=False)
                     else:
                         to_save.to_csv(savename, index=False)
+            if disp == True:
+                print("Analysed image", oligomer_files[i], "data saved in", analysis_directory)
 
         return
     
