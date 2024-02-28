@@ -699,6 +699,102 @@ class Analysis_Functions():
             
         return to_save
     
+    def bincalculator(self, data):
+        """ bincalculator function
+        # reads in data and generates bins according to Freedman-Diaconis rule
+        # ================INPUTS============= 
+        # data is data to be histogrammed
+        # ================OUTPUT============= 
+        # bins """
+        N = len(data)
+        sigma = np.std(data)
+    
+        binwidth = np.multiply(np.multiply(np.power(N, np.divide(-1,3)), sigma), 3.5)
+        bins = np.linspace(np.min(data), np.max(data), int((np.max(data) - np.min(data))/binwidth)+1)
+        return bins
+
+    
+    def Gauss2DFitting(self, image, pixel_index_list, expanded_area=5):
+        """
+        Gets HWHM of PSFs from fitting Gaussians to spots (from pixel_index_list)
+        Pixels expanded borders by n pixels (default 5)
+    
+        Args:
+        - image (array). image as numpy array
+        - pixel_index_list (list) list of pixel arrays
+        - expended area (int) range to expand the pixel mask to
+        
+        Returns:
+        - HWHMarray (array). array of half-width-half maxima from the fits
+        """
+        # this code from https://scipy-cookbook.readthedocs.io/items/FittingData.html
+        from scipy import optimize
+        def gaussian(height, center_x, center_y, width_x, width_y, bg):
+            """Returns a gaussian function with the given parameters"""
+            width_x = float(width_x)
+            width_y = float(width_y)
+            return lambda x,y: height*np.exp(
+                        -(((center_x-x)/width_x)**2+((center_y-y)/width_y)**2)/2) + bg
+        
+        def moments(data):
+            """Returns (height, x, y, width_x, width_y)
+            the gaussian parameters of a 2D distribution by calculating its
+            moments """
+            total = data.sum()
+            X, Y = np.indices(data.shape)
+            x = (X*data).sum()/total
+            y = (Y*data).sum()/total
+            col = data[:, int(y)]
+            width_x = np.sqrt(np.abs((np.arange(col.size)-x)**2*col).sum()/col.sum())
+            row = data[int(x), :]
+            width_y = np.sqrt(np.abs((np.arange(row.size)-y)**2*row).sum()/row.sum())
+            height = data.max()
+            bg = data.min()
+            return height, x, y, width_x, width_y, bg
+        
+        def fitgaussian(data):
+            """Returns (height, x, y, width_x, width_y, bg)
+            the gaussian parameters of a 2D distribution found by a fit"""
+            params = moments(data)
+            errorfunction = lambda p: np.ravel((gaussian(*p)(*np.indices(data.shape)) -
+                                         data))
+            p, success = optimize.leastsq(errorfunction, params)
+            return np.abs(p), success
+        
+        HWHMarray = np.zeros(len(pixel_index_list))
+        for p in np.arange(len(pixel_index_list)):
+            xp = np.arange(np.min(np.unique(pixel_index_list[p][:,0]))-expanded_area,
+                           np.max(np.unique(pixel_index_list[p][:,0]))+expanded_area)
+            yp = np.arange(np.min(np.unique(pixel_index_list[p][:,1]))-expanded_area, 
+                           np.max(np.unique(pixel_index_list[p][:,1]))+expanded_area)
+            x, y = np.meshgrid(xp, yp)
+            params, success = fitgaussian(image[x, y])
+            if success == True:
+                (height, cx, cy, width_x, width_y, bg) = params
+                HWHMarray[p] = np.sqrt(2*np.log(2))*np.mean([width_y, width_x])
+            else:
+                HWHMarray[p] = np.NAN
+        HWHMarray = HWHMarray[~np.isnan(HWHMarray)]
+        return HWHMarray
+    
+    def rejectoutliers(self, data):
+        """ rejectoutliers function
+        # rejects outliers from data, does iqr method (i.e. anything below
+        lower quartile (25 percent) or above upper quartile (75 percent)
+        is rejected)
+        # ================INPUTS============= 
+        # data is data matrix
+        # ================OUTPUT============= 
+        # newdata, data matrix """
+        from scipy.stats import iqr
+        IQR = iqr(data)
+        q1, q2 = np.percentile(data, q=(25, 75))
+        
+        nd1 = data[data <= (1.5*IQR)+q2]
+        newdata = nd1[nd1 >= q1-(1.5*IQR)]
+        return newdata 
+
+    
     def compute_image_props(self, image, k1, k2, thres=0.05, large_thres=450., areathres=30., rdl=[50., 0., 0.], d=2, z_planes=0, calib=False):
         """
         Gets basic image properties (dl_mask, centroids, radiality)

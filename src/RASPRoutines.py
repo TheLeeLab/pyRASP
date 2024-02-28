@@ -188,21 +188,7 @@ class RASP_Routines():
 
         rad_1 = np.percentile(r1_neg, accepted_ratio)
         rad_2 = np.percentile(r2_neg, 100.-accepted_ratio)
-        
-        def bincalculator(data):
-            """ bincalculator function
-            # reads in data and generates bins according to Freedman-Diaconis rule
-            # ================INPUTS============= 
-            # data is data to be histogrammed
-            # ================OUTPUT============= 
-            # bins """
-            N = len(data)
-            sigma = np.std(data)
-        
-            binwidth = np.multiply(np.multiply(np.power(N, np.divide(-1,3)), sigma), 3.5)
-            bins = np.linspace(np.min(data), np.max(data), int((np.max(data) - np.min(data))/binwidth)+1)
-            return bins
-        
+                
         to_save = {'flatness' : rad_1, 'integratedGrad' : rad_2}
         
         IO.make_directory(self.defaultfolder)
@@ -217,7 +203,7 @@ class RASP_Routines():
         
         import matplotlib.pyplot as plt
         fig, axs = plt.subplots(1, 2)
-        axs[0].hist(r1_neg, bins=bincalculator(r1_neg), color='#808080', density=True);
+        axs[0].hist(r1_neg, bins=A_F.bincalculator(r1_neg), color='#808080', density=True);
         ylim0, ylim1 = axs[0].get_ylim()[0], axs[0].get_ylim()[1]
         axs[0].vlines(rad_1, ylim0, ylim1, color='k', label='threshold', ls='--')
         axs[0].set_ylim([ylim0, ylim1])
@@ -226,7 +212,7 @@ class RASP_Routines():
         axs[0].grid(True,which="both",ls="--",c='gray', lw=0.25, alpha=0.25)  
         axs[0].legend(loc='best', frameon=False)
                
-        axs[1].hist(r2_neg, bins=bincalculator(r2_neg), color='#808080', density=True);
+        axs[1].hist(r2_neg, bins=A_F.bincalculator(r2_neg), color='#808080', density=True);
         ylim0, ylim1 = axs[1].get_ylim()[0], axs[1].get_ylim()[1]
         axs[1].vlines(rad_2, ylim0, ylim1, color='k', label='threshold', ls='--')
         axs[1].set_xlabel('integrated gradient metric')
@@ -266,29 +252,37 @@ class RASP_Routines():
                 dl_mask, centroids, radiality = A_F.compute_image_props(image, 
                             k1, k2, thres, large_thres, areathres, rdl, self.d)
                 pixel_index_list, areas, centroids = A_F.calculate_region_properties(dl_mask)
+                HWHMarray = A_F.Gauss2DFitting(image, pixel_index_list)
                 if i == 0:
                     a_neg = areas
+                    HWHM = HWHMarray
                 else:
                     a_neg = np.hstack([a_neg, areas])
+                    HWHM = np.hstack([HWHM, HWHMarray])
             else:
                 dl_mask, centroids, radiality = A_F.compute_image_props(image, 
                     k1, k2, thres, large_thres, areathres, rdl, self.d, z_planes=np.arange(image.shape[2]))
                 for j in np.arange(image.shape[2]):
                     pixel_index_list, areas, centroids = A_F.calculate_region_properties(dl_mask[:,:,j])
+                    HWHMarray = A_F.Gauss2DFitting(image[:,:,j], pixel_index_list)
                     if (i == 0) and (j == 0):
                         a_neg = areas
+                        HWHM = HWHMarray
                     else:
                         a_neg = np.hstack([a_neg, areas])
+                        HWHM = np.hstack([HWHM, HWHMarray])
 
+        HWHM = A_F.rejectoutliers(HWHM)
         area_thresh = int(np.ceil(np.percentile(a_neg, accepted_ratio)))
+        pixel_d = int(np.round(np.mean(HWHM)))
                 
-        to_save = {'areathres' : area_thresh, 'd': self.d}
+        to_save = {'areathres' : area_thresh, 'd': pixel_d}
         
         IO.make_directory(self.defaultfolder)
         IO.save_as_json(to_save, os.path.join(self.defaultfolder,
                                               'areathres.json'))
         self.areathres = area_thresh
-        self.d = self.d
+        self.d = pixel_d
         
         print("Area threshold using beads"+
               " images in "+str(folder)+". New area threshold is "+
@@ -299,16 +293,26 @@ class RASP_Routines():
               +str(self.defaultfolder)+".")
         
         import matplotlib.pyplot as plt
-        fig, axs = plt.subplots(1, 1)
-        axs.ecdf(a_neg, color='k');
-        xlim0, xlim1 = axs.get_xlim()[0], axs.get_xlim()[1]
-        axs.hlines(accepted_ratio/100., xlim0, xlim1, color='k', label='threshold', ls='--')
-        axs.set_ylim([0, 1])
-        axs.set_xlim([xlim0, xlim1])
-        axs.set_xlabel('puncta area (pixel)')
-        axs.set_ylabel('probability ') 
-        axs.grid(True,which="both",ls="--",c='gray', lw=0.25, alpha=0.25)  
-        axs.legend(loc='lower right', frameon=False)
+        fig, axs = plt.subplots(1, 2)
+        axs[0].ecdf(a_neg, color='k');
+        xlim0, xlim1 = axs[0].get_xlim()[0], axs[0].get_xlim()[1]
+        axs[0].hlines(accepted_ratio/100., xlim0, xlim1, color='k', label='threshold', ls='--')
+        axs[0].set_ylim([0, 1])
+        axs[0].set_xlim([xlim0, xlim1])
+        axs[0].set_xlabel('puncta area (pixel)')
+        axs[0].set_ylabel('probability ') 
+        axs[0].grid(True,which="both",ls="--",c='gray', lw=0.25, alpha=0.25)  
+        axs[0].legend(loc='lower right', frameon=False)
+        
+        axs[1].hist(HWHM, bins=A_F.bincalculator(HWHM), color='#808080', density=True);
+        ylim0, ylim1 = axs[1].get_ylim()[0], axs[1].get_ylim()[1]
+        axs[1].vlines(np.mean(HWHM), ylim0, ylim1, color='k', label='threshold', ls='--')
+        axs[1].set_xlabel('HWHM (pixel)')
+        axs[1].set_xlim([0, np.max(HWHM)])
+        axs[1].set_ylim([ylim0, ylim1])
+        axs[1].legend(loc='best', frameon=False)
+        axs[1].grid(True,which="both",ls="--",c='gray', lw=0.25, alpha=0.25)  
+       
         plt.tight_layout()
         plt.show(block=False)
 
