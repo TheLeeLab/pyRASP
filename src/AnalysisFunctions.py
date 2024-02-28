@@ -622,7 +622,8 @@ class Analysis_Functions():
                     cell_threshold1, cell_threshold2, cell_sigma1, cell_sigma2)
                 
                 image_size = img_z.shape
-                mask_indices, spot_indices = self.generate_mask_and_spot_indices(cell_mask[:,:,zp], centroids, image_size)
+                mask_indices, spot_indices = self.generate_mask_and_spot_indices(cell_mask[:,:,zp], 
+                                        np.asarray(centroids[zp], dtype=int), image_size)
 
                 clr[zp], norm_std[zp], norm_CSR[zp], expected_spots[zp], n_iter[zp] = self.calculate_spot_colocalisation_likelihood_ratio(spot_indices, mask_indices, image_size)
                 

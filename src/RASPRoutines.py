@@ -345,7 +345,6 @@ class RASP_Routines():
         files = self.file_search(folder, oligomer_string, imtype)
         if cell_analysis == True:
             cell_files = self.file_search(folder, cell_string, imtype)
-
         k1, k2 = A_F.create_kernel(gsigma, rwave) # create image processing kernels
         rdl = [self.flatness, self.integratedGrad, 0.]
 
@@ -377,7 +376,7 @@ class RASP_Routines():
                 img = img[:, :, im_start:]
             if len(img.shape) > 2: # if a z-stack
                 z_planes = self.get_infocus_planes(img, k1)
-                
+
                 if cell_analysis == False:
                     to_save = A_F.compute_spot_props(img, 
                     k1, k2, thres=thres, large_thres=large_thres, 
@@ -394,13 +393,13 @@ class RASP_Routines():
                 
                 if one_savefile == False:
                     savename = os.path.join(analysis_directory, 
-                    files[i].split(imtype)[0]+'.csv')
+                    os.path.split(files[i])[-1].split(imtype)[0]+'.csv')
                     to_save.to_csv(savename, index=False)
                     if cell_analysis == True:
                         to_save_cell.to_csv(os.path.join(analysis_directory, 
-                        files[i].split(imtype)[0]+'_cell_analysis.csv'), index=False)
+                        os.path.split(files[i])[-1].split(imtype)[0]+'_cell_analysis.csv'), index=False)
                         IO.write_tiff(cell_mask, os.path.join(analysis_directory, 
-                        files[i].split(imtype)[0]+'_cellMask.tiff'), bit=np.uint8)
+                        os.path.split(files[i])[-1].split(imtype)[0]+'_cellMask.tiff'), bit=np.uint8)
                 else:
                     to_save['image_filename'] = np.full_like(to_save.z.values, files[i], dtype='object')
                     savename = os.path.join(analysis_directory, 'spot_analysis.csv')
@@ -412,7 +411,7 @@ class RASP_Routines():
                         to_save_cell['image_filename'] = np.full_like(to_save_cell.z.values, files[i], dtype='object')
                         savename_cell = os.path.join(analysis_directory, 'cell_colocalisation_analysis.csv')
                         IO.write_tiff(cell_mask, os.path.join(analysis_directory, 
-                        files[i].split(imtype)[0]+'_cellMask.tiff'), bit=np.uint8)
+                        os.path.split(files[i])[-1].split(imtype)[0]+'_cellMask.tiff'), bit=np.uint8)
 
                     if i != 0:
                         to_save.to_csv(savename, mode='a', header=False, index=False)
@@ -430,7 +429,7 @@ class RASP_Routines():
                 
                 if one_savefile == False:
                     savename = os.path.join(analysis_directory, 
-                        files[i].split(imtype)[0]+'.csv')
+                        os.path.split(files[i])[-1].split(imtype)[0]+'.csv')
                     to_save.to_csv(savename, index=False)
                 else:
                     to_save['image_filename'] = np.full_like(to_save.z.values, files[i], dtype='object')
