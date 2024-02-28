@@ -558,8 +558,9 @@ class Analysis_Functions():
         imsz = img.shape
         pixel_idx_list, areas, centroids = self.calculate_region_properties(BW)
     
-        idxb = np.logical_and(centroids[:, 0] > 10, centroids[:, 0] < imsz[1] - 10)
-        idxb = np.logical_and(idxb, np.logical_and(centroids[:, 1] > 10, centroids[:, 1] < imsz[0] - 9))
+        border_value = int(np.multiply(d, 5))
+        idxb = np.logical_and(centroids[:, 0] > border_value, centroids[:, 0] < imsz[1] - border_value)
+        idxb = np.logical_and(idxb, np.logical_and(centroids[:, 1] > border_value, centroids[:, 1] < imsz[0] - (border_value - 1)))
         idxs = np.logical_and(areas < area_thres, idxb)
     
         pil_small = pixel_idx_list[idxs]
