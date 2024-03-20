@@ -82,8 +82,7 @@ class IO_Functions():
         # specifying the 'tifffile' plugin explicitly
         image = io.imread(file_path, plugin='tifffile')
         if len(image.shape) > 2: # if image a stack
-            if image.shape[0] < image.shape[-1]: # if stack is wrong way round
-                image = image.T
+            image = image.T
         return np.asarray(np.swapaxes(image,0,1), dtype='double')
     
     def read_tiff_tophotons(self, file_path, QE=0.95, gain_map=1., offset_map=0.):

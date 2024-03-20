@@ -18,7 +18,7 @@ A_F = AnalysisFunctions.Analysis_Functions()
 
 
 class RASP_Routines():
-    def __init__(self, defaultarea=True, defaultd=True, defaultrad=True, defaultflat=True, defaultdfocus=True, defaultintfocus=True, defaultcellparams=True, defaultcameraparams=True):
+    def __init__(self, defaultfolder=None, defaultarea=True, defaultd=True, defaultrad=True, defaultflat=True, defaultdfocus=True, defaultintfocus=True, defaultcellparams=True, defaultcameraparams=True):
         """
         Initialises class.
     
@@ -32,8 +32,11 @@ class RASP_Routines():
         - defaultcameraparams (boolean). If True, uses camera parameters in folder for analysis later
         """
         self = self
-        self.defaultfolder = os.path.join(os.path.split(module_dir)[0],
+        if defaultfolder==None:
+            self.defaultfolder = os.path.join(os.path.split(module_dir)[0],
                             'default_analysis_parameters')
+        else:
+            self.defaultfolder = defaultfolder
         if defaultarea == True:
             if os.path.isfile(os.path.join(self.defaultfolder, 'areathres.json')):
                 data = IO.load_json(os.path.join(self.defaultfolder, 'areathres.json'))
@@ -164,7 +167,7 @@ class RASP_Routines():
         thres = 0.05
         for i in np.arange(len(files)):
             file_path = os.path.join(folder, files[i])
-            image = IO.read_tiff(file_path)
+            image = IO.read_tiff_tophotons(file_path)
             if len(image.shape) < 3:
                 dl_mask, centroids, radiality = A_F.compute_image_props(image, k1, k2, thres, 10000., self.areathres, rdl, self.d, calib=True)
                 if i == 0:
