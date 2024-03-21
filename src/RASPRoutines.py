@@ -210,6 +210,7 @@ class RASP_Routines():
         ylim0, ylim1 = axs[0].get_ylim()[0], axs[0].get_ylim()[1]
         axs[0].vlines(rad_1, ylim0, ylim1, color='k', label='threshold', ls='--')
         axs[0].set_ylim([ylim0, ylim1])
+        axs[0].set_xlim([0, rad_1/2.])
         axs[0].set_xlabel('flatness metric')
         axs[0].set_ylabel('probability density') 
         axs[0].grid(True,which="both",ls="--",c='gray', lw=0.25, alpha=0.25)  
@@ -219,7 +220,7 @@ class RASP_Routines():
         ylim0, ylim1 = axs[1].get_ylim()[0], axs[1].get_ylim()[1]
         axs[1].vlines(rad_2, ylim0, ylim1, color='k', label='threshold', ls='--')
         axs[1].set_xlabel('integrated gradient metric')
-        axs[1].set_xlim([0, np.max(r2_neg)])
+        axs[1].set_xlim([0, rad_2*2.])
         axs[1].set_ylim([ylim0, ylim1])
         axs[1].legend(loc='best', frameon=False)
         axs[1].grid(True,which="both",ls="--",c='gray', lw=0.25, alpha=0.25)  
@@ -336,6 +337,8 @@ class RASP_Routines():
         Args:
         - folder (string). Folder containing images
         - imtype (string). Type of images being analysed, default tif
+        - thres (float). fraction of bright pixels accepted
+        - large_thres (float). large object intensity threshold
         - gisgma (float). gaussian blurring parameter (default 1.4)
         - rwave (float). Ricker wavelent sigma (default 2.)
         - oligomer_string (string). string for oligomer-containing data (default C1)
@@ -449,6 +452,111 @@ class RASP_Routines():
                 print("Analysed image", os.path.split(files[i])[-1], "data saved in", analysis_directory)
         return
     
+    def single_image_analysis(self, protein_file, thres=0.05, 
+                       large_thres=450., gsigma=1.4, rwave=2., image_size=200,
+                       save_figure=False,
+                              cell_analysis=False, cell_file=None):
+        
+        """
+        analyses data from specified image,
+        presents spots, locations, intensities in a figure, with the option of
+        saving this figure
+    
+        Args:
+        - file (string). image location
+        - thres (float). fraction of bright pixels accepted
+        - large_thres (float). large object intensity threshold
+        - gisgma (float). gaussian blurring parameter (default 1.4)
+        - rwave (float). Ricker wavelent sigma (default 2.)
+        - image_size (int). Amount of image to plot---by default plots 100x100 
+        chunk of an image to give you an idea, can scale up
+        - save_figure (boolean). save the figure as an svg, default no
+        - cell_analysis (boolean). Parameter where script also analyses cell
+        images and computes colocalisation likelihood ratios.
+        - cell_file (string). cell image location
+
+        """
+        import PlottingFunctions
+        plots = PlottingFunctions.Plotter()
+        import matplotlib.pyplot as plt
+       
+        img = IO.read_tiff_tophotons(protein_file, 
+        QE=self.QE, gain_map=self.gain_map, offset_map=self.offset_map)
+        
+        
+        k1, k2 = A_F.create_kernel(gsigma, rwave) # create image processing kernels
+        rdl = [self.flatness, self.integratedGrad, 0.]
+        
+        
+        if cell_analysis == True:
+            img_cell = IO.read_tiff_tophotons(cell_file, 
+            QE=self.QE, gain_map=self.gain_map, offset_map=self.offset_map)
+            
+        if len(img.shape) > 2: # if a z-stack
+            z_planes = self.get_infocus_planes(img, k1)
+
+            if cell_analysis == False:
+                to_save = A_F.compute_spot_props(img, 
+                k1, k2, thres=thres, large_thres=large_thres, 
+                areathres=self.areathres, rdl=rdl, z=z_planes, d=self.d)
+            else:
+                to_save, to_save_cell, cell_mask = A_F.compute_spot_and_cell_props(img, img_cell, k1, k2,
+                                    prot_thres=thres, large_prot_thres=large_thres, 
+                                    areathres=self.areathres, rdl=rdl, z=z_planes, 
+                                    cell_threshold1=self.cell_threshold1, 
+                                    cell_threshold2=self.cell_threshold1, 
+                                    cell_sigma1=self.cell_sigma1,
+                                    cell_sigma2=self.cell_sigma2,
+                                    d=self.d) 
+        
+        # run through z planes here and check data in; if not, abort some
+
+        zps = z_planes[-1]-z_planes[0]
+        if cell_analysis == False:
+            fig, axs = plots.two_column_plot(nrows=zps, ncolumns=2, heightratio=np.full(zps, 1), widthratio=[1,1])
+            for i in enumerate(np.arange(z_planes[0]+1, z_planes[-1]+1)):
+                xpositions = to_save[to_save.z == i[1]].x.values
+                ypositions = to_save[to_save.z == i[1]].y.values
+                testvals = (xpositions < image_size)*(ypositions < image_size)
+                xpositions = xpositions[testvals]
+                ypositions = ypositions[testvals]
+                axs[i[0], 0] = plots.image_scatter_plot(axs[i[0], 0], 
+                            img[:image_size, :image_size, i[1]-1], 
+                            xdata=xpositions, ydata=ypositions, label='z plane = '+str(int(i[1])))
+                
+                axs[i[0], 1] = plots.histogram_plot(axs[i[0],1], 
+                                    to_save[to_save.z == i[1]].sum_intensity_in_photons.values, 
+                                bins=A_F.bincalculator(to_save[to_save.z == i[1]].sum_intensity_in_photons.values), 
+                                xaxislabel='puncta intensity (photons)')
+        else:
+            fig, axs = plots.two_column_plot(nrows=zps, ncolumns=3, heightratio=np.full(zps, 1), widthratio=[1,1,1])
+            for i in enumerate(np.arange(z_planes[0]+1, z_planes[-1]+1)):
+                xpositions = to_save[to_save.z == i[1]].x.values
+                ypositions = to_save[to_save.z == i[1]].y.values
+                testvals = (xpositions < image_size)*(ypositions < image_size)
+                xpositions = xpositions[testvals]
+                ypositions = ypositions[testvals]
+                axs[i[0], 0] = plots.image_scatter_plot(axs[i[0], 0], 
+                            img[:image_size, :image_size, i[1]-1], 
+                            xdata=xpositions, ydata=ypositions, label='protein, z plane = '+str(int(i[1])))
+                
+                axs[i[0], 1] = plots.image_plot(axs[i[0], 1], 
+                            img_cell[:image_size, :image_size, i[1]-1], 
+                            label='cell, z plane = '+str(int(i[1])), plotmask=True, mask=cell_mask[:image_size, :image_size, i[1]-1])
+                
+                axs[i[0], 2] = plots.histogram_plot(axs[i[0],2], 
+                                    to_save[to_save.z == i[1]].sum_intensity_in_photons.values, 
+                                bins=A_F.bincalculator(to_save[to_save.z == i[1]].sum_intensity_in_photons.values), 
+                                xaxislabel='puncta intensity (photons)')
+
+            
+        plt.tight_layout()
+        
+        if save_figure == True:
+            plt.savefig(protein_file.split('.')[0]+'_ExampleFigure.svg', format='svg', dpi=600)
+        plt.show()
+        return
+    
     def save_analysis_results(self, directory, file, to_save, 
                     rsid, cell_analysis=False, to_save_cell=0, cell_mask=0):
         """
@@ -559,6 +667,8 @@ class RASP_Routines():
         - k1 (matrix). convolution kernel 1
         - k2 (matrix). convolution kernel 2
         - rdl (vector). radiality filter
+        - thres (float). fraction of bright pixels accepted
+        - large_thres (float). large object intensity threshold
         - imtype (string). Type of images being analysed, default tif
         - gisgma (float). gaussian blurring parameter (default 1.4)
         - rwave (float). Ricker wavelent sigma (default 2.)
