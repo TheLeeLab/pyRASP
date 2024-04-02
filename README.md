@@ -8,3 +8,7 @@ The package "pyRASP" (written in support of https://www.biorxiv.org/content/10.1
 A list of package requirements are noted in the "requirements.txt" file. These can be installed with the command:
 
 `pip install -r requirements.txt`
+
+## Contributing
+
+Patches and contributions are very welcome! Please see CONTRIBUTING.md for more details.
