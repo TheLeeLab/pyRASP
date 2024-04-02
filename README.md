@@ -11,4 +11,4 @@ A list of package requirements are noted in the "requirements.txt" file. These c
 
 ## Contributing
 
-Patches and contributions are very welcome! Please see CONTRIBUTING.md for more details.
+Patches and contributions are very welcome! Please see CONTRIBUTING.md and the CODE_OF_CONDUCT.md for more details.
