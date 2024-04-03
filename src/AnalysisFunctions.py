@@ -5,7 +5,7 @@ radiality, relating to the RASP concept.
 jsb92, 2024/01/02
 """
 import numpy as np
-from scipy.signal import gaussian as gauss
+from scipy.signal.windows import gaussian as gauss
 from scipy.signal import fftconvolve
 import skimage as ski
 from skimage.filters import gaussian
@@ -78,13 +78,14 @@ class Analysis_Functions():
         Calculate radiality measures based on pixel neighborhoods and gradients.
 
         Args:
-        - pil_small (list): List of pixel indices.
-        - img (numpy.ndarray): The input image.
-        - gradient_x (numpy.ndarray): X-gradient of the image.
-        - gradient_y (numpy.ndarray): Y-gradient of the image.
-        - d (integer): pixel ring size
+            pil_small (list): List of pixel indices.
+            img (numpy.ndarray): The input image.
+            gradient_x (numpy.ndarray): X-gradient of the image.
+            gradient_y (numpy.ndarray): Y-gradient of the image.
+            d (integer): pixel ring size
+        
         Returns:
-        - radiality (numpy.ndarray): Radiality measures.
+            radiality (numpy.ndarray): Radiality measures.
         """
         xy = np.zeros([len(pil_small), 2])
         r0 = np.zeros(len(pil_small))
@@ -111,13 +112,13 @@ class Analysis_Functions():
         makes mask and spot indices from xy coordinates
     
         Args:
-        - mask (2D array): boolean matrix
-        - centroids (2D array): xy centroid coordinates
-        - image_size (tuple): Image dimensions (height, width).
+            mask (2D array): boolean matrix
+            centroids (2D array): xy centroid coordinates
+            image_size (tuple): Image dimensions (height, width).
         
         Returns:
-        mask_indices (1D array): indices of mask
-        spot_indices (1D array): indices of spots
+            mask_indices (1D array): indices of mask
+            spot_indices (1D array): indices of spots
         """
         mask_coords = np.transpose((mask>0).nonzero())
         mask_indices = np.ravel_multi_index([mask_coords[:, 0], mask_coords[:, 1]], image_size)
@@ -130,18 +131,18 @@ class Analysis_Functions():
         bounds on the likelihood ratio for one image
     
         Args:
-        - spot_indices (1D array): indices of spots
-        - mask_indices (1D array): indices of pixels in mask
-        - image_size (tuple): Image dimensions (height, width).
-        - tol (float): default 0.01; tolerance for convergence
-        - n_iter (int): default 100; number of iterations to start with
+            spot_indices (1D array): indices of spots
+            mask_indices (1D array): indices of pixels in mask
+            image_size (tuple): Image dimensions (height, width).
+            tol (float): default 0.01; tolerance for convergence
+            n_iter (int): default 100; number of iterations to start with
         
         Returns:
-        colocalisation_likelihood_ratio (float): likelihood ratio of spots for mask
-        perc_std (float): standard deviation on this CLR based on bootstrapping
-        meanCSR (float): mean of randomised spot data
-        expected_spots (float): number of spots we expect based on mask % of image
-        n_iter (int): how many iterations it took to converge
+            colocalisation_likelihood_ratio (float): likelihood ratio of spots for mask
+            perc_std (float): standard deviation on this CLR based on bootstrapping
+            meanCSR (float): mean of randomised spot data
+            expected_spots (float): number of spots we expect based on mask % of image
+            n_iter (int): how many iterations it took to converge
         """
         n_iter_rec = n_iter
         possible_indices = np.arange(0, np.prod(image_size)) # get list of where is possible to exist in an image
