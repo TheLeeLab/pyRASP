@@ -66,6 +66,50 @@ class IO_Functions():
         """
         with open(file_name, 'w') as json_file:
             json.dump(data, json_file, indent=4)
+            
+    def read_multichannel_tiff_tophotons(self, file_path, order='tzc', n_t=1, n_z=1, n_c=1):
+        """
+        Read a multichannel TIFF file using the skimage library, 
+        averaging/splitting as appropriate. Converts to photons.
+    
+        Args:
+        - file_path (str): The path to the TIFF file to be read.
+        - order (str): default 'tzc', order images are saved in (this defines the averaging).
+            Options are:
+                'tzc' (first does all time steps, then does these at different zs, then returns and does other colour channels)
+                'tcz' (first does all time steps, then does different colour channels, then moves in z)
+                'ztc' (first does all z stacks, then repeats at different time steps, then does other colour channels)
+                'zct' (first does all z stacks, then does at different colour channels, then does time steps)
+                'ctz' (first does different colours, then repeats at different time steps, then moves in z)
+                'czt' (first does different colours, then does different z stacks, then does all time steps)
+        - n_t (int): number of time steps per condition. Default 1
+        - n_z (int): number of z stacks per condition. Default 1
+        - n_c (int): number of colours per condition. Default 1
+        
+        Returns:
+        - image_colourchannels (dict of numpy.ndarrays): Dict of the image data
+        from the TIFF file. Dict will contain N objects that are N colour channels.
+        Final dimension of the NDarrays is the z coordiante.
+        """
+        image_unaveraged = self.read_tiff_tophotons(file_path)
+        image_colourchannels = {}
+        if 't' == order[0]: # if a time average first
+            tlocs = np.arange(0, image_unaveraged.shape[-1]+n_t, n_t)
+            image = np.zeros([image_unaveraged.shape[0], image_unaveraged.shape[0], n_z*n_c])
+            for t in np.arange(len(tlocs)-1):
+                image[:, :, t] = np.mean(image_unaveraged[:, :, tlocs[t]:tlocs[t+1]], axis=-1)
+                
+            if 'z' == order[1]: # if then does z-steps
+                dividing_locations = np.arange(0, image.shape[-1]+n_z, n_z)
+                for i in np.arange(len(dividing_locations)-1):
+                    minloc = dividing_locations[i]
+                    maxloc = dividing_locations[i+1]
+                    image_colourchannels[i] = image[:, :, minloc:maxloc]
+            else:
+                for colour in np.arange(n_c):
+                    colour_locs = np.arange(colour, image.shape[-1], n_c, dtype=int)
+                    image_colourchannels[colour] = image[:, :, colour_locs]
+        return image_colourchannels
 
     def read_tiff(self, file_path):
         """
@@ -102,8 +146,7 @@ class IO_Functions():
         # specifying the 'tifffile' plugin explicitly
         image = io.imread(file_path, plugin='tifffile')
         if len(image.shape) > 2: # if image a stack
-            if image.shape[0] < image.shape[-1]: # if stack is wrong way round
-                image = image.T
+            image = image.T
         data = np.asarray(np.swapaxes(image,0,1), dtype='double')
         if type(gain_map) is not float:
             if data.shape[:2] != gain_map.shape:
@@ -132,7 +175,6 @@ class IO_Functions():
             Additional metadata specifying the software as 'Python' is included.
         """
         if len(volume.shape) > 2: # if image a stack
-            if volume.shape[-1] < volume.shape[0]: # if stack is wrong way round
-                volume = volume.T
+            volume = volume.T
             volume = np.asarray(np.swapaxes(volume,1,2), dtype='double')
         io.imsave(file_path, np.asarray(volume, dtype=bit), plugin='tifffile', bigtiff=True, photometric='minisblack', metadata={'Software': 'Python'}, check_contrast=False)
