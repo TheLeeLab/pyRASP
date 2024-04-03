@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>IOFunctions module &mdash; pyRASP v0.5.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=19f00094" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="_static/jquery.js?v=5d32c60e"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script src="_static/documentation_options.js?v=e663822d"></script>
+        <script src="_static/doctools.js?v=888ff710"></script>
+        <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="PlottingFunctions module" href="PlottingFunctions.html" />
+    <link rel="prev" title="AnalysisFunctions module" href="AnalysisFunctions.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            pyRASP
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="getting-started.html">Introduction</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="modules.html">src</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="AnalysisFunctions.html">AnalysisFunctions module</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">IOFunctions module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#IOFunctions.IO_Functions"><code class="docutils literal notranslate"><span class="pre">IO_Functions</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#IOFunctions.IO_Functions.load_json"><code class="docutils literal notranslate"><span class="pre">IO_Functions.load_json()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#IOFunctions.IO_Functions.make_directory"><code class="docutils literal notranslate"><span class="pre">IO_Functions.make_directory()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#IOFunctions.IO_Functions.read_tiff"><code class="docutils literal notranslate"><span class="pre">IO_Functions.read_tiff()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#IOFunctions.IO_Functions.read_tiff_tophotons"><code class="docutils literal notranslate"><span class="pre">IO_Functions.read_tiff_tophotons()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#IOFunctions.IO_Functions.save_analysis_params"><code class="docutils literal notranslate"><span class="pre">IO_Functions.save_analysis_params()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#IOFunctions.IO_Functions.save_as_json"><code class="docutils literal notranslate"><span class="pre">IO_Functions.save_as_json()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#IOFunctions.IO_Functions.write_tiff"><code class="docutils literal notranslate"><span class="pre">IO_Functions.write_tiff()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="PlottingFunctions.html">PlottingFunctions module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="RASPRoutines.html">RASPRoutines module</a></li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">pyRASP</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="modules.html">src</a></li>
+      <li class="breadcrumb-item active">IOFunctions module</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/IOFunctions.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="module-IOFunctions">
+<span id="iofunctions-module"></span><h1>IOFunctions module<a class="headerlink" href="#module-IOFunctions" title="Link to this heading"></a></h1>
+<p>This class contains functions pertaining to IO of files based for the RASP code.
+jsb92, 2024/01/02</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="IOFunctions.IO_Functions">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">IOFunctions.</span></span><span class="sig-name descname"><span class="pre">IO_Functions</span></span><a class="headerlink" href="#IOFunctions.IO_Functions" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="IOFunctions.IO_Functions.load_json">
+<span class="sig-name descname"><span class="pre">load_json</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">filename</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#IOFunctions.IO_Functions.load_json" title="Link to this definition"></a></dt>
+<dd><p>Loads data from a JSON file.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>filename</strong> (<em>str</em>) – The name of the JSON file to load.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The loaded JSON data.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>data (dict)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="IOFunctions.IO_Functions.make_directory">
+<span class="sig-name descname"><span class="pre">make_directory</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">directory_path</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#IOFunctions.IO_Functions.make_directory" title="Link to this definition"></a></dt>
+<dd><p>Creates a directory if it doesn’t exist.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>directory_path</strong> (<em>str</em>) – The path of the directory to be created.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="IOFunctions.IO_Functions.read_tiff">
+<span class="sig-name descname"><span class="pre">read_tiff</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">file_path</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#IOFunctions.IO_Functions.read_tiff" title="Link to this definition"></a></dt>
+<dd><p>Read a TIFF file using the skimage library.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>file_path</strong> (<em>str</em>) – The path to the TIFF file to be read.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The image data from the TIFF file.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>image (numpy.ndarray)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="IOFunctions.IO_Functions.read_tiff_tophotons">
+<span class="sig-name descname"><span class="pre">read_tiff_tophotons</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">file_path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">QE</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.95</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gain_map</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">offset_map</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#IOFunctions.IO_Functions.read_tiff_tophotons" title="Link to this definition"></a></dt>
+<dd><p>Read a TIFF file using the skimage library.
+Use camera parameters to convert output to photons</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>file_path</strong> (<em>str</em>) – The path to the TIFF file to be read.</p></li>
+<li><p><strong>QR</strong> (<em>float</em>) – QE of camera</p></li>
+<li><p><strong>gain_map</strong> (<em>matrix</em><em>, or </em><em>float</em>) – gain map. Assumes units of ADU/photoelectrons</p></li>
+<li><p><strong>offset_map</strong> (<em>matrix</em><em>, or </em><em>float</em>) – offset map. Assumes units of ADU</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The image data from the TIFF file.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>image (numpy.ndarray)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="IOFunctions.IO_Functions.save_analysis_params">
+<span class="sig-name descname"><span class="pre">save_analysis_params</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">analysis_p_directory</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">to_save</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gain_map</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">offset_map</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#IOFunctions.IO_Functions.save_analysis_params" title="Link to this definition"></a></dt>
+<dd><p>saves analysis parameters.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>analysis_p_directory</strong> (<em>str</em>) – The folder to save to.</p></li>
+<li><p><strong>to_save</strong> (<em>dict</em>) – dict to save of analysis parameters.</p></li>
+<li><p><strong>gain_map</strong> (<em>array</em>) – gain_map to save</p></li>
+<li><p><strong>offset_map</strong> (<em>array</em>) – offset_map to save</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="IOFunctions.IO_Functions.save_as_json">
+<span class="sig-name descname"><span class="pre">save_as_json</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">file_name</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#IOFunctions.IO_Functions.save_as_json" title="Link to this definition"></a></dt>
+<dd><p>Saves data to a JSON file.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>data</strong> (<em>dict</em>) – The data to be saved in JSON format.</p></li>
+<li><p><strong>file_name</strong> (<em>str</em>) – The name of the JSON file.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="IOFunctions.IO_Functions.write_tiff">
+<span class="sig-name descname"><span class="pre">write_tiff</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">volume</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">file_path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bit=&lt;class</span> <span class="pre">'numpy.uint16'&gt;</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#IOFunctions.IO_Functions.write_tiff" title="Link to this definition"></a></dt>
+<dd><p>Write a TIFF file using the skimage library.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>volume</strong> (<em>numpy.ndarray</em>) – The volume data to be saved as a TIFF file.</p></li>
+<li><p><strong>file_path</strong> (<em>str</em>) – The path where the TIFF file will be saved.</p></li>
+<li><p><strong>bit</strong> (<em>int</em>) – Bit-depth for the saved TIFF file (default is 16).</p></li>
+</ul>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<p>The function uses skimage’s imsave to save the volume as a TIFF file.
+The plugin is set to ‘tifffile’ and photometric to ‘minisblack’.
+Additional metadata specifying the software as ‘Python’ is included.</p>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="AnalysisFunctions.html" class="btn btn-neutral float-left" title="AnalysisFunctions module" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="PlottingFunctions.html" class="btn btn-neutral float-right" title="PlottingFunctions module" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, Joseph S. Beckwith, Bin Fu, Steven F. Lee.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

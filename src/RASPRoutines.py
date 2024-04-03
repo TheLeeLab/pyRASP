@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-This class contains functions that collect analysis routines for RASP
+This class contains functions that collect analysis routines for RASP.
 jsb92, 2024/02/08
 """
 import os
@@ -23,13 +23,13 @@ class RASP_Routines():
         Initialises class.
     
         Args:
-        - defaultarea (boolean). If True, uses area default for analysis later
-        - defaultd (boolean). If True, uses default pixel radius for analysis later
-        - defaultrad (boolean). If True, uses radiality default for analysis later
-        - defaultflat (boolean). If True, uses flatness default for analysis later
-        - defaultdfocus (boolean). If True, uses differential infocus default for analysis later
-        - defaultintfocus (boolean). If True, uses integral infocus default for analysis later
-        - defaultcameraparams (boolean). If True, uses camera parameters in folder for analysis later
+            defaultarea (boolean): If True, uses area default for analysis later
+            defaultd (boolean): If True, uses default pixel radius for analysis later
+            defaultrad (boolean): If True, uses radiality default for analysis later
+            defaultflat (boolean): If True, uses flatness default for analysis later
+            defaultdfocus (boolean): If True, uses differential infocus default for analysis later
+            defaultintfocus (boolean): If True, uses integral infocus default for analysis later
+            defaultcameraparams (boolean): If True, uses camera parameters in folder for analysis later
         """
         self = self
         if defaultfolder==None:
@@ -121,8 +121,11 @@ class RASP_Routines():
         Gets z planes that area in focus from an image stack
     
         Args:
-        - image (array). image as numpy array
-        - kernel (array). gaussian blur kernel   
+            image (array): image as numpy array
+            kernel (array): gaussian blur kernel  
+            
+        Returns:
+            z_planes (np.1darray): z_plane range that is in focus
         """
 
         na, na, na, focus_score, na = A_F.calculate_gradient_field(image, kernel)
@@ -134,8 +137,11 @@ class RASP_Routines():
         Counts spots per z plane
     
         Args:
-        - database is pandas array of spots
-        - z_planes is range of zplanes
+            database (pandas array): pandas array of spots
+            z_planes (np.1darray): is range of zplanes
+            
+        Returns:
+            n_spots 
         """
         columns = ['z', 'n_spots']
         
@@ -153,11 +159,11 @@ class RASP_Routines():
         well as writing it to the current class radiality and flatness values
     
         Args:
-        - folder (string). Folder containing negative control tifs
-        - imtype (string). Type of images being analysed, default tif
-        - gsigma (float). gaussian blurring parameter (default 1.4)
-        - rwave (float). Ricker wavelent sigma (default 2.)
-        - accepted_ratio (float). Percentage accepted of false positives
+            folder (string): Folder containing negative control tifs
+            imtype (string): Type of images being analysed, default tif
+            gsigma (float): gaussian blurring parameter (default 1.4)
+            rwave (float): Ricker wavelent sigma (default 2.)
+            accepted_ratio (float): Percentage accepted of false positives
         """
         files_list = os.listdir(folder)
         files = np.sort([e for e in files_list if imtype in e])
@@ -236,10 +242,10 @@ class RASP_Routines():
         well as writing it to the current class radiality and flatness values
     
         Args:
-        - folder (string). Folder containing bead (bright) control tifs
-        - imtype (string). Type of images being analysed, default tif
-        - gisgma (float). gaussian blurring parameter (default 1.4)
-        - rwave (float). Ricker wavelent sigma (default 2.)
+            folder (string): Folder containing bead (bright) control tifs
+            imtype (string): Type of images being analysed, default tif
+            gisgma (float): gaussian blurring parameter (default 1.4)
+            rwave (float): Ricker wavelent sigma (default 2.)
         """
         files_list = os.listdir(folder)
         files = np.sort([e for e in files_list if imtype in e])
@@ -335,21 +341,21 @@ class RASP_Routines():
         used for particular experiment
     
         Args:
-        - folder (string). Folder containing images
-        - imtype (string). Type of images being analysed, default tif
-        - thres (float). fraction of bright pixels accepted
-        - large_thres (float). large object intensity threshold
-        - gisgma (float). gaussian blurring parameter (default 1.4)
-        - rwave (float). Ricker wavelent sigma (default 2.)
-        - oligomer_string (string). string for oligomer-containing data (default C1)
-        - cell string (string). string for cell-containing data (default C0)
-        - if_filter (boolean). Filter images for focus (default True)
-        - im_start (integer). Images to start from (default 1)
-        - cell_analysis (boolean). Parameter where script also analyses cell
-        images and computes colocalisation likelihood ratios.
-        - one_savefile (boolean). Parameter that, if true, doesn't save a file
-        per image but amalgamates them into one file
-        - disp (boolean). If true, prints when analysed an image stack.
+            folder (string): Folder containing images
+            imtype (string): Type of images being analysed, default tif
+            thres (float): fraction of bright pixels accepted
+            large_thres (float): large object intensity threshold
+            gisgma (float): gaussian blurring parameter (default 1.4)
+            rwave (float): Ricker wavelent sigma (default 2.)
+            oligomer_string (string): string for oligomer-containing data (default C1)
+            cell string (string): string for cell-containing data (default C0)
+            if_filter (boolean): Filter images for focus (default True)
+            im_start (integer): Images to start from (default 1)
+            cell_analysis (boolean): Parameter where script also analyses cell
+                images and computes colocalisation likelihood ratios.
+            one_savefile (boolean): Parameter that, if true, doesn't save a file
+                per image but amalgamates them into one file
+            disp (boolean): If true, prints when analysed an image stack.
 
         """
         files = self.file_search(folder, oligomer_string, imtype)
@@ -463,17 +469,17 @@ class RASP_Routines():
         saving this figure
     
         Args:
-        - file (string). image location
-        - thres (float). fraction of bright pixels accepted
-        - large_thres (float). large object intensity threshold
-        - gisgma (float). gaussian blurring parameter (default 1.4)
-        - rwave (float). Ricker wavelent sigma (default 2.)
-        - image_size (int). Amount of image to plot---by default plots 100x100 
-        chunk of an image to give you an idea, can scale up
-        - save_figure (boolean). save the figure as an svg, default no
-        - cell_analysis (boolean). Parameter where script also analyses cell
-        images and computes colocalisation likelihood ratios.
-        - cell_file (string). cell image location
+            file (string): image location
+            thres (float): fraction of bright pixels accepted
+            large_thres (float): large object intensity threshold
+            gisgma (float): gaussian blurring parameter (default 1.4)
+            rwave (float): Ricker wavelent sigma (default 2.)
+            image_size (int): Amount of image to plot---by default plots 100x100 
+                chunk of an image to give you an idea, can scale up
+            save_figure (boolean): save the figure as an svg, default no
+            cell_analysis (boolean): Parameter where script also analyses cell
+                images and computes colocalisation likelihood ratios.
+            cell_file (string): cell image location
 
         """
         import PlottingFunctions
@@ -563,13 +569,13 @@ class RASP_Routines():
         Saves analysis results to the specified directory.
         
         Args:
-        - directory (str): The directory where the results will be saved.
-        - file_path (str): The file path of the original data file.
-        - data_to_save (pandas.DataFrame): The data to be saved.
-        - rsid (float): The rsid value associated with the data.
-        - cell_analysis (bool): Indicates whether cell analysis was performed (default False).
-        - cell_data_to_save (pandas.DataFrame): The cell data to be saved (default None).
-        - cell_mask (numpy.ndarray): The cell mask to be saved as a TIFF file (default None).
+            directory (str): The directory where the results will be saved.
+            file_path (str): The file path of the original data file.
+            data_to_save (pandas.DataFrame): The data to be saved.
+            rsid (float): The rsid value associated with the data.
+            cell_analysis (bool): Indicates whether cell analysis was performed (default False).
+            cell_data_to_save (pandas.DataFrame): The cell data to be saved (default None).
+            cell_mask (numpy.ndarray): The cell mask to be saved as a TIFF file (default None).
         """
         IO.make_directory(directory)
         savefile = os.path.split(file)[-1]
@@ -590,13 +596,13 @@ class RASP_Routines():
         Saves analysis results to the specified directory.
         
         Args:
-        - directory (str): The directory where the results will be saved.
-        - file_path (str): The file path of the original data file.
-        - data_to_save (pandas.DataFrame): The data to be saved.
-        - rsid (float): The rsid value associated with the data.
-        - cell_analysis (bool): Indicates whether cell analysis was performed (default False).
-        - cell_data_to_save (pandas.DataFrame): The cell data to be saved (default None).
-        - cell_mask (numpy.ndarray): The cell mask to be saved as a TIFF file (default None).
+            directory (str): The directory where the results will be saved.
+            file_path (str): The file path of the original data file.
+            data_to_save (pandas.DataFrame): The data to be saved.
+            rsid (float): The rsid value associated with the data.
+            cell_analysis (bool): Indicates whether cell analysis was performed (default False).
+            cell_data_to_save (pandas.DataFrame): The cell data to be saved (default None).
+            cell_mask (numpy.ndarray): The cell mask to be saved as a TIFF file (default None).
         """
         to_save['rsid'] = np.full_like(to_save.z.values, rsid)
         to_save['image_filename'] = np.full_like(to_save.z.values, os.path.split(file)[-1], dtype='object')
@@ -634,12 +640,12 @@ class RASP_Routines():
         and then filter the results to include only those containing 'string2'.
 
         Args:
-        - folder (str): The directory to search for files.
-        - string1 (str): The first string to search for in the filenames.
-        - string2 (str): The second string to filter the filenames containing string1.
+            folder (str): The directory to search for files.
+            string1 (str): The first string to search for in the filenames.
+            string2 (str): The second string to filter the filenames containing string1.
 
         Returns:
-        - file_list (list): A sorted list of file paths matching the search criteria.
+            file_list (list): A sorted list of file paths matching the search criteria.
         """
         # Get a list of all files containing 'string1' in their names within 'folder'
         file_list = [os.path.join(dirpath, f) for dirpath, dirnames, files in os.walk(folder)
@@ -663,24 +669,24 @@ class RASP_Routines():
         used for particular experiment
     
         Args:
-        - folder (string). Folder containing images
-        - k1 (matrix). convolution kernel 1
-        - k2 (matrix). convolution kernel 2
-        - rdl (vector). radiality filter
-        - thres (float). fraction of bright pixels accepted
-        - large_thres (float). large object intensity threshold
-        - imtype (string). Type of images being analysed, default tif
-        - gisgma (float). gaussian blurring parameter (default 1.4)
-        - rwave (float). Ricker wavelent sigma (default 2.)
-        - oligomer_string (string). string for oligomer-containing data (default C1)
-        - cell string (string). string for cell-containing data (default C0)
-        - if_filter (boolean). Filter images for focus (default True)
-        - im_start (integer). Images to start from (default 1)
-        - one_savefile (boolean). Parameter that, if true, doesn't save a file
-        per image but amalgamates them into one file
-        - cell_analysis (boolean). Parameter where script also analyses cell
-        images and computes colocalisation likelihood ratios.
-        - disp (boolean). If True, outputs a message saying analysed image.
+            folder (string): Folder containing images
+            k1 (matrix): convolution kernel 1
+            k2 (matrix): convolution kernel 2
+            rdl (vector): radiality filter
+            thres (float): fraction of bright pixels accepted
+            large_thres (float): large object intensity threshold
+            imtype (string): Type of images being analysed, default tif
+            gisgma (float): gaussian blurring parameter (default 1.4)
+            rwave (float): Ricker wavelent sigma (default 2.)
+            oligomer_string (string): string for oligomer-containing data (default C1)
+            cell string (string): string for cell-containing data (default C0)
+            if_filter (boolean): Filter images for focus (default True)
+            im_start (integer): Images to start from (default 1)
+            one_savefile (boolean): Parameter that, if true, doesn't save a file
+                per image but amalgamates them into one file
+            cell_analysis (boolean): Parameter where script also analyses cell
+                images and computes colocalisation likelihood ratios.
+            disp (boolean): If True, outputs a message saying analysed image.
         """
 
         r = float(os.path.split(folder)[1].split('Round')[1]) # get round for rsid later
@@ -797,18 +803,18 @@ class RASP_Routines():
         used for particular experiment
     
         Args:
-        - folder (string). Folder containing images
-        - imtype (string). Type of images being analysed, default tif
-        - gisgma (float). gaussian blurring parameter (default 1.4)
-        - rwave (float). Ricker wavelent sigma (default 2.)
-        - oligomer_string (string). string for oligomer-containing data (default C1)
-        - cell string (string). string for cell-containing data (default C0)
-        - if_filter (boolean). Filter images for focus (default True)
-        - im_start (integer). Images to start from (default 1)
-        - one_savefile (boolean). Parameter that, if true, doesn't save a file
-        per image but amalgamates them into one file
-        - cell_analysis (boolean). Parameter where script also analyses cell
-        images and computes colocalisation likelihood ratios.
+            folder (string): Folder containing images
+            imtype (string): Type of images being analysed, default tif
+            gisgma (float): gaussian blurring parameter (default 1.4)
+            rwave (float): Ricker wavelent sigma (default 2.)
+            oligomer_string (string): string for oligomer-containing data (default C1)
+            cell string (string): string for cell-containing data (default C0)
+            if_filter (boolean): Filter images for focus (default True)
+            im_start (integer): Images to start from (default 1)
+            one_savefile (boolean): Parameter that, if true, doesn't save a file
+                per image but amalgamates them into one file
+            cell_analysis (boolean): Parameter where script also analyses cell
+                images and computes colocalisation likelihood ratios.
         """
         k1, k2 = A_F.create_kernel(gsigma, rwave) # create image processing kernels
         rdl = [self.flatness, self.integratedGrad, 0.]

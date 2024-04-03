@@ -1,9 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on Tue Sep 19 11:02:24 2023
-
-Class related to making figure-quality plots
+Class related to making figure-quality plots.
 
 Probably best to set your default sans-serif font to Helvetica before you make
 figures: https://fowlerlab.org/2019/01/03/changing-the-sans-serif-font-to-helvetica/
@@ -14,9 +12,8 @@ figure is 6.69 inches (17 cm). The maximum depth of figures should
 be 8 ¼ in. (21.1 cm).
 
 panel labels are 8 point font, ticks are 7 point font,
-annotations and legends are 6 point font
+annotations and legends are 6 point font.
 
-@author: jbeckwith
 """
 import matplotlib # requires 3.8.0
 import matplotlib.pyplot as plt
@@ -31,11 +28,18 @@ class Plotter():
     def two_column_plot(self, nrows=1, ncolumns=1, heightratio=[1], widthratio=[1], height=0, big=True):
         """ two_column_plot function
         takes data and makes a two-column width figure
-        ================INPUTS============= 
-        npanels is panel matrix
-        ratios is size ratios of panels
-        ================OUTPUT============= 
-        fig, axs are figure objects """
+        
+        Args:
+            nrows (int): number of rows
+            ncolumns (int): number of columns
+            heightratio (list): list of heights of same length as nrows
+            widthratio (list): list of widths of same length as ncolumns
+            height (float): overridden height of figure
+            big (boolean): if big is True, uses larger font sizes
+        
+        Returns:
+            fig (figure): figure object
+            ax (axes): axes object """
         
         # first, check everything matches
         try:
@@ -104,18 +108,20 @@ class Plotter():
         histcolor='gray', xaxislabel='x axis', alpha=1, histtype='bar', density=True): 
         """ histogram_plot function
         takes data and makes a histogram
-        ================INPUTS============= 
-        data is data
-        bins are bins
-        xlim is x limits; default is None (which computes max/min)
-        ylim is y limits; default is None (which lets it keep its default)
-        histcolor is histogram colour (default is gray)
-        xaxislabel is x axis label (default is 'x axis')
-        alpha is histogram transparency (default 1)
-        density is if to plot as pdf, default yes
-        histtype is histogram type, default bar
-        ================OUTPUT============= 
-        axs is axis object """
+        
+        Args:
+            data (np.1darray): data array
+            bins (np.1darray): bin array
+            xlim (boolean or list of two floats): default is None (which computes min/max of x), otherwise provide a min/max
+            ylim (boolean or list of two floats): default is None (which computes min/max of y), otherwise provide a min/max
+            histcolor (string): histogram colour (default is gray)
+            xaxislabel (string): x axis label (default is 'x axis')
+            alpha (float): histogram transparency (default 1)
+            histtype (string): histogram type, default bar
+            density (boolean): if to plot as pdf, default True
+        
+        Returns:
+            axs (axis): axis object """
         if self.poster == True:
             fontsz = 15
         else:
@@ -140,19 +146,21 @@ class Plotter():
                    labelcolor='white', pixelsize=110, scalebarsize=5000, scalebarlabel=r'5$\,\mu$m', alpha=1, plotmask=False, mask=None):
         """ image_plot function
         takes image data and makes an image plot
-        ================INPUTS============= 
-        data is image
-        vmin is minimum pixel displayed (default 99.9%)
-        vmax is maximum pixel displayed (default 0.1%)
-        cmap is colour map used; default gray
-        cbarlabel is colour bar label; default intensity
-        label is any annotation
-        labelcolor is annotation colour
-        pixelsize is pixel size in nm for scalebar, default 69
-        scalebarsize is scalebarsize in nm, default 5000
-        scalebarlabel is scale bar label, default 5 um
-        ================OUTPUT============= 
-        axs is axis object """
+        
+        Args:
+            data (np.2darray): image
+            vmin (float): minimum pixel intensity displayed (default 0.1%)
+            vmax (float): minimum pixel intensity displayed (default 99.9%)
+            cmap (string): colour map used; default gray)
+            cbarlabel (string): colour bar label; default 'photons'
+            label (string): is any annotation
+            labelcolor (string): annotation colour
+            pixelsize (float): pixel size in nm for scalebar, default 110
+            scalebarsize (float): scalebarsize in nm, default 5000
+            scalebarlabel (string): scale bar label, default 5 um
+        
+        Returns:
+            axs (axis): axis object """
         
         if self.poster == True:
             fontsz = 15
@@ -194,19 +202,23 @@ class Plotter():
                    labelcolor='white', pixelsize=110, scalebarsize=5000, scalebarlabel=r'5$\,\mu$m', alpha=1, scattercolor='red', s=20, lws=0.75):
         """ image_plot function
         takes image data and makes an image plot
-        ================INPUTS============= 
-        data is image
-        vmin is minimum pixel displayed (default 99.9%)
-        vmax is maximum pixel displayed (default 0.1%)
-        cmap is colour map used; default gray
-        cbarlabel is colour bar label; default intensity
-        label is any annotation
-        labelcolor is annotation colour
-        pixelsize is pixel size in nm for scalebar, default 69
-        scalebarsize is scalebarsize in nm, default 5000
-        scalebarlabel is scale bar label, default 5 um
-        ================OUTPUT============= 
-        axs is axis object """
+        
+        Args:
+            data (np.2darray): image
+            xdata (np.1darray): scatter points, x
+            ydata (np.1darray): scatter points, y
+            vmin (float): minimum pixel intensity displayed (default 0.1%)
+            vmax (float): minimum pixel intensity displayed (default 99.9%)
+            cmap (string): colour map used; default gray)
+            cbarlabel (string): colour bar label; default 'photons'
+            label (string): is any annotation
+            labelcolor (string): annotation colour
+            pixelsize (float): pixel size in nm for scalebar, default 110
+            scalebarsize (float): scalebarsize in nm, default 5000
+            scalebarlabel (string): scale bar label, default 5 um
+        
+        Returns:
+            axs (axis): axis object """
         
         if self.poster == True:
             fontsz = 15

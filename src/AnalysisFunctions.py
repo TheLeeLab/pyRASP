@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
 This class contains functions pertaining to analysis of images based on their 
-radiality, relating to the RASP concept
+radiality, relating to the RASP concept.
 jsb92, 2024/01/02
 """
 import numpy as np
@@ -27,15 +27,15 @@ class Analysis_Functions():
         Calculate the gradient field of an image and compute focus-related measures.
     
         Args:
-        - image (numpy.ndarray): The input image.
-        - kernel (numpy.ndarray): The kernel for low-pass filtering.
+            image (numpy.ndarray): The input image.
+            kernel (numpy.ndarray): The kernel for low-pass filtering.
     
         Returns:
-        - filtered_image (numpy.ndarray): Image after low-pass filtering.
-        - gradient_x (numpy.ndarray): X-gradient of the filtered image.
-        - gradient_y (numpy.ndarray): Y-gradient of the filtered image.
-        - focus_score (numpy.ndarray): Focus score of the image.
-        - concentration_factor (numpy.ndarray): Concentration factor of the image.
+            filtered_image (numpy.ndarray): Image after low-pass filtering.
+            gradient_x (numpy.ndarray): X-gradient of the filtered image.
+            gradient_y (numpy.ndarray): Y-gradient of the filtered image.
+            focus_score (numpy.ndarray): Focus score of the image.
+            concentration_factor (numpy.ndarray): Concentration factor of the image.
         """
         # Initialize variables
         filtered_image = np.zeros_like(image)
@@ -702,11 +702,13 @@ class Analysis_Functions():
     
     def bincalculator(self, data):
         """ bincalculator function
-        # reads in data and generates bins according to Freedman-Diaconis rule
-        # ================INPUTS============= 
-        # data is data to be histogrammed
-        # ================OUTPUT============= 
-        # bins """
+        reads in data and generates bins according to Freedman-Diaconis rule
+        
+        Args:
+            data (np.1darray): data to calculate bins
+        
+        Returns:
+        bins (np.1darray): bins for histogram according to Freedman-Diaconis rule """
         N = len(data)
         sigma = np.std(data)
     

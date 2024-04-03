@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>RASPRoutines module &mdash; pyRASP v0.5.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=19f00094" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="_static/jquery.js?v=5d32c60e"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script src="_static/documentation_options.js?v=e663822d"></script>
+        <script src="_static/doctools.js?v=888ff710"></script>
+        <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="prev" title="PlottingFunctions module" href="PlottingFunctions.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            pyRASP
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="getting-started.html">Introduction</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="modules.html">src</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="AnalysisFunctions.html">AnalysisFunctions module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="IOFunctions.html">IOFunctions module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="PlottingFunctions.html">PlottingFunctions module</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">RASPRoutines module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#RASPRoutines.RASP_Routines"><code class="docutils literal notranslate"><span class="pre">RASP_Routines</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#RASPRoutines.RASP_Routines.analyse_images"><code class="docutils literal notranslate"><span class="pre">RASP_Routines.analyse_images()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#RASPRoutines.RASP_Routines.analyse_round_images"><code class="docutils literal notranslate"><span class="pre">RASP_Routines.analyse_round_images()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#RASPRoutines.RASP_Routines.analyse_round_subfolder"><code class="docutils literal notranslate"><span class="pre">RASP_Routines.analyse_round_subfolder()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#RASPRoutines.RASP_Routines.calibrate_area"><code class="docutils literal notranslate"><span class="pre">RASP_Routines.calibrate_area()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#RASPRoutines.RASP_Routines.calibrate_radiality"><code class="docutils literal notranslate"><span class="pre">RASP_Routines.calibrate_radiality()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#RASPRoutines.RASP_Routines.count_spots"><code class="docutils literal notranslate"><span class="pre">RASP_Routines.count_spots()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#RASPRoutines.RASP_Routines.file_search"><code class="docutils literal notranslate"><span class="pre">RASP_Routines.file_search()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#RASPRoutines.RASP_Routines.get_infocus_planes"><code class="docutils literal notranslate"><span class="pre">RASP_Routines.get_infocus_planes()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#RASPRoutines.RASP_Routines.save_analysis_results"><code class="docutils literal notranslate"><span class="pre">RASP_Routines.save_analysis_results()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#RASPRoutines.RASP_Routines.save_analysis_results_onesavefile"><code class="docutils literal notranslate"><span class="pre">RASP_Routines.save_analysis_results_onesavefile()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#RASPRoutines.RASP_Routines.single_image_analysis"><code class="docutils literal notranslate"><span class="pre">RASP_Routines.single_image_analysis()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">pyRASP</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="modules.html">src</a></li>
+      <li class="breadcrumb-item active">RASPRoutines module</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/RASPRoutines.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="module-RASPRoutines">
+<span id="rasproutines-module"></span><h1>RASPRoutines module<a class="headerlink" href="#module-RASPRoutines" title="Link to this heading"></a></h1>
+<p>This class contains functions that collect analysis routines for RASP.
+jsb92, 2024/02/08</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="RASPRoutines.RASP_Routines">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">RASPRoutines.</span></span><span class="sig-name descname"><span class="pre">RASP_Routines</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">defaultfolder</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">defaultarea</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">defaultd</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">defaultrad</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">defaultflat</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">defaultdfocus</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">defaultintfocus</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">defaultcellparams</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">defaultcameraparams</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#RASPRoutines.RASP_Routines" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="RASPRoutines.RASP_Routines.analyse_images">
+<span class="sig-name descname"><span class="pre">analyse_images</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">folder</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">imtype</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'.tif'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">thres</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.05</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">large_thres</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">450.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gsigma</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.4</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rwave</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">oligomer_string</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'C1'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cell_string</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'C0'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">if_filter</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">im_start</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cell_analysis</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">one_savefile</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">disp</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#RASPRoutines.RASP_Routines.analyse_images" title="Link to this definition"></a></dt>
+<dd><p>analyses data from images in a specified folder,
+saves spots, locations, intensities and backgrounds in a folder created
+next to the folder analysed with _analysis string attached
+also writes a folder with _analysisparameters and saves analysis parameters
+used for particular experiment</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>folder</strong> (<em>string</em>) – Folder containing images</p></li>
+<li><p><strong>imtype</strong> (<em>string</em>) – Type of images being analysed, default tif</p></li>
+<li><p><strong>thres</strong> (<em>float</em>) – fraction of bright pixels accepted</p></li>
+<li><p><strong>large_thres</strong> (<em>float</em>) – large object intensity threshold</p></li>
+<li><p><strong>gisgma</strong> (<em>float</em>) – gaussian blurring parameter (default 1.4)</p></li>
+<li><p><strong>rwave</strong> (<em>float</em>) – Ricker wavelent sigma (default 2.)</p></li>
+<li><p><strong>oligomer_string</strong> (<em>string</em>) – string for oligomer-containing data (default C1)</p></li>
+<li><p><strong>string</strong> (<em>cell</em>) – string for cell-containing data (default C0)</p></li>
+<li><p><strong>if_filter</strong> (<em>boolean</em>) – Filter images for focus (default True)</p></li>
+<li><p><strong>im_start</strong> (<em>integer</em>) – Images to start from (default 1)</p></li>
+<li><p><strong>cell_analysis</strong> (<em>boolean</em>) – Parameter where script also analyses cell
+images and computes colocalisation likelihood ratios.</p></li>
+<li><p><strong>one_savefile</strong> (<em>boolean</em>) – Parameter that, if true, doesn’t save a file
+per image but amalgamates them into one file</p></li>
+<li><p><strong>disp</strong> (<em>boolean</em>) – If true, prints when analysed an image stack.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="RASPRoutines.RASP_Routines.analyse_round_images">
+<span class="sig-name descname"><span class="pre">analyse_round_images</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">folder</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">imtype</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'.tif'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">thres</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.05</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">large_thres</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">450.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gsigma</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.4</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rwave</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">oligomer_string</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'C1'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cell_string</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'C0'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">if_filter</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">im_start</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cell_analysis</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">one_savefile</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#RASPRoutines.RASP_Routines.analyse_round_images" title="Link to this definition"></a></dt>
+<dd><p>analyses data in a folder specified,
+folder has either “Round” in the title
+or multiple rounds below;
+structure as in Lee Lab Cambridge Experiment
+saves spots, locations, intensities and backgrounds in a folder created
+next to the folder analysed with _analysis string attached
+also writes a folder with _analysisparameters and saves analysis parameters
+used for particular experiment</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>folder</strong> (<em>string</em>) – Folder containing images</p></li>
+<li><p><strong>imtype</strong> (<em>string</em>) – Type of images being analysed, default tif</p></li>
+<li><p><strong>gisgma</strong> (<em>float</em>) – gaussian blurring parameter (default 1.4)</p></li>
+<li><p><strong>rwave</strong> (<em>float</em>) – Ricker wavelent sigma (default 2.)</p></li>
+<li><p><strong>oligomer_string</strong> (<em>string</em>) – string for oligomer-containing data (default C1)</p></li>
+<li><p><strong>string</strong> (<em>cell</em>) – string for cell-containing data (default C0)</p></li>
+<li><p><strong>if_filter</strong> (<em>boolean</em>) – Filter images for focus (default True)</p></li>
+<li><p><strong>im_start</strong> (<em>integer</em>) – Images to start from (default 1)</p></li>
+<li><p><strong>one_savefile</strong> (<em>boolean</em>) – Parameter that, if true, doesn’t save a file
+per image but amalgamates them into one file</p></li>
+<li><p><strong>cell_analysis</strong> (<em>boolean</em>) – Parameter where script also analyses cell
+images and computes colocalisation likelihood ratios.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="RASPRoutines.RASP_Routines.analyse_round_subfolder">
+<span class="sig-name descname"><span class="pre">analyse_round_subfolder</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">folder</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">k1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">k2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rdl</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">imtype</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'.tif'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">thres</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.05</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">large_thres</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">450.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gsigma</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.4</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rwave</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">oligomer_string</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'C1'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cell_string</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'C0'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">if_filter</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">im_start</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cell_analysis</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">one_savefile</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">disp</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#RASPRoutines.RASP_Routines.analyse_round_subfolder" title="Link to this definition"></a></dt>
+<dd><p>analyses data in a folder specified,
+folder has either “Round” in the title
+or multiple rounds below;
+structure as in Lee Lab Cambridge Experiment
+saves spots, locations, intensities and backgrounds in a folder created
+next to the folder analysed with _analysis string attached
+also writes a folder with _analysisparameters and saves analysis parameters
+used for particular experiment</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>folder</strong> (<em>string</em>) – Folder containing images</p></li>
+<li><p><strong>k1</strong> (<em>matrix</em>) – convolution kernel 1</p></li>
+<li><p><strong>k2</strong> (<em>matrix</em>) – convolution kernel 2</p></li>
+<li><p><strong>rdl</strong> (<em>vector</em>) – radiality filter</p></li>
+<li><p><strong>thres</strong> (<em>float</em>) – fraction of bright pixels accepted</p></li>
+<li><p><strong>large_thres</strong> (<em>float</em>) – large object intensity threshold</p></li>
+<li><p><strong>imtype</strong> (<em>string</em>) – Type of images being analysed, default tif</p></li>
+<li><p><strong>gisgma</strong> (<em>float</em>) – gaussian blurring parameter (default 1.4)</p></li>
+<li><p><strong>rwave</strong> (<em>float</em>) – Ricker wavelent sigma (default 2.)</p></li>
+<li><p><strong>oligomer_string</strong> (<em>string</em>) – string for oligomer-containing data (default C1)</p></li>
+<li><p><strong>string</strong> (<em>cell</em>) – string for cell-containing data (default C0)</p></li>
+<li><p><strong>if_filter</strong> (<em>boolean</em>) – Filter images for focus (default True)</p></li>
+<li><p><strong>im_start</strong> (<em>integer</em>) – Images to start from (default 1)</p></li>
+<li><p><strong>one_savefile</strong> (<em>boolean</em>) – Parameter that, if true, doesn’t save a file
+per image but amalgamates them into one file</p></li>
+<li><p><strong>cell_analysis</strong> (<em>boolean</em>) – Parameter where script also analyses cell
+images and computes colocalisation likelihood ratios.</p></li>
+<li><p><strong>disp</strong> (<em>boolean</em>) – If True, outputs a message saying analysed image.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="RASPRoutines.RASP_Routines.calibrate_area">
+<span class="sig-name descname"><span class="pre">calibrate_area</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">folder</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">imtype</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'.tif'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gsigma</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.4</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rwave</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">large_thres</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">10000.0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#RASPRoutines.RASP_Routines.calibrate_area" title="Link to this definition"></a></dt>
+<dd><p>Calibrates area threshold. Given a folder of bead images,
+analyses them and saves the radiality parameter to the .json file, as
+well as writing it to the current class radiality and flatness values</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>folder</strong> (<em>string</em>) – Folder containing bead (bright) control tifs</p></li>
+<li><p><strong>imtype</strong> (<em>string</em>) – Type of images being analysed, default tif</p></li>
+<li><p><strong>gisgma</strong> (<em>float</em>) – gaussian blurring parameter (default 1.4)</p></li>
+<li><p><strong>rwave</strong> (<em>float</em>) – Ricker wavelent sigma (default 2.)</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="RASPRoutines.RASP_Routines.calibrate_radiality">
+<span class="sig-name descname"><span class="pre">calibrate_radiality</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">folder</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">imtype</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'.tif'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gsigma</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.4</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rwave</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">accepted_ratio</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#RASPRoutines.RASP_Routines.calibrate_radiality" title="Link to this definition"></a></dt>
+<dd><p>Calibrates radility parameters. Given a folder of negative controls,
+analyses them and saves the radiality parameter to the .json file, as
+well as writing it to the current class radiality and flatness values</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>folder</strong> (<em>string</em>) – Folder containing negative control tifs</p></li>
+<li><p><strong>imtype</strong> (<em>string</em>) – Type of images being analysed, default tif</p></li>
+<li><p><strong>gsigma</strong> (<em>float</em>) – gaussian blurring parameter (default 1.4)</p></li>
+<li><p><strong>rwave</strong> (<em>float</em>) – Ricker wavelent sigma (default 2.)</p></li>
+<li><p><strong>accepted_ratio</strong> (<em>float</em>) – Percentage accepted of false positives</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="RASPRoutines.RASP_Routines.count_spots">
+<span class="sig-name descname"><span class="pre">count_spots</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">database</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">z_planes</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#RASPRoutines.RASP_Routines.count_spots" title="Link to this definition"></a></dt>
+<dd><p>Counts spots per z plane</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>database</strong> (<em>pandas array</em>) – pandas array of spots</p></li>
+<li><p><strong>z_planes</strong> (<em>np.1darray</em>) – is range of zplanes</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>n_spots</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="RASPRoutines.RASP_Routines.file_search">
+<span class="sig-name descname"><span class="pre">file_search</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">folder</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">string1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">string2</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#RASPRoutines.RASP_Routines.file_search" title="Link to this definition"></a></dt>
+<dd><p>Search for files containing ‘string1’ in their names within ‘folder’,
+and then filter the results to include only those containing ‘string2’.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>folder</strong> (<em>str</em>) – The directory to search for files.</p></li>
+<li><p><strong>string1</strong> (<em>str</em>) – The first string to search for in the filenames.</p></li>
+<li><p><strong>string2</strong> (<em>str</em>) – The second string to filter the filenames containing string1.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A sorted list of file paths matching the search criteria.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>file_list (list)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="RASPRoutines.RASP_Routines.get_infocus_planes">
+<span class="sig-name descname"><span class="pre">get_infocus_planes</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">image</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">kernel</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#RASPRoutines.RASP_Routines.get_infocus_planes" title="Link to this definition"></a></dt>
+<dd><p>Gets z planes that area in focus from an image stack</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>image</strong> (<em>array</em>) – image as numpy array</p></li>
+<li><p><strong>kernel</strong> (<em>array</em>) – gaussian blur kernel</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>z_plane range that is in focus</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>z_planes (np.1darray)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="RASPRoutines.RASP_Routines.save_analysis_results">
+<span class="sig-name descname"><span class="pre">save_analysis_results</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">directory</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">file</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">to_save</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rsid</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cell_analysis</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">to_save_cell</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cell_mask</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#RASPRoutines.RASP_Routines.save_analysis_results" title="Link to this definition"></a></dt>
+<dd><p>Saves analysis results to the specified directory.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>directory</strong> (<em>str</em>) – The directory where the results will be saved.</p></li>
+<li><p><strong>file_path</strong> (<em>str</em>) – The file path of the original data file.</p></li>
+<li><p><strong>data_to_save</strong> (<em>pandas.DataFrame</em>) – The data to be saved.</p></li>
+<li><p><strong>rsid</strong> (<em>float</em>) – The rsid value associated with the data.</p></li>
+<li><p><strong>cell_analysis</strong> (<em>bool</em>) – Indicates whether cell analysis was performed (default False).</p></li>
+<li><p><strong>cell_data_to_save</strong> (<em>pandas.DataFrame</em>) – The cell data to be saved (default None).</p></li>
+<li><p><strong>cell_mask</strong> (<em>numpy.ndarray</em>) – The cell mask to be saved as a TIFF file (default None).</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="RASPRoutines.RASP_Routines.save_analysis_results_onesavefile">
+<span class="sig-name descname"><span class="pre">save_analysis_results_onesavefile</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">analysis_directory</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">file</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">to_save</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rsid</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">z_planes</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">i</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cell_analysis</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cell_file</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">to_save_cell</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cell_mask</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#RASPRoutines.RASP_Routines.save_analysis_results_onesavefile" title="Link to this definition"></a></dt>
+<dd><p>Saves analysis results to the specified directory.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>directory</strong> (<em>str</em>) – The directory where the results will be saved.</p></li>
+<li><p><strong>file_path</strong> (<em>str</em>) – The file path of the original data file.</p></li>
+<li><p><strong>data_to_save</strong> (<em>pandas.DataFrame</em>) – The data to be saved.</p></li>
+<li><p><strong>rsid</strong> (<em>float</em>) – The rsid value associated with the data.</p></li>
+<li><p><strong>cell_analysis</strong> (<em>bool</em>) – Indicates whether cell analysis was performed (default False).</p></li>
+<li><p><strong>cell_data_to_save</strong> (<em>pandas.DataFrame</em>) – The cell data to be saved (default None).</p></li>
+<li><p><strong>cell_mask</strong> (<em>numpy.ndarray</em>) – The cell mask to be saved as a TIFF file (default None).</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="RASPRoutines.RASP_Routines.single_image_analysis">
+<span class="sig-name descname"><span class="pre">single_image_analysis</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">protein_file</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">thres</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.05</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">large_thres</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">450.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gsigma</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.4</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rwave</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">image_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">200</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">save_figure</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cell_analysis</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cell_file</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#RASPRoutines.RASP_Routines.single_image_analysis" title="Link to this definition"></a></dt>
+<dd><p>analyses data from specified image,
+presents spots, locations, intensities in a figure, with the option of
+saving this figure</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>file</strong> (<em>string</em>) – image location</p></li>
+<li><p><strong>thres</strong> (<em>float</em>) – fraction of bright pixels accepted</p></li>
+<li><p><strong>large_thres</strong> (<em>float</em>) – large object intensity threshold</p></li>
+<li><p><strong>gisgma</strong> (<em>float</em>) – gaussian blurring parameter (default 1.4)</p></li>
+<li><p><strong>rwave</strong> (<em>float</em>) – Ricker wavelent sigma (default 2.)</p></li>
+<li><p><strong>image_size</strong> (<em>int</em>) – Amount of image to plot—by default plots 100x100
+chunk of an image to give you an idea, can scale up</p></li>
+<li><p><strong>save_figure</strong> (<em>boolean</em>) – save the figure as an svg, default no</p></li>
+<li><p><strong>cell_analysis</strong> (<em>boolean</em>) – Parameter where script also analyses cell
+images and computes colocalisation likelihood ratios.</p></li>
+<li><p><strong>cell_file</strong> (<em>string</em>) – cell image location</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="PlottingFunctions.html" class="btn btn-neutral float-left" title="PlottingFunctions module" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, Joseph S. Beckwith, Bin Fu, Steven F. Lee.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

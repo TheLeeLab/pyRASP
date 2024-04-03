@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AnalysisFunctions module &mdash; pyRASP v0.5.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=19f00094" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="_static/jquery.js?v=5d32c60e"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script src="_static/documentation_options.js?v=e663822d"></script>
+        <script src="_static/doctools.js?v=888ff710"></script>
+        <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="IOFunctions module" href="IOFunctions.html" />
+    <link rel="prev" title="src" href="modules.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            pyRASP
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="getting-started.html">Introduction</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="modules.html">src</a><ul class="current">
+<li class="toctree-l2 current"><a class="current reference internal" href="#">AnalysisFunctions module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#AnalysisFunctions.Analysis_Functions"><code class="docutils literal notranslate"><span class="pre">Analysis_Functions</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#AnalysisFunctions.Analysis_Functions.Gauss2DFitting"><code class="docutils literal notranslate"><span class="pre">Analysis_Functions.Gauss2DFitting()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#AnalysisFunctions.Analysis_Functions.bincalculator"><code class="docutils literal notranslate"><span class="pre">Analysis_Functions.bincalculator()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#AnalysisFunctions.Analysis_Functions.calculate_gradient_field"><code class="docutils literal notranslate"><span class="pre">Analysis_Functions.calculate_gradient_field()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#AnalysisFunctions.Analysis_Functions.calculate_mask_fill"><code class="docutils literal notranslate"><span class="pre">Analysis_Functions.calculate_mask_fill()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#AnalysisFunctions.Analysis_Functions.calculate_radiality"><code class="docutils literal notranslate"><span class="pre">Analysis_Functions.calculate_radiality()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#AnalysisFunctions.Analysis_Functions.calculate_region_properties"><code class="docutils literal notranslate"><span class="pre">Analysis_Functions.calculate_region_properties()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#AnalysisFunctions.Analysis_Functions.calculate_spot_colocalisation_likelihood_ratio"><code class="docutils literal notranslate"><span class="pre">Analysis_Functions.calculate_spot_colocalisation_likelihood_ratio()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#AnalysisFunctions.Analysis_Functions.compute_image_props"><code class="docutils literal notranslate"><span class="pre">Analysis_Functions.compute_image_props()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#AnalysisFunctions.Analysis_Functions.compute_spot_and_cell_props"><code class="docutils literal notranslate"><span class="pre">Analysis_Functions.compute_spot_and_cell_props()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#AnalysisFunctions.Analysis_Functions.compute_spot_props"><code class="docutils literal notranslate"><span class="pre">Analysis_Functions.compute_spot_props()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#AnalysisFunctions.Analysis_Functions.create_filled_region"><code class="docutils literal notranslate"><span class="pre">Analysis_Functions.create_filled_region()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#AnalysisFunctions.Analysis_Functions.create_gaussian_kernel"><code class="docutils literal notranslate"><span class="pre">Analysis_Functions.create_gaussian_kernel()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#AnalysisFunctions.Analysis_Functions.create_kernel"><code class="docutils literal notranslate"><span class="pre">Analysis_Functions.create_kernel()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#AnalysisFunctions.Analysis_Functions.default_spotanalysis_routine"><code class="docutils literal notranslate"><span class="pre">Analysis_Functions.default_spotanalysis_routine()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#AnalysisFunctions.Analysis_Functions.detect_large_features"><code class="docutils literal notranslate"><span class="pre">Analysis_Functions.detect_large_features()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#AnalysisFunctions.Analysis_Functions.dilate_pixel"><code class="docutils literal notranslate"><span class="pre">Analysis_Functions.dilate_pixel()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#AnalysisFunctions.Analysis_Functions.estimate_intensity"><code class="docutils literal notranslate"><span class="pre">Analysis_Functions.estimate_intensity()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#AnalysisFunctions.Analysis_Functions.gen_CSRmats"><code class="docutils literal notranslate"><span class="pre">Analysis_Functions.gen_CSRmats()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#AnalysisFunctions.Analysis_Functions.generate_mask_and_spot_indices"><code class="docutils literal notranslate"><span class="pre">Analysis_Functions.generate_mask_and_spot_indices()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#AnalysisFunctions.Analysis_Functions.infocus_indices"><code class="docutils literal notranslate"><span class="pre">Analysis_Functions.infocus_indices()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#AnalysisFunctions.Analysis_Functions.intensity_pixel_indices"><code class="docutils literal notranslate"><span class="pre">Analysis_Functions.intensity_pixel_indices()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#AnalysisFunctions.Analysis_Functions.make_datarray_cell"><code class="docutils literal notranslate"><span class="pre">Analysis_Functions.make_datarray_cell()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#AnalysisFunctions.Analysis_Functions.make_datarray_spot"><code class="docutils literal notranslate"><span class="pre">Analysis_Functions.make_datarray_spot()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#AnalysisFunctions.Analysis_Functions.rejectoutliers"><code class="docutils literal notranslate"><span class="pre">Analysis_Functions.rejectoutliers()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#AnalysisFunctions.Analysis_Functions.ricker_wavelet"><code class="docutils literal notranslate"><span class="pre">Analysis_Functions.ricker_wavelet()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#AnalysisFunctions.Analysis_Functions.small_feature_kernel"><code class="docutils literal notranslate"><span class="pre">Analysis_Functions.small_feature_kernel()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#AnalysisFunctions.Analysis_Functions.test_spot_mask_overlap"><code class="docutils literal notranslate"><span class="pre">Analysis_Functions.test_spot_mask_overlap()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="IOFunctions.html">IOFunctions module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="PlottingFunctions.html">PlottingFunctions module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="RASPRoutines.html">RASPRoutines module</a></li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">pyRASP</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="modules.html">src</a></li>
+      <li class="breadcrumb-item active">AnalysisFunctions module</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/AnalysisFunctions.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="module-AnalysisFunctions">
+<span id="analysisfunctions-module"></span><h1>AnalysisFunctions module<a class="headerlink" href="#module-AnalysisFunctions" title="Link to this heading"></a></h1>
+<p>This class contains functions pertaining to analysis of images based on their
+radiality, relating to the RASP concept.
+jsb92, 2024/01/02</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="AnalysisFunctions.Analysis_Functions">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">AnalysisFunctions.</span></span><span class="sig-name descname"><span class="pre">Analysis_Functions</span></span><a class="headerlink" href="#AnalysisFunctions.Analysis_Functions" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="AnalysisFunctions.Analysis_Functions.Gauss2DFitting">
+<span class="sig-name descname"><span class="pre">Gauss2DFitting</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">image</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pixel_index_list</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">expanded_area</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">5</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#AnalysisFunctions.Analysis_Functions.Gauss2DFitting" title="Link to this definition"></a></dt>
+<dd><p>Gets HWHM of PSFs from fitting Gaussians to spots (from pixel_index_list)
+Pixels expanded borders by n pixels (default 5)</p>
+<p>Args:
+- image (array). image as numpy array
+- pixel_index_list (list) list of pixel arrays
+- expended area (int) range to expand the pixel mask to</p>
+<p>Returns:
+- HWHMarray (array). array of half-width-half maxima from the fits</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="AnalysisFunctions.Analysis_Functions.bincalculator">
+<span class="sig-name descname"><span class="pre">bincalculator</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#AnalysisFunctions.Analysis_Functions.bincalculator" title="Link to this definition"></a></dt>
+<dd><p>bincalculator function
+reads in data and generates bins according to Freedman-Diaconis rule</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>data</strong> (<em>np.1darray</em>) – data to calculate bins</p>
+</dd>
+</dl>
+<p>Returns:
+bins (np.1darray): bins for histogram according to Freedman-Diaconis rule</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="AnalysisFunctions.Analysis_Functions.calculate_gradient_field">
+<span class="sig-name descname"><span class="pre">calculate_gradient_field</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">image</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">kernel</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#AnalysisFunctions.Analysis_Functions.calculate_gradient_field" title="Link to this definition"></a></dt>
+<dd><p>Calculate the gradient field of an image and compute focus-related measures.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>image</strong> (<em>numpy.ndarray</em>) – The input image.</p></li>
+<li><p><strong>kernel</strong> (<em>numpy.ndarray</em>) – The kernel for low-pass filtering.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Image after low-pass filtering.
+gradient_x (numpy.ndarray): X-gradient of the filtered image.
+gradient_y (numpy.ndarray): Y-gradient of the filtered image.
+focus_score (numpy.ndarray): Focus score of the image.
+concentration_factor (numpy.ndarray): Concentration factor of the image.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>filtered_image (numpy.ndarray)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="AnalysisFunctions.Analysis_Functions.calculate_mask_fill">
+<span class="sig-name descname"><span class="pre">calculate_mask_fill</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mask_indices</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">image_size</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#AnalysisFunctions.Analysis_Functions.calculate_mask_fill" title="Link to this definition"></a></dt>
+<dd><p>calculate amount of image filled by mask.</p>
+<p>Args:
+- mask_indices (1D array): indices of pixels in mask
+- image_size (tuple): Image dimensions (height, width).</p>
+<p>Returns:
+- mask_fill (float): proportion of image filled by mask.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="AnalysisFunctions.Analysis_Functions.calculate_radiality">
+<span class="sig-name descname"><span class="pre">calculate_radiality</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pil_small</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">img</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gradient_x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gradient_y</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">d</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#AnalysisFunctions.Analysis_Functions.calculate_radiality" title="Link to this definition"></a></dt>
+<dd><p>Calculate radiality measures based on pixel neighborhoods and gradients.</p>
+<p>Args:
+- pil_small (list): List of pixel indices.
+- img (numpy.ndarray): The input image.
+- gradient_x (numpy.ndarray): X-gradient of the image.
+- gradient_y (numpy.ndarray): Y-gradient of the image.
+- d (integer): pixel ring size
+Returns:
+- radiality (numpy.ndarray): Radiality measures.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="AnalysisFunctions.Analysis_Functions.calculate_region_properties">
+<span class="sig-name descname"><span class="pre">calculate_region_properties</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">binary_mask</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#AnalysisFunctions.Analysis_Functions.calculate_region_properties" title="Link to this definition"></a></dt>
+<dd><p>Calculate properties for labeled regions in a binary mask.</p>
+<p>Args:
+- binary_mask (numpy.ndarray): Binary mask of connected components.</p>
+<p>Returns:
+- pixel_index_list (list): List containing pixel indices for each labeled object.
+- areas (numpy.ndarray): Array containing areas of each labeled object.
+- centroids (numpy.ndarray): Array containing centroids (x, y) of each labeled object.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="AnalysisFunctions.Analysis_Functions.calculate_spot_colocalisation_likelihood_ratio">
+<span class="sig-name descname"><span class="pre">calculate_spot_colocalisation_likelihood_ratio</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">spot_indices</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mask_indices</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">image_size</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tol</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.01</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_iter</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">100</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#AnalysisFunctions.Analysis_Functions.calculate_spot_colocalisation_likelihood_ratio" title="Link to this definition"></a></dt>
+<dd><p>gets spot colocalisation likelihood ratio, as well as reporting error
+bounds on the likelihood ratio for one image</p>
+<p>Args:
+- spot_indices (1D array): indices of spots
+- mask_indices (1D array): indices of pixels in mask
+- image_size (tuple): Image dimensions (height, width).
+- tol (float): default 0.01; tolerance for convergence
+- n_iter (int): default 100; number of iterations to start with</p>
+<p>Returns:
+colocalisation_likelihood_ratio (float): likelihood ratio of spots for mask
+perc_std (float): standard deviation on this CLR based on bootstrapping
+meanCSR (float): mean of randomised spot data
+expected_spots (float): number of spots we expect based on mask % of image
+n_iter (int): how many iterations it took to converge</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="AnalysisFunctions.Analysis_Functions.compute_image_props">
+<span class="sig-name descname"><span class="pre">compute_image_props</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">image</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">k1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">k2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">thres</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.05</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">large_thres</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">450.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">areathres</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">30.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rdl</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[50.0,</span> <span class="pre">0.0,</span> <span class="pre">0.0]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">d</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">z_planes</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">calib</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#AnalysisFunctions.Analysis_Functions.compute_image_props" title="Link to this definition"></a></dt>
+<dd><p>Gets basic image properties (dl_mask, centroids, radiality)
+from a single image</p>
+<p>Args:
+- image (array). image as numpy array
+- k1 (array). gaussian blur kernel
+- k2 (array). ricker wavelet kernel
+- thres (float). percentage threshold
+- areathres (float). area threshold
+- rdl (array). radiality thresholds
+- d (int). radiality ring
+- z_planes (array). If multiple z planes, give z planes
+- calib (bool). If True, for radiality calibration</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="AnalysisFunctions.Analysis_Functions.compute_spot_and_cell_props">
+<span class="sig-name descname"><span class="pre">compute_spot_and_cell_props</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">image</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">image_cell</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">k1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">k2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prot_thres</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.05</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">large_prot_thres</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">450.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">areathres</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">30.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rdl</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[50.0,</span> <span class="pre">0.0,</span> <span class="pre">0.0]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">z</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cell_threshold1</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">200.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cell_threshold2</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">200</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cell_sigma1</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cell_sigma2</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">40.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">d</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#AnalysisFunctions.Analysis_Functions.compute_spot_and_cell_props" title="Link to this definition"></a></dt>
+<dd><p>Gets basic image properties (centroids, radiality)
+from a single image and compare to a cell mask from another image channel</p>
+<p>Args:
+- image (array). image of protein stain as numpy array
+- image (array). image of cell stain as numpy array
+- k1 (array). gaussian blur kernel
+- k2 (array). ricker wavelet kernel
+- prot_thres (float). percentage threshold for protein
+- large_prot_thres (float). Protein threshold intensity
+- areathres (float). area threshold
+- rdl (array). radiality thresholds
+- z (array). z planes to image, default 0
+- cell_threshold1 (float). 1st cell intensity threshold
+- cell_threshold2 (float). 2nd cell intensity threshold
+- cell_sigma1 (float). cell blur value 1
+- cell_sigma2 (float). cell blur value 2
+- d (integer). pixel radius value</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="AnalysisFunctions.Analysis_Functions.compute_spot_props">
+<span class="sig-name descname"><span class="pre">compute_spot_props</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">image</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">k1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">k2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">thres</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.05</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">large_thres</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">450.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">areathres</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">30.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rdl</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[50.0,</span> <span class="pre">0.0,</span> <span class="pre">0.0]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">z</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">d</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#AnalysisFunctions.Analysis_Functions.compute_spot_props" title="Link to this definition"></a></dt>
+<dd><p>Gets basic image properties (centroids, radiality)
+from a single image</p>
+<p>Args:
+- image (array). image as numpy array
+- k1 (array). gaussian blur kernel
+- k2 (array). ricker wavelet kernel
+- thres (float). percentage threshold
+- areathres (float). area threshold
+- rdl (array). radiality thresholds
+- z (array). z planes to image, default 0
+- d (int). Pixel radius value</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="AnalysisFunctions.Analysis_Functions.create_filled_region">
+<span class="sig-name descname"><span class="pre">create_filled_region</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">image_size</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">indices_to_keep</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#AnalysisFunctions.Analysis_Functions.create_filled_region" title="Link to this definition"></a></dt>
+<dd><p>Fill a region in a boolean matrix based on specified indices.</p>
+<p>Args:
+- image_size (tuple): Size of the boolean matrix.
+- indices_to_keep (list): List of indices to set as True.</p>
+<p>Returns:
+- boolean_matrix (numpy.ndarray): Boolean matrix with specified indices set to True.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="AnalysisFunctions.Analysis_Functions.create_gaussian_kernel">
+<span class="sig-name descname"><span class="pre">create_gaussian_kernel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sigmas</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">size</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#AnalysisFunctions.Analysis_Functions.create_gaussian_kernel" title="Link to this definition"></a></dt>
+<dd><p>Create a 2D Gaussian kernel.</p>
+<p>Args:
+- sigmas (tuple): Standard deviations in X and Y directions.
+- size (tuple): Size of the kernel.</p>
+<p>Returns:
+- kernel (numpy.ndarray): 2D Gaussian kernel.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="AnalysisFunctions.Analysis_Functions.create_kernel">
+<span class="sig-name descname"><span class="pre">create_kernel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">background_sigma</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">wavelet_sigma</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#AnalysisFunctions.Analysis_Functions.create_kernel" title="Link to this definition"></a></dt>
+<dd><p>Create Gaussian and Ricker wavelet kernels.</p>
+<p>Args:
+- background_sigma (float): Standard deviation for Gaussian kernel.
+- wavelet_sigma (float): Standard deviation for Ricker wavelet.</p>
+<p>Returns:
+- gaussian_kernel (numpy.ndarray): Gaussian kernel for background suppression.
+- ricker_kernel (numpy.ndarray): Ricker wavelet for feature enhancement.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="AnalysisFunctions.Analysis_Functions.default_spotanalysis_routine">
+<span class="sig-name descname"><span class="pre">default_spotanalysis_routine</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">image</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">k1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">k2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">thres</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.05</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">large_thres</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">450.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">areathres</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">30.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rdl</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[50.0,</span> <span class="pre">0.0,</span> <span class="pre">0.0]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">d</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#AnalysisFunctions.Analysis_Functions.default_spotanalysis_routine" title="Link to this definition"></a></dt>
+<dd><p>Daisy-chains analyses to get
+basic image properties (centroids, radiality)
+from a single image</p>
+<p>Args:
+- image (array). image as numpy array
+- k1 (array). gaussian blur kernel
+- k2 (array). ricker wavelet kernel
+- thres (float). percentage threshold
+- areathres (float). area threshold
+- rdl (array). radiality thresholds</p>
+<p>Returns:
+- centroids (2D array): centroid positions per oligomer
+- estimated_intensity (numpy.ndarray): Estimated sum intensity per oligomer.
+- estimated_background (numpy.ndarray): Estimated mean background per oligomer.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="AnalysisFunctions.Analysis_Functions.detect_large_features">
+<span class="sig-name descname"><span class="pre">detect_large_features</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">image</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">threshold1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">threshold2</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sigma1</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sigma2</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">60.0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#AnalysisFunctions.Analysis_Functions.detect_large_features" title="Link to this definition"></a></dt>
+<dd><p>Detects large features in an image based on a given threshold.</p>
+<p>Args:
+- image (numpy.ndarray): Original image.
+- threshold1 (float): Threshold for determining features. Only this is
+used for the determination of large protein aggregates.
+- threshold2 (float): Threshold for determining cell features. If above
+0, gets used and cellular features are detected.
+- sigma1 (float): first gaussian blur width
+- sigma2 (float): second gaussian blur width</p>
+<p>Returns:
+- large_mask (numpy.ndarray): Binary mask for the large features.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="AnalysisFunctions.Analysis_Functions.dilate_pixel">
+<span class="sig-name descname"><span class="pre">dilate_pixel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">index</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">image_size</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">width</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">edge</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#AnalysisFunctions.Analysis_Functions.dilate_pixel" title="Link to this definition"></a></dt>
+<dd><p>Dilate a pixel index to form a neighborhood.</p>
+<p>Args:
+- index (int): Pixel index.
+- image_size (tuple): Image dimensions (height, width).
+- width: width of dilation (default 5)
+- edge: edge of dilation (default 1)</p>
+<p>Returns:
+- dilated_indices (numpy.ndarray): Dilated pixel indices forming a neighborhood.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="AnalysisFunctions.Analysis_Functions.estimate_intensity">
+<span class="sig-name descname"><span class="pre">estimate_intensity</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">image</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">centroids</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#AnalysisFunctions.Analysis_Functions.estimate_intensity" title="Link to this definition"></a></dt>
+<dd><p>Estimate intensity values for each centroid in the image.</p>
+<p>Args:
+- image (numpy.ndarray): Input image.
+- centroids (numpy.ndarray): Centroid locations.</p>
+<p>Returns:
+- estimated_intensity (numpy.ndarray): Estimated sum intensity per oligomer.
+- estimated_background (numpy.ndarray): Estimated mean background per oligomer.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="AnalysisFunctions.Analysis_Functions.gen_CSRmats">
+<span class="sig-name descname"><span class="pre">gen_CSRmats</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">image_z_shape</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#AnalysisFunctions.Analysis_Functions.gen_CSRmats" title="Link to this definition"></a></dt>
+<dd><p>Generates empty matrices for the CSR</p>
+<p>Args:
+- image_z_shape (int). shape of new array</p>
+<p>Returns:
+- clr (ndarray). empty array
+- norm_std (ndarray). empty array
+- norm_CSR (ndarray). empty array
+- expected_spots (ndarray). empty array
+- n_iter (ndarray). empty array</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="AnalysisFunctions.Analysis_Functions.generate_mask_and_spot_indices">
+<span class="sig-name descname"><span class="pre">generate_mask_and_spot_indices</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mask</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">centroids</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">image_size</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#AnalysisFunctions.Analysis_Functions.generate_mask_and_spot_indices" title="Link to this definition"></a></dt>
+<dd><p>makes mask and spot indices from xy coordinates</p>
+<p>Args:
+- mask (2D array): boolean matrix
+- centroids (2D array): xy centroid coordinates
+- image_size (tuple): Image dimensions (height, width).</p>
+<p>Returns:
+mask_indices (1D array): indices of mask
+spot_indices (1D array): indices of spots</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="AnalysisFunctions.Analysis_Functions.infocus_indices">
+<span class="sig-name descname"><span class="pre">infocus_indices</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">focus_scores</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">threshold_differential</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#AnalysisFunctions.Analysis_Functions.infocus_indices" title="Link to this definition"></a></dt>
+<dd><p>Identify in-focus indices based on focus scores and a threshold differential.</p>
+<p>Args:
+- focus_scores (numpy.ndarray): Focus scores for different slices.
+- threshold_differential (float): Threshold for differential focus scores.</p>
+<p>Returns:
+- in_focus_indices (list): List containing the first and last in-focus indices.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="AnalysisFunctions.Analysis_Functions.intensity_pixel_indices">
+<span class="sig-name descname"><span class="pre">intensity_pixel_indices</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">centroid_loc</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">image_size</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#AnalysisFunctions.Analysis_Functions.intensity_pixel_indices" title="Link to this definition"></a></dt>
+<dd><p>Calculate pixel indices for inner and outer regions around the given index.</p>
+<p>Args:
+- centroid_loc (2D array): xy location of the pixel.
+- image_size (tuple): Size of the image.</p>
+<p>Returns:
+- inner_indices (numpy.ndarray): Pixel indices for the inner region.
+- outer_indices (numpy.ndarray): Pixel indices for the outer region.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="AnalysisFunctions.Analysis_Functions.make_datarray_cell">
+<span class="sig-name descname"><span class="pre">make_datarray_cell</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">clr</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">norm_std</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">norm_CSR</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">expected_spots</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_iter</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">columns</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">z_planes</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'none'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#AnalysisFunctions.Analysis_Functions.make_datarray_cell" title="Link to this definition"></a></dt>
+<dd><p>makes a datarray in pandas for cell information</p>
+<p>Args:
+- clr (ndarray): colocalisation likelihood ratios
+- estimated_intensity (ndarray): estimated intensities
+- estimated_background (ndarray): estimated backgrounds
+- columns (list of strings): column labels
+- zp (string or int): if int, gives out z-plane version of datarray
+- z_planes: z_planes to put in array (if needed)</p>
+<p>Returns:
+- to_save (pandas DataArray) pandas array to save</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="AnalysisFunctions.Analysis_Functions.make_datarray_spot">
+<span class="sig-name descname"><span class="pre">make_datarray_spot</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">centroids</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">estimated_intensity</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">estimated_background</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">columns</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">z_planes</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#AnalysisFunctions.Analysis_Functions.make_datarray_spot" title="Link to this definition"></a></dt>
+<dd><p>makes a datarray in pandas for spot information</p>
+<p>Args:
+- centroids (ndarray): centroid positions
+- estimated_intensity (ndarray): estimated intensities
+- estimated_background (ndarray): estimated backgrounds
+- columns (list of strings): column labels
+- z_planes: z_planes to put in array (if needed); if int, assumes only
+one z-plane</p>
+<p>Returns:
+- to_save (pandas DataArray) pandas array to save</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="AnalysisFunctions.Analysis_Functions.rejectoutliers">
+<span class="sig-name descname"><span class="pre">rejectoutliers</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#AnalysisFunctions.Analysis_Functions.rejectoutliers" title="Link to this definition"></a></dt>
+<dd><p>rejectoutliers function
+# rejects outliers from data, does iqr method (i.e. anything below
+lower quartile (25 percent) or above upper quartile (75 percent)
+is rejected)
+# ================INPUTS=============
+# data is data matrix
+# ================OUTPUT=============
+# newdata, data matrix</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="AnalysisFunctions.Analysis_Functions.ricker_wavelet">
+<span class="sig-name descname"><span class="pre">ricker_wavelet</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sigma</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#AnalysisFunctions.Analysis_Functions.ricker_wavelet" title="Link to this definition"></a></dt>
+<dd><p>Create a 2D Ricker wavelet.</p>
+<p>Args:
+- sigma (float): Standard deviation for the wavelet.</p>
+<p>Returns:
+- wavelet (numpy.ndarray): 2D Ricker wavelet.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="AnalysisFunctions.Analysis_Functions.small_feature_kernel">
+<span class="sig-name descname"><span class="pre">small_feature_kernel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">img</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">large_mask</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">img2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Gx</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Gy</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">k2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">thres</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">area_thres</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rdl</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">d</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#AnalysisFunctions.Analysis_Functions.small_feature_kernel" title="Link to this definition"></a></dt>
+<dd><p>Find small features in an image and determine diffraction-limited (dl) and non-diffraction-limited (ndl) features.</p>
+<p>Args:
+- img (numpy.ndarray): Original image.
+- large_mask (numpy.ndarray): Binary mask for large features.
+- img2 (numpy.ndarray): Smoothed image for background suppression.
+- Gx (numpy.ndarray): Gradient image in x-direction.
+- Gy (numpy.ndarray): Gradient image in y-direction.
+- k2 (numpy.ndarray): The kernel for blob feature enhancement.
+- thres (float): Converting real-valued image into a binary mask.
+- area_thres (float): The maximum area in pixels a diffraction-limited object can be.
+- rdl (list): Radiality threshold [min_radiality, max_radiality, area].
+- d (integer): pixel radius</p>
+<p>Returns:
+- dl_mask (numpy.ndarray): Binary mask for diffraction-limited (dl) features.
+- centroids (numpy.ndarray): Centroids for dl features.
+- radiality (numpy.ndarray): Radiality value for all features (before the filtering based on the radiality).
+- idxs (numpy.ndarray): Indices for objects that satisfy the decision boundary.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="AnalysisFunctions.Analysis_Functions.test_spot_mask_overlap">
+<span class="sig-name descname"><span class="pre">test_spot_mask_overlap</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">spot_indices</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mask_indices</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#AnalysisFunctions.Analysis_Functions.test_spot_mask_overlap" title="Link to this definition"></a></dt>
+<dd><p>Tests which spots overlap with a given mask.</p>
+<p>Args:
+- spot_indices (1D array): indices of spots
+- mask_indices (1D array): indices of pixels in mask</p>
+<p>Returns:
+- n_spots_in_mask (float): number of spots that overlap with the mask.</p>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="modules.html" class="btn btn-neutral float-left" title="src" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="IOFunctions.html" class="btn btn-neutral float-right" title="IOFunctions module" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, Joseph S. Beckwith, Bin Fu, Steven F. Lee.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-This class contains functions pertaining to IO of files based for the
-RASP code
+This class contains functions pertaining to IO of files based for the RASP code.
 jsb92, 2024/01/02
 """
 import json
@@ -19,10 +18,10 @@ class IO_Functions():
         saves analysis parameters.
     
         Args:
-        - analysis_p_directory (str): The folder to save to.
-        - to_save (dict): dict to save of analysis parameters.
-        - gain_map (array): gain_map to save
-        - offset_map (array): offset_map to save
+            analysis_p_directory (str): The folder to save to.
+            to_save (dict): dict to save of analysis parameters.
+            gain_map (array): gain_map to save
+            offset_map (array): offset_map to save
     
         """
         self.make_directory(analysis_p_directory)
@@ -38,10 +37,10 @@ class IO_Functions():
         Loads data from a JSON file.
     
         Args:
-        - filename (str): The name of the JSON file to load.
+            filename (str): The name of the JSON file to load.
     
         Returns:
-        - data (dict): The loaded JSON data.
+            data (dict): The loaded JSON data.
         """
         with open(filename, 'r') as file:
             data = json.load(file)
@@ -52,7 +51,7 @@ class IO_Functions():
         Creates a directory if it doesn't exist.
 
         Args:
-        - directory_path (str): The path of the directory to be created.
+            directory_path (str): The path of the directory to be created.
         """
         if not os.path.exists(directory_path):
             os.makedirs(directory_path)
@@ -62,8 +61,8 @@ class IO_Functions():
         Saves data to a JSON file.
     
         Args:
-        - data (dict): The data to be saved in JSON format.
-        - file_name (str): The name of the JSON file.
+            data (dict): The data to be saved in JSON format.
+            file_name (str): The name of the JSON file.
         """
         with open(file_name, 'w') as json_file:
             json.dump(data, json_file, indent=4)
@@ -73,10 +72,10 @@ class IO_Functions():
         Read a TIFF file using the skimage library.
     
         Args:
-        - file_path (str): The path to the TIFF file to be read.
+            file_path (str): The path to the TIFF file to be read.
     
         Returns:
-        - image (numpy.ndarray): The image data from the TIFF file.
+            image (numpy.ndarray): The image data from the TIFF file.
         """
         # Use skimage's imread function to read the TIFF file
         # specifying the 'tifffile' plugin explicitly
@@ -91,13 +90,13 @@ class IO_Functions():
         Use camera parameters to convert output to photons
     
         Args:
-        - file_path (str): The path to the TIFF file to be read.
-        - QR (float): QE of camera
-        - gain_map (matrix, or float): gain map. Assumes units of ADU/photoelectrons
-        - offset_map (matrix, or float): offset map. Assumes units of ADU
+            file_path (str): The path to the TIFF file to be read.
+            QR (float): QE of camera
+            gain_map (matrix, or float): gain map. Assumes units of ADU/photoelectrons
+            offset_map (matrix, or float): offset map. Assumes units of ADU
     
         Returns:
-        - image (numpy.ndarray): The image data from the TIFF file.
+            image (numpy.ndarray): The image data from the TIFF file.
         """
         # Use skimage's imread function to read the TIFF file
         # specifying the 'tifffile' plugin explicitly
@@ -123,14 +122,14 @@ class IO_Functions():
         Write a TIFF file using the skimage library.
     
         Args:
-        - volume (numpy.ndarray): The volume data to be saved as a TIFF file.
-        - file_path (str): The path where the TIFF file will be saved.
-        - bit (int): Bit-depth for the saved TIFF file (default is 16).
+            volume (numpy.ndarray): The volume data to be saved as a TIFF file.
+            file_path (str): The path where the TIFF file will be saved.
+            bit (int): Bit-depth for the saved TIFF file (default is 16).
     
         Notes:
-        - The function uses skimage's imsave to save the volume as a TIFF file.
-        - The plugin is set to 'tifffile' and photometric to 'minisblack'.
-        - Additional metadata specifying the software as 'Python' is included.
+            The function uses skimage's imsave to save the volume as a TIFF file.
+            The plugin is set to 'tifffile' and photometric to 'minisblack'.
+            Additional metadata specifying the software as 'Python' is included.
         """
         if len(volume.shape) > 2: # if image a stack
             if volume.shape[-1] < volume.shape[0]: # if stack is wrong way round
