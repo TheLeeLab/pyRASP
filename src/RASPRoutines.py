@@ -210,26 +210,28 @@ class RASP_Routines():
               +str(np.around(rad_2, 2))+". Parameters saved in "
               +str(self.defaultfolder)+".")
         
+        import PlottingFunctions
+        plots = PlottingFunctions.Plotter()
         import matplotlib.pyplot as plt
-        fig, axs = plt.subplots(1, 2)
-        axs[0].hist(r1_neg, bins=A_F.bincalculator(r1_neg), color='#808080', density=True);
+        
+        fig, axs = plots.two_column_plot(nrows=1, ncolumns=2, heightratio=[1], widthratio=[1,1])
+
+        axs[0] = plots.histogram_plot(axs[0], r1_neg, bins=A_F.bincalculator(r1_neg))
         ylim0, ylim1 = axs[0].get_ylim()[0], axs[0].get_ylim()[1]
         axs[0].vlines(rad_1, ylim0, ylim1, color='k', label='threshold', ls='--')
         axs[0].set_ylim([ylim0, ylim1])
         axs[0].set_xlim([0, rad_1/2.])
         axs[0].set_xlabel('flatness metric')
         axs[0].set_ylabel('probability density') 
-        axs[0].grid(True,which="both",ls="--",c='gray', lw=0.25, alpha=0.25)  
         axs[0].legend(loc='best', frameon=False)
                
-        axs[1].hist(r2_neg, bins=A_F.bincalculator(r2_neg), color='#808080', density=True);
+        axs[1] = plots.histogram_plot(axs[1], r2_neg, bins=A_F.bincalculator(r2_neg))
         ylim0, ylim1 = axs[1].get_ylim()[0], axs[1].get_ylim()[1]
         axs[1].vlines(rad_2, ylim0, ylim1, color='k', label='threshold', ls='--')
         axs[1].set_xlabel('integrated gradient metric')
         axs[1].set_xlim([0, rad_2*2.])
         axs[1].set_ylim([ylim0, ylim1])
         axs[1].legend(loc='best', frameon=False)
-        axs[1].grid(True,which="both",ls="--",c='gray', lw=0.25, alpha=0.25)  
         plt.tight_layout()
         plt.show(block=False)
 
@@ -301,9 +303,13 @@ class RASP_Routines():
               str(int(self.d))+
               ". Parameters saved in "
               +str(self.defaultfolder)+".")
-        
+                
+        import PlottingFunctions
+        plots = PlottingFunctions.Plotter()
         import matplotlib.pyplot as plt
-        fig, axs = plt.subplots(1, 2)
+        
+        fig, axs = plots.two_column_plot(nrows=1, ncolumns=2, heightratio=[1], widthratio=[1,1])
+
         axs[0].ecdf(a_neg, color='k');
         xlim0, xlim1 = axs[0].get_xlim()[0], axs[0].get_xlim()[1]
         axs[0].hlines(accepted_ratio/100., xlim0, xlim1, color='k', label='threshold', ls='--')
@@ -311,17 +317,13 @@ class RASP_Routines():
         axs[0].set_xlim([xlim0, xlim1])
         axs[0].set_xlabel('puncta area (pixel)')
         axs[0].set_ylabel('probability ') 
-        axs[0].grid(True,which="both",ls="--",c='gray', lw=0.25, alpha=0.25)  
         axs[0].legend(loc='lower right', frameon=False)
         
-        axs[1].hist(HWHM, bins=A_F.bincalculator(HWHM), color='#808080', density=True);
+        axs[1] = plots.histogram_plot(axs[1], HWHM, bins=A_F.bincalculator(HWHM))
         ylim0, ylim1 = axs[1].get_ylim()[0], axs[1].get_ylim()[1]
         axs[1].vlines(np.mean(HWHM), ylim0, ylim1, color='k', label='threshold', ls='--')
         axs[1].set_xlabel('HWHM (pixel)')
-        axs[1].set_xlim([0, np.max(HWHM)])
-        axs[1].set_ylim([ylim0, ylim1])
         axs[1].legend(loc='best', frameon=False)
-        axs[1].grid(True,which="both",ls="--",c='gray', lw=0.25, alpha=0.25)  
        
         plt.tight_layout()
         plt.show(block=False)

@@ -193,17 +193,17 @@ class Analysis_Functions():
         from a single image
     
         Args:
-        - image (array). image as numpy array
-        - k1 (array). gaussian blur kernel
-        - k2 (array). ricker wavelet kernel
-        - thres (float). percentage threshold
-        - areathres (float). area threshold
-        - rdl (array). radiality thresholds
+            image (array): image as numpy array
+            k1 (array): gaussian blur kernel
+            k2 (array): ricker wavelet kernel
+            thres (float): percentage threshold
+            areathres (float): area threshold
+            rdl (array): radiality thresholds
         
         Returns:
-        - centroids (2D array): centroid positions per oligomer
-        - estimated_intensity (numpy.ndarray): Estimated sum intensity per oligomer.
-        - estimated_background (numpy.ndarray): Estimated mean background per oligomer.
+            centroids (2D array): centroid positions per oligomer
+            estimated_intensity (numpy.ndarray): Estimated sum intensity per oligomer.
+            estimated_background (numpy.ndarray): Estimated mean background per oligomer.
 
         """
         large_mask = self.detect_large_features(image, large_thres)
@@ -223,11 +223,11 @@ class Analysis_Functions():
         calculate amount of image filled by mask.
     
         Args:
-        - mask_indices (1D array): indices of pixels in mask
-        - image_size (tuple): Image dimensions (height, width).
+            mask_indices (1D array): indices of pixels in mask
+            image_size (tuple): Image dimensions (height, width).
     
         Returns:
-        - mask_fill (float): proportion of image filled by mask.
+            mask_fill (float): proportion of image filled by mask.
         """
 
         mask_fill = np.divide(len(mask_indices), np.prod(image_size))
@@ -238,11 +238,11 @@ class Analysis_Functions():
         Tests which spots overlap with a given mask.
     
         Args:
-        - spot_indices (1D array): indices of spots
-        - mask_indices (1D array): indices of pixels in mask
+            spot_indices (1D array): indices of spots
+            mask_indices (1D array): indices of pixels in mask
     
         Returns:
-        - n_spots_in_mask (float): number of spots that overlap with the mask.
+            n_spots_in_mask (float): number of spots that overlap with the mask.
         """
 
         n_spots_in_mask = np.sum(np.isin(mask_indices, spot_indices))
@@ -254,13 +254,13 @@ class Analysis_Functions():
         Dilate a pixel index to form a neighborhood.
     
         Args:
-        - index (int): Pixel index.
-        - image_size (tuple): Image dimensions (height, width).
-        - width: width of dilation (default 5)
-        - edge: edge of dilation (default 1)
+            index (int): Pixel index.
+            image_size (tuple): Image dimensions (height, width).
+            width: width of dilation (default 5)
+            edge: edge of dilation (default 1)
     
         Returns:
-        - dilated_indices (numpy.ndarray): Dilated pixel indices forming a neighborhood.
+            dilated_indices (numpy.ndarray): Dilated pixel indices forming a neighborhood.
         """
         x,y = np.where(ski.morphology.octagon(width, edge))
         x = x - int(ski.morphology.octagon(width, edge).shape[0]/2)
@@ -277,12 +277,12 @@ class Analysis_Functions():
         Create Gaussian and Ricker wavelet kernels.
 
         Args:
-        - background_sigma (float): Standard deviation for Gaussian kernel.
-        - wavelet_sigma (float): Standard deviation for Ricker wavelet.
+            background_sigma (float): Standard deviation for Gaussian kernel.
+            wavelet_sigma (float): Standard deviation for Ricker wavelet.
 
         Returns:
-        - gaussian_kernel (numpy.ndarray): Gaussian kernel for background suppression.
-        - ricker_kernel (numpy.ndarray): Ricker wavelet for feature enhancement.
+            gaussian_kernel (numpy.ndarray): Gaussian kernel for background suppression.
+            ricker_kernel (numpy.ndarray): Ricker wavelet for feature enhancement.
         """
         gaussian_kernel = self.create_gaussian_kernel((background_sigma, background_sigma), 
                                                 (2 * int(np.ceil(2 * background_sigma)) + 1, 
@@ -295,11 +295,11 @@ class Analysis_Functions():
         Create a 2D Gaussian kernel.
 
         Args:
-        - sigmas (tuple): Standard deviations in X and Y directions.
-        - size (tuple): Size of the kernel.
+            sigmas (tuple): Standard deviations in X and Y directions.
+            size (tuple): Size of the kernel.
 
         Returns:
-        - kernel (numpy.ndarray): 2D Gaussian kernel.
+            kernel (numpy.ndarray): 2D Gaussian kernel.
         """
         kernel_x = gauss(size[0], sigmas[0])[:, np.newaxis]
         kernel_y = gauss(size[1], sigmas[1])
@@ -312,10 +312,10 @@ class Analysis_Functions():
         Create a 2D Ricker wavelet.
 
         Args:
-        - sigma (float): Standard deviation for the wavelet.
+            sigma (float): Standard deviation for the wavelet.
 
         Returns:
-        - wavelet (numpy.ndarray): 2D Ricker wavelet.
+            wavelet (numpy.ndarray): 2D Ricker wavelet.
         """
         amplitude = np.divide(2., np.multiply(np.sqrt(np.multiply(3., sigma)), np.power(np.pi, 0.25)))
         length = int(np.ceil(np.multiply(4, sigma)))
@@ -332,11 +332,11 @@ class Analysis_Functions():
         Fill a region in a boolean matrix based on specified indices.
 
         Args:
-        - image_size (tuple): Size of the boolean matrix.
-        - indices_to_keep (list): List of indices to set as True.
+            image_size (tuple): Size of the boolean matrix.
+            indices_to_keep (list): List of indices to set as True.
 
         Returns:
-        - boolean_matrix (numpy.ndarray): Boolean matrix with specified indices set to True.
+            boolean_matrix (numpy.ndarray): Boolean matrix with specified indices set to True.
         """
         # Concatenate all indices to keep into a single array
         indices_to_keep = np.concatenate(indices_to_keep)
@@ -355,11 +355,11 @@ class Analysis_Functions():
         Identify in-focus indices based on focus scores and a threshold differential.
     
         Args:
-        - focus_scores (numpy.ndarray): Focus scores for different slices.
-        - threshold_differential (float): Threshold for differential focus scores.
+            focus_scores (numpy.ndarray): Focus scores for different slices.
+            threshold_differential (float): Threshold for differential focus scores.
     
         Returns:
-        - in_focus_indices (list): List containing the first and last in-focus indices.
+            in_focus_indices (list): List containing the first and last in-focus indices.
         """
         # Calculate the Euclidean distance between each slice in focus_scores
         focus_score_diff = np.diff(focus_scores)
@@ -400,12 +400,12 @@ class Analysis_Functions():
         Estimate intensity values for each centroid in the image.
     
         Args:
-        - image (numpy.ndarray): Input image.
-        - centroids (numpy.ndarray): Centroid locations.
+            image (numpy.ndarray): Input image.
+            centroids (numpy.ndarray): Centroid locations.
     
         Returns:
-        - estimated_intensity (numpy.ndarray): Estimated sum intensity per oligomer.
-        - estimated_background (numpy.ndarray): Estimated mean background per oligomer.
+            estimated_intensity (numpy.ndarray): Estimated sum intensity per oligomer.
+            estimated_background (numpy.ndarray): Estimated mean background per oligomer.
         """
         centroids = np.asarray(centroids, dtype=int)
         image_size = image.shape
@@ -427,12 +427,12 @@ class Analysis_Functions():
         Calculate pixel indices for inner and outer regions around the given index.
     
         Args:
-        - centroid_loc (2D array): xy location of the pixel.
-        - image_size (tuple): Size of the image.
+            centroid_loc (2D array): xy location of the pixel.
+            image_size (tuple): Size of the image.
     
         Returns:
-        - inner_indices (numpy.ndarray): Pixel indices for the inner region.
-        - outer_indices (numpy.ndarray): Pixel indices for the outer region.
+            inner_indices (numpy.ndarray): Pixel indices for the inner region.
+            outer_indices (numpy.ndarray): Pixel indices for the outer region.
         """
         
         small_oct = ski.morphology.octagon(2, 4)
@@ -460,16 +460,16 @@ class Analysis_Functions():
         Detects large features in an image based on a given threshold.
     
         Args:
-        - image (numpy.ndarray): Original image.
-        - threshold1 (float): Threshold for determining features. Only this is
-        used for the determination of large protein aggregates.
-        - threshold2 (float): Threshold for determining cell features. If above
-        0, gets used and cellular features are detected.
-        - sigma1 (float): first gaussian blur width
-        - sigma2 (float): second gaussian blur width
+            image (numpy.ndarray): Original image.
+            threshold1 (float): Threshold for determining features. Only this is
+                used for the determination of large protein aggregates.
+            threshold2 (float): Threshold for determining cell features. If above
+                0, gets used and cellular features are detected.
+            sigma1 (float): first gaussian blur width
+            sigma2 (float): second gaussian blur width
     
         Returns:
-        - large_mask (numpy.ndarray): Binary mask for the large features.
+            large_mask (numpy.ndarray): Binary mask for the large features.
         """
         # Apply Gaussian filters with different sigmas and subtract to enhance features
         enhanced_image = gaussian(image, sigma=sigma1, truncate=2.) - gaussian(image, sigma=sigma2, truncate=2.)
@@ -501,12 +501,12 @@ class Analysis_Functions():
         Calculate properties for labeled regions in a binary mask.
     
         Args:
-        - binary_mask (numpy.ndarray): Binary mask of connected components.
+            binary_mask (numpy.ndarray): Binary mask of connected components.
     
         Returns:
-        - pixel_index_list (list): List containing pixel indices for each labeled object.
-        - areas (numpy.ndarray): Array containing areas of each labeled object.
-        - centroids (numpy.ndarray): Array containing centroids (x, y) of each labeled object.
+            pixel_index_list (list): List containing pixel indices for each labeled object.
+            areas (numpy.ndarray): Array containing areas of each labeled object.
+            centroids (numpy.ndarray): Array containing centroids (x, y) of each labeled object.
         """
         # Find connected components and count the number of objects
         labeled_image, num_objects = label(binary_mask,
@@ -528,22 +528,22 @@ class Analysis_Functions():
         Find small features in an image and determine diffraction-limited (dl) and non-diffraction-limited (ndl) features.
     
         Args:
-        - img (numpy.ndarray): Original image.
-        - large_mask (numpy.ndarray): Binary mask for large features.
-        - img2 (numpy.ndarray): Smoothed image for background suppression.
-        - Gx (numpy.ndarray): Gradient image in x-direction.
-        - Gy (numpy.ndarray): Gradient image in y-direction.
-        - k2 (numpy.ndarray): The kernel for blob feature enhancement.
-        - thres (float): Converting real-valued image into a binary mask.
-        - area_thres (float): The maximum area in pixels a diffraction-limited object can be.
-        - rdl (list): Radiality threshold [min_radiality, max_radiality, area].
-        - d (integer): pixel radius
+            img (numpy.ndarray): Original image.
+            large_mask (numpy.ndarray): Binary mask for large features.
+            img2 (numpy.ndarray): Smoothed image for background suppression.
+            Gx (numpy.ndarray): Gradient image in x-direction.
+            Gy (numpy.ndarray): Gradient image in y-direction.
+            k2 (numpy.ndarray): The kernel for blob feature enhancement.
+            thres (float): Converting real-valued image into a binary mask.
+            area_thres (float): The maximum area in pixels a diffraction-limited object can be.
+            rdl (list): Radiality threshold [min_radiality, max_radiality, area].
+            d (integer): pixel radius
     
         Returns:
-        - dl_mask (numpy.ndarray): Binary mask for diffraction-limited (dl) features.
-        - centroids (numpy.ndarray): Centroids for dl features.
-        - radiality (numpy.ndarray): Radiality value for all features (before the filtering based on the radiality).
-        - idxs (numpy.ndarray): Indices for objects that satisfy the decision boundary.
+            dl_mask (numpy.ndarray): Binary mask for diffraction-limited (dl) features.
+            centroids (numpy.ndarray): Centroids for dl features.
+            radiality (numpy.ndarray): Radiality value for all features (before the filtering based on the radiality).
+            idxs (numpy.ndarray): Indices for objects that satisfy the decision boundary.
         """
         img1 = np.maximum(np.subtract(img, img2), 0)
         pad_size = np.subtract(np.asarray(k2.shape), 1) // 2
@@ -586,20 +586,20 @@ class Analysis_Functions():
         from a single image and compare to a cell mask from another image channel
     
         Args:
-        - image (array). image of protein stain as numpy array
-        - image (array). image of cell stain as numpy array
-        - k1 (array). gaussian blur kernel
-        - k2 (array). ricker wavelet kernel
-        - prot_thres (float). percentage threshold for protein
-        - large_prot_thres (float). Protein threshold intensity
-        - areathres (float). area threshold
-        - rdl (array). radiality thresholds
-        - z (array). z planes to image, default 0
-        - cell_threshold1 (float). 1st cell intensity threshold
-        - cell_threshold2 (float). 2nd cell intensity threshold
-        - cell_sigma1 (float). cell blur value 1
-        - cell_sigma2 (float). cell blur value 2
-        - d (integer). pixel radius value
+            image (array): image of protein stain as numpy array
+            image (array): image of cell stain as numpy array
+            k1 (array): gaussian blur kernel
+            k2 (array): ricker wavelet kernel
+            prot_thres (float): percentage threshold for protein
+            large_prot_thres (float): Protein threshold intensity
+            areathres (float): area threshold
+            rdl (array): radiality thresholds
+            z (array): z planes to image, default 0
+            cell_threshold1 (float): 1st cell intensity threshold
+            cell_threshold2 (float): 2nd cell intensity threshold
+            cell_sigma1 (float): cell blur value 1
+            cell_sigma2 (float): cell blur value 2
+            d (integer): pixel radius value
         """
         
         columns = ['x', 'y', 'z', 'sum_intensity_in_photons', 'bg', 'zi', 'zf']
@@ -665,14 +665,14 @@ class Analysis_Functions():
         from a single image
     
         Args:
-        - image (array). image as numpy array
-        - k1 (array). gaussian blur kernel
-        - k2 (array). ricker wavelet kernel
-        - thres (float). percentage threshold
-        - areathres (float). area threshold
-        - rdl (array). radiality thresholds
-        - z (array). z planes to image, default 0
-        - d (int). Pixel radius value
+            image (array): image as numpy array
+            k1 (array): gaussian blur kernel
+            k2 (array): ricker wavelet kernel
+            thres (float): percentage threshold
+            areathres (float): area threshold
+            rdl (array): radiality thresholds
+            z (array): z planes to image, default 0
+            d (int): Pixel radius value
         """
         
         columns = ['x', 'y', 'z', 'sum_intensity_in_photons', 'bg', 'zi', 'zf']
@@ -709,7 +709,7 @@ class Analysis_Functions():
             data (np.1darray): data to calculate bins
         
         Returns:
-        bins (np.1darray): bins for histogram according to Freedman-Diaconis rule """
+            bins (np.1darray): bins for histogram according to Freedman-Diaconis rule """
         N = len(data)
         sigma = np.std(data)
     
@@ -724,12 +724,12 @@ class Analysis_Functions():
         Pixels expanded borders by n pixels (default 5)
     
         Args:
-        - image (array). image as numpy array
-        - pixel_index_list (list) list of pixel arrays
-        - expended area (int) range to expand the pixel mask to
+            image (array): image as numpy array
+            pixel_index_list (list): list of pixel arrays
+            expended area (int): range to expand the pixel mask to
         
         Returns:
-        - HWHMarray (array). array of half-width-half maxima from the fits
+            HWHMarray (array): array of half-width-half maxima from the fits
         """
         # this code from https://scipy-cookbook.readthedocs.io/items/FittingData.html
         from scipy import optimize
@@ -786,10 +786,12 @@ class Analysis_Functions():
         # rejects outliers from data, does iqr method (i.e. anything below
         lower quartile (25 percent) or above upper quartile (75 percent)
         is rejected)
-        # ================INPUTS============= 
-        # data is data matrix
-        # ================OUTPUT============= 
-        # newdata, data matrix """
+        
+        Args:
+            data (np.1darray): data matrix
+
+        Returns:
+            newdata (np.1darray): data matrix """
         from scipy.stats import iqr
         IQR = iqr(data)
         q1, q2 = np.percentile(data, q=(25, 75))
@@ -805,15 +807,15 @@ class Analysis_Functions():
         from a single image
     
         Args:
-        - image (array). image as numpy array
-        - k1 (array). gaussian blur kernel
-        - k2 (array). ricker wavelet kernel
-        - thres (float). percentage threshold
-        - areathres (float). area threshold
-        - rdl (array). radiality thresholds
-        - d (int). radiality ring
-        - z_planes (array). If multiple z planes, give z planes
-        - calib (bool). If True, for radiality calibration
+            image (array): image as numpy array
+            k1 (array): gaussian blur kernel
+            k2 (array): ricker wavelet kernel
+            thres (float): percentage threshold
+            areathres (float): area threshold
+            rdl (array): radiality thresholds
+            d (int): radiality ring
+            z_planes (array): If multiple z planes, give z planes
+            calib (bool): If True, for radiality calibration
    
         """
         if isinstance(z_planes, int):
@@ -854,14 +856,14 @@ class Analysis_Functions():
         Generates empty matrices for the CSR
     
         Args:
-        - image_z_shape (int). shape of new array
+            image_z_shape (int): shape of new array
 
         Returns:
-        - clr (ndarray). empty array
-        - norm_std (ndarray). empty array
-        - norm_CSR (ndarray). empty array
-        - expected_spots (ndarray). empty array
-        - n_iter (ndarray). empty array
+            clr (ndarray): empty array
+            norm_std (ndarray): empty array
+            norm_CSR (ndarray): empty array
+            expected_spots (ndarray): empty array
+            n_iter (ndarray): empty array
         
         """
 
@@ -877,15 +879,15 @@ class Analysis_Functions():
         makes a datarray in pandas for spot information
     
         Args:
-        - centroids (ndarray): centroid positions
-        - estimated_intensity (ndarray): estimated intensities
-        - estimated_background (ndarray): estimated backgrounds
-        - columns (list of strings): column labels
-        - z_planes: z_planes to put in array (if needed); if int, assumes only
-        one z-plane
+            centroids (ndarray): centroid positions
+            estimated_intensity (ndarray): estimated intensities
+            estimated_background (ndarray): estimated backgrounds
+            columns (list of strings): column labels
+            z_planes: z_planes to put in array (if needed); if int, assumes only
+                one z-plane
         
         Returns:
-        - to_save (pandas DataArray) pandas array to save
+            to_save (pandas DataArray) pandas array to save
         
         """
         if isinstance(z_planes, int):
@@ -912,15 +914,15 @@ class Analysis_Functions():
         makes a datarray in pandas for cell information
     
         Args:
-        - clr (ndarray): colocalisation likelihood ratios
-        - estimated_intensity (ndarray): estimated intensities
-        - estimated_background (ndarray): estimated backgrounds
-        - columns (list of strings): column labels
-        - zp (string or int): if int, gives out z-plane version of datarray
-        - z_planes: z_planes to put in array (if needed)
+            clr (ndarray): colocalisation likelihood ratios
+            estimated_intensity (ndarray): estimated intensities
+            estimated_background (ndarray): estimated backgrounds
+            columns (list of strings): column labels
+            zp (string or int): if int, gives out z-plane version of datarray
+            z_planes: z_planes to put in array (if needed)
         
         Returns:
-        - to_save (pandas DataArray) pandas array to save
+            to_save (pandas DataArray): pandas array to save
         
         """
         if isinstance(z_planes, str):

@@ -20,12 +20,12 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 class Plotter():
-    def __init__(self, poster=True):
+    def __init__(self, poster=False):
         self.poster = poster
         self = self
         return
     
-    def two_column_plot(self, nrows=1, ncolumns=1, heightratio=[1], widthratio=[1], height=0, big=True):
+    def two_column_plot(self, nrows=1, ncolumns=1, heightratio=[1], widthratio=[1], height=0, big=False):
         """ two_column_plot function
         takes data and makes a two-column width figure
         

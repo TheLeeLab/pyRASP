@@ -27,6 +27,8 @@ extensions = [
       'sphinx.ext.coverage'
 ]
 
+napoleon_custom_sections = [('Returns', 'params_style')]
+
 # add in this line for the autosummary functionality
 auto_doc_default_options = {'autosummary': True}
 
