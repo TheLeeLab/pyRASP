@@ -414,13 +414,14 @@ class Analysis_Functions():
         
         x_in, y_in, x_out, y_out = self.intensity_pixel_indices(centroids, image_size)
         
-        estimated_background = np.mean(image[y_out, x_out])
-        estimated_intensity = np.sum(np.subtract(image[y_in, x_in], estimated_background))
+        estimated_background = np.mean(image[y_out, x_out], axis=0)
+        estimated_intensity = np.sum(np.subtract(image[y_in, x_in], estimated_background), axis=0)
         
         estimated_intensity[estimated_intensity < 0] = np.NAN
         estimated_background[estimated_background < 0] = np.NAN
        
-        return estimated_intensity, estimated_background
+        # correct for averaged background; report background summed
+        return estimated_intensity, estimated_background*len(x_in)
     
     def intensity_pixel_indices(self, centroid_loc, image_size):
         """
