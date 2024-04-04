@@ -554,50 +554,54 @@ class RASP_Routines():
         
         # run through z planes here and check data in; if not, abort some
 
-        zps = z_planes[-1]-z_planes[0]
         if cell_analysis == False:
-            fig, axs = plots.two_column_plot(nrows=zps, ncolumns=2, heightratio=np.full(zps, 1), widthratio=[1,1])
+            
             for i in enumerate(np.arange(z_planes[0]+1, z_planes[-1]+1)):
+                fig, axs = plots.two_column_plot(nrows=1, ncolumns=2, widthratio=[1,1])
                 xpositions = to_save[to_save.z == i[1]].x.values
                 ypositions = to_save[to_save.z == i[1]].y.values
                 testvals = (xpositions < image_size)*(ypositions < image_size)
                 xpositions = xpositions[testvals]
                 ypositions = ypositions[testvals]
-                axs[i[0], 0] = plots.image_scatter_plot(axs[i[0], 0], 
+                axs[0] = plots.image_scatter_plot(axs[0], 
                             img[:image_size, :image_size, i[1]-1], 
                             xdata=xpositions, ydata=ypositions, label='z plane = '+str(int(i[1])))
-                
-                axs[i[0], 1] = plots.histogram_plot(axs[i[0],1], 
+    
+                axs[1] = plots.histogram_plot(axs[1], 
                                     to_save[to_save.z == i[1]].sum_intensity_in_photons.values, 
                                 bins=A_F.bincalculator(to_save[to_save.z == i[1]].sum_intensity_in_photons.values), 
-                                xaxislabel='puncta intensity (photons)')
+                                xaxislabel='puncta intensity (photons)', density=False)
+                plt.tight_layout()
+                if save_figure == True:
+                    plt.savefig(protein_file.split('.')[0]+'_ExampleFigure_zplane'+str(int(i[1]))+'.svg', format='svg', dpi=600)
+                plt.show()
         else:
-            fig, axs = plots.two_column_plot(nrows=zps, ncolumns=3, heightratio=np.full(zps, 1), widthratio=[1,1,1])
+            
             for i in enumerate(np.arange(z_planes[0]+1, z_planes[-1]+1)):
+                fig, axs = plots.two_column_plot(nrows=1, ncolumns=3, widthratio=[1,1,1])
                 xpositions = to_save[to_save.z == i[1]].x.values
                 ypositions = to_save[to_save.z == i[1]].y.values
                 testvals = (xpositions < image_size)*(ypositions < image_size)
                 xpositions = xpositions[testvals]
                 ypositions = ypositions[testvals]
-                axs[i[0], 0] = plots.image_scatter_plot(axs[i[0], 0], 
+                axs[0] = plots.image_scatter_plot(axs[0], 
                             img[:image_size, :image_size, i[1]-1], 
-                            xdata=xpositions, ydata=ypositions, label='protein, z plane = '+str(int(i[1])))
+                            xdata=xpositions, ydata=ypositions, label='puncta, z plane = '+str(int(i[1])))
                 
-                axs[i[0], 1] = plots.image_plot(axs[i[0], 1], 
+                axs[1] = plots.image_plot(axs[1], 
                             img_cell[:image_size, :image_size, i[1]-1], 
                             label='cell, z plane = '+str(int(i[1])), plotmask=True, mask=cell_mask[:image_size, :image_size, i[1]-1])
                 
-                axs[i[0], 2] = plots.histogram_plot(axs[i[0],2], 
+                axs[2] = plots.histogram_plot(axs[2], 
                                     to_save[to_save.z == i[1]].sum_intensity_in_photons.values, 
                                 bins=A_F.bincalculator(to_save[to_save.z == i[1]].sum_intensity_in_photons.values), 
-                                xaxislabel='puncta intensity (photons)')
+                                xaxislabel='puncta intensity (photons)', density=False)
 
-            
-        plt.tight_layout()
+                plt.tight_layout()
         
-        if save_figure == True:
-            plt.savefig(protein_file.split('.')[0]+'_ExampleFigure.svg', format='svg', dpi=600)
-        plt.show()
+                if save_figure == True:
+                    plt.savefig(protein_file.split('.')[0]+'_ExampleFigure_zplane'+str(int(i[1]))+'.svg', format='svg', dpi=600)
+                plt.show()
         return
     
     def save_analysis_results(self, directory, file, to_save, 
