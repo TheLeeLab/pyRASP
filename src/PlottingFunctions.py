@@ -71,6 +71,7 @@ class Plotter():
         else:
             ysize = height
         
+        
         plt.rcParams['figure.figsize'] = [xsize, ysize]
         plt.rcParams['font.size'] = fontsz
         plt.rcParams['svg.fonttype'] = 'none'

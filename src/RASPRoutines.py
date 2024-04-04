@@ -171,30 +171,58 @@ class RASP_Routines():
         k1, k2 = A_F.create_kernel(gsigma, rwave) # create image processing kernels
         rdl = [0., 0., 0.]
         thres = 0.05
+        r1_neg_forplot = {} # generate dictionaries for plotting
+        r2_neg_forplot = {}
+        
         for i in np.arange(len(files)):
             file_path = os.path.join(folder, files[i])
             image = IO.read_tiff_tophotons(file_path)
             if len(image.shape) < 3:
                 dl_mask, centroids, radiality = A_F.compute_image_props(image, k1, k2, thres, 10000., self.areathres, rdl, self.d, calib=True)
-                if i == 0:
-                    r1_neg = radiality[:,0]
-                    r2_neg = radiality[:,1]
-                else:
-                    r1_neg = np.hstack([r1_neg, radiality[:,0]])
-                    r2_neg = np.hstack([r2_neg, radiality[:,1]])
+                r1_neg_forplot[i] = radiality[:,0]
+                r2_neg_forplot[i] = radiality[:,1]
             else:
                 z_planes = self.get_infocus_planes(image, k1)
                 z_planes = np.arange(z_planes[0], z_planes[-1])
                 if len(z_planes) != 0: # if there are images we want to analyse
                     dl_mask, centroids, radiality = A_F.compute_image_props(image, k1, k2, thres, 10000., self.areathres, rdl, self.d, z_planes=z_planes, calib=True)
                     for z in enumerate(z_planes):
-                        if (i == 0) and (z[0] == 0):
-                            r1_neg = radiality[z[1]][:,0]
-                            r2_neg = radiality[z[1]][:,1]
-                        else:
-                            r1_neg = np.hstack([r1_neg, radiality[z[1]][:,0]])
-                            r2_neg = np.hstack([r2_neg, radiality[z[1]][:,1]])
+                        r1_neg_forplot[i, z[0]] = radiality[z[1]][:,0]
+                        r2_neg_forplot[i, z[0]] = radiality[z[1]][:,1]
 
+        ### IQR filtering
+        means_rad1 = np.zeros(len(r1_neg_forplot.keys()))
+        means_rad2 = np.zeros(len(r2_neg_forplot.keys()))
+        
+        keys = list(r1_neg_forplot.keys())
+        
+        for i, key in enumerate(keys):
+            means_rad1[i] = np.mean(r1_neg_forplot[key])
+            means_rad2[i] = np.mean(r2_neg_forplot[key])
+        
+        r1_reject = A_F.rejectoutliers_ind(means_rad1)
+        if len(r1_reject) > 0:
+            keys_to_del = keys[r1_reject]
+            r1_neg_forplot.pop(keys_to_del)
+
+        r2_reject = A_F.rejectoutliers_ind(means_rad2)
+        if len(r2_reject) > 0:
+            keys_to_del = keys[r2_reject]
+            r2_neg_forplot.pop(keys_to_del)
+        ### IQR filtering complete
+        
+        for i, key in enumerate(r1_neg_forplot.keys()):
+            if i == 0:
+                r1_neg = r1_neg_forplot[key]
+            else:
+                r1_neg = np.hstack([r1_neg, r1_neg_forplot[key]])
+                
+        for i, key in enumerate(r2_neg_forplot.keys()):
+            if i == 0:
+                r2_neg = r2_neg_forplot[key]
+            else:
+                r2_neg = np.hstack([r2_neg, r2_neg_forplot[key]])
+                
         rad_1 = np.percentile(r1_neg, accepted_ratio)
         rad_2 = np.percentile(r2_neg, 100.-accepted_ratio)
                 
@@ -213,24 +241,31 @@ class RASP_Routines():
         import PlottingFunctions
         plots = PlottingFunctions.Plotter()
         import matplotlib.pyplot as plt
+        from matplotlib.pyplot import cm
         
         fig, axs = plots.two_column_plot(nrows=1, ncolumns=2, heightratio=[1], widthratio=[1,1])
+        
+        
+        color = cm.twilight(np.linspace(0, 1, len(r1_neg_forplot.keys())))
+        for i, key in enumerate(r1_neg_forplot.keys()):
+            axs[0] = plots.histogram_plot(axs[0], r1_neg_forplot[key], bins=A_F.bincalculator(r1_neg), histcolor=color[i], alpha=0.5)
+            axs[1] = plots.histogram_plot(axs[1], r2_neg_forplot[key], bins=A_F.bincalculator(r2_neg), histcolor=color[i], alpha=0.5)
 
-        axs[0] = plots.histogram_plot(axs[0], r1_neg, bins=A_F.bincalculator(r1_neg))
         ylim0, ylim1 = axs[0].get_ylim()[0], axs[0].get_ylim()[1]
         axs[0].vlines(rad_1, ylim0, ylim1, color='k', label='threshold', ls='--')
+        axs[0].vlines(rad_1, ylim0, ylim1, color='k', alpha=0, label='colours are \ndifferent FOVs', ls='--')
+
         axs[0].set_ylim([ylim0, ylim1])
-        axs[0].set_xlim([0, rad_1/2.])
         axs[0].set_xlabel('flatness metric')
-        axs[0].set_ylabel('probability density') 
-        axs[0].legend(loc='best', frameon=False)
-               
-        axs[1] = plots.histogram_plot(axs[1], r2_neg, bins=A_F.bincalculator(r2_neg))
+        axs[0].set_ylabel('probability density')
+                   
         ylim0, ylim1 = axs[1].get_ylim()[0], axs[1].get_ylim()[1]
         axs[1].vlines(rad_2, ylim0, ylim1, color='k', label='threshold', ls='--')
         axs[1].set_xlabel('integrated gradient metric')
         axs[1].set_xlim([0, rad_2*2.])
         axs[1].set_ylim([ylim0, ylim1])
+            
+        axs[0].legend(loc='best', frameon=False)
         axs[1].legend(loc='best', frameon=False)
         plt.tight_layout()
         plt.show(block=False)

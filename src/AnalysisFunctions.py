@@ -800,6 +800,26 @@ class Analysis_Functions():
         nd1 = data[data <= (1.5*IQR)+q2]
         newdata = nd1[nd1 >= q1-(1.5*IQR)]
         return newdata 
+    
+    def rejectoutliers_ind(self, data):
+        """ rejectoutliers function
+        # gets indices to reject outliers from data, does iqr method (i.e. anything
+        below lower quartile (25 percent) or above upper quartile (75 percent)
+        is rejected)
+        
+        Args:
+            data (np.1darray): data matrix
+
+        Returns:
+            ind_arr (np.1darray): index array """
+        from scipy.stats import iqr
+        IQR = iqr(data)
+        q1, q2 = np.percentile(data, q=(25, 75))
+        
+        indices = np.arange(len(data), dtype=int)
+        nd1 = indices[data >= (1.5*IQR)+q2]
+        nd2 = indices[data <= q1-(1.5*IQR)]
+        return np.hstack([nd1, nd2])
 
     
     def compute_image_props(self, image, k1, k2, thres=0.05, large_thres=450., areathres=30., rdl=[50., 0., 0.], d=2, z_planes=0, calib=False):
