@@ -420,7 +420,8 @@ class Analysis_Functions():
         estimated_intensity[estimated_intensity < 0] = np.NAN
         estimated_background[estimated_background < 0] = np.NAN
        
-        return estimated_intensity, estimated_background
+        # correct for averaged background; report background summed
+        return estimated_intensity, estimated_background*len(x_in)
     
     def intensity_pixel_indices(self, centroid_loc, image_size):
         """
