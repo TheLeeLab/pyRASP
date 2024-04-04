@@ -9,7 +9,7 @@ A list of package requirements are noted in the "requirements.txt" file. These c
 
 `pip install -r requirements.txt`
 
-Documentation can be found at [read the docs](https://pyrasp.readthedocs.io/)
+Documentation can be found at [read the docs](https://pyrasp.readthedocs.io/).
 
 ## Contributing
 
