@@ -1,4 +1,6 @@
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.10723155.svg)](https://doi.org/10.5281/zenodo.10723155)
+
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.10932778.svg)](https://doi.org/10.5281/zenodo.10932778)
+
 
 
 ## Installation Instructions
