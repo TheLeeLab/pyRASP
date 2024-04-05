@@ -125,7 +125,7 @@ class Analysis_Functions():
         spot_indices = np.ravel_multi_index(centroids.T, image_size, order='F')
         return mask_indices, spot_indices
     
-    def calculate_spot_colocalisation_likelihood_ratio(self, spot_indices, mask_indices, image_size, tol=0.01, n_iter=100):
+    def calculate_spot_colocalisation_likelihood_ratio(self, spot_indices, mask_indices, image_size, tol=0.01, n_iter=100, blur_degree=1, max_iter=10000):
         """
         gets spot colocalisation likelihood ratio, as well as reporting error
         bounds on the likelihood ratio for one image
@@ -136,6 +136,9 @@ class Analysis_Functions():
             image_size (tuple): Image dimensions (height, width).
             tol (float): default 0.01; tolerance for convergence
             n_iter (int): default 100; number of iterations to start with
+            blur_degree (int): number of pixels to blur spot indices with 
+                                (i.e. number of pixels surrounding centroid to 
+                                consider part of spot). Default 1
         
         Returns:
             colocalisation_likelihood_ratio (float): likelihood ratio of spots for mask
@@ -144,9 +147,16 @@ class Analysis_Functions():
             expected_spots (float): number of spots we expect based on mask % of image
             n_iter (int): how many iterations it took to converge
         """
+        n_spots = len(spot_indices) # get number of spots
+        if blur_degree > 0:
+            for i, index in enumerate(spot_indices):
+                if i == 0:
+                    new_spot_indices = self.dilate_pixel(index, image_size, width=blur_degree+1, edge=blur_degree)
+                else:
+                    new_spot_indices = np.hstack([new_spot_indices, self.dilate_pixel(index, image_size, width=blur_degree+1, edge=blur_degree)])
+            spot_indices = new_spot_indices
         n_iter_rec = n_iter
         possible_indices = np.arange(0, np.prod(image_size)) # get list of where is possible to exist in an image
-        n_spots = len(spot_indices) # get number of spots
         mask_fill = self.calculate_mask_fill(mask_indices, image_size) # get mask_fill
         expected_spots = np.multiply(mask_fill, n_spots) # get expected number of spots
         if np.isclose(expected_spots, 0., atol=1e-4):
@@ -167,7 +177,7 @@ class Analysis_Functions():
             
             meanCSR = np.divide(np.nanmean(CSR), expected_spots) # should be close to 1
             CSR_diff = np.abs(meanCSR - 1.)
-            while CSR_diff > tol: # do n_iter more tests iteratively until convergence
+            while (CSR_diff > tol) and (n_iter_rec < max_iter): # do n_iter more tests iteratively until convergence
                 n_iter_rec = n_iter_rec + n_iter # add n_iter iterations
                 CSR_new = np.zeros([n_iter])
                 random_spot_locations = np.random.choice(possible_indices, size=(n_iter, n_spots)) # get random spot locations
