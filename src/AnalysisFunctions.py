@@ -214,6 +214,8 @@ class Analysis_Functions():
             centroids (2D array): centroid positions per oligomer
             estimated_intensity (numpy.ndarray): Estimated sum intensity per oligomer.
             estimated_background (numpy.ndarray): Estimated mean background per oligomer.
+            estimated_background_perpixel (numpy.ndarray): Estimated mean background per pixel.
+
 
         """
         large_mask = self.detect_large_features(image, large_thres)
@@ -221,12 +223,13 @@ class Analysis_Functions():
         dl_mask, centroids, radiality, idxs = self.small_feature_kernel(image, 
         large_mask, img2, Gx, Gy,
         k2, thres, areathres, rdl, d)
-        estimated_intensity, estimated_background = self.estimate_intensity(image, centroids)
+        estimated_intensity, estimated_background, estimated_background_perpixel = self.estimate_intensity(image, centroids)
         to_keep = ~np.isnan(estimated_intensity)
         estimated_intensity = estimated_intensity[to_keep]
         estimated_background = estimated_background[to_keep]
+        estimated_background_perpixel = estimated_background_perpixel[to_keep]
         centroids = centroids[to_keep, :]    
-        return centroids, estimated_intensity, estimated_background
+        return centroids, estimated_intensity, estimated_background, estimated_background_perpixel
     
     def calculate_mask_fill(self, mask_indices, image_size):
         """
@@ -416,6 +419,7 @@ class Analysis_Functions():
         Returns:
             estimated_intensity (numpy.ndarray): Estimated sum intensity per oligomer.
             estimated_background (numpy.ndarray): Estimated mean background per oligomer.
+            estimated_background_perpixel (numpy.ndarray): Estimated mean background per pixel.
         """
         centroids = np.asarray(centroids, dtype=int)
         image_size = image.shape
@@ -431,7 +435,7 @@ class Analysis_Functions():
         estimated_background[estimated_background < 0] = np.NAN
        
         # correct for averaged background; report background summed
-        return estimated_intensity, estimated_background*len(x_in)
+        return estimated_intensity, estimated_background*len(x_in), estimated_background
     
     def intensity_pixel_indices(self, centroid_loc, image_size):
         """
@@ -613,7 +617,7 @@ class Analysis_Functions():
             d (integer): pixel radius value
         """
         
-        columns = ['x', 'y', 'z', 'sum_intensity_in_photons', 'bg', 'zi', 'zf']
+        columns = ['x', 'y', 'z', 'sum_intensity_in_photons', 'bg_per_punctum', 'bg_per_pixel', 'zi', 'zf']
         columns_cell = ['colocalisation_likelihood_ratio', 'std', 
                             'CSR', 'expected_spots', 'n_iterations', 'z']
 
@@ -625,10 +629,11 @@ class Analysis_Functions():
             centroids = {} # do this so can parallelise
             estimated_intensity = {}
             estimated_background = {}
+            estimated_background_perpixel = {}
             def analyse_zplanes(zp):
                 img_z = image[:, :, zp]
                 img_cell_z = image_cell[:, :, zp]
-                centroids[zp], estimated_intensity[zp], estimated_background[zp] = self.default_spotanalysis_routine(img_z,
+                centroids[zp], estimated_intensity[zp], estimated_background[zp], estimated_background_perpixel[zp] = self.default_spotanalysis_routine(img_z,
                 k1, k2, prot_thres, large_prot_thres, areathres, rdl, d)
                 
                 cell_mask[:,:,zp] = self.detect_large_features(img_cell_z,
@@ -645,13 +650,13 @@ class Analysis_Functions():
             pool.close(); pool.terminate()
             
             to_save = self.make_datarray_spot(centroids, 
-            estimated_intensity, estimated_background, columns, z_planes)
+            estimated_intensity, estimated_background, estimated_background_perpixel, columns, z_planes)
             to_save = to_save.reset_index(drop=True)
             
             to_save_cell = self.make_datarray_cell(clr, norm_std,
                         norm_CSR, expected_spots, n_iter, columns_cell, z_planes)
         else:
-            centroids, estimated_intensity, estimated_background = self.default_spotanalysis_routine(image,
+            centroids, estimated_intensity, estimated_background, estimated_background_perpixel = self.default_spotanalysis_routine(image,
             k1, k2, prot_thres, large_prot_thres, areathres, rdl, d)
             
             cell_mask = self.detect_large_features(image_cell,
@@ -663,7 +668,7 @@ class Analysis_Functions():
             clr, norm_std, norm_CSR, expected_spots, n_iter = self.calculate_spot_colocalisation_likelihood_ratio(spot_indices, mask_indices, image_size)
 
             to_save = self.make_datarray_spot(centroids, 
-                estimated_intensity, estimated_background, columns[:-2])
+                estimated_intensity, estimated_background, estimated_background_perpixel, columns[:-2])
             
             to_save_cell = self.make_datarray_cell(clr, norm_std, norm_CSR, 
                                 expected_spots, n_iter, columns_cell[:-1])
@@ -686,14 +691,15 @@ class Analysis_Functions():
             d (int): Pixel radius value
         """
         
-        columns = ['x', 'y', 'z', 'sum_intensity_in_photons', 'bg', 'zi', 'zf']
+        columns = ['x', 'y', 'z', 'sum_intensity_in_photons', 'bg_per_punctum', 'bg_per_pixel', 'zi', 'zf']
         if not isinstance(z, int):
             z_planes = np.arange(z[0], z[1])
             centroids = {}
             estimated_intensity = {}
             estimated_background = {}
+            estimated_background_perpixel = {}
             def analyse_zplanes(zp):
-                centroids[zp], estimated_intensity[zp], estimated_background[zp] = self.default_spotanalysis_routine(image[:, :, zp],
+                centroids[zp], estimated_intensity[zp], estimated_background[zp], estimated_background_perpixel[zp] = self.default_spotanalysis_routine(image[:, :, zp],
                 k1, k2, thres, large_thres, areathres, rdl, d)
                 
             pool = Pool(nodes=cpu_number); pool.restart()
@@ -701,14 +707,14 @@ class Analysis_Functions():
             pool.close(); pool.terminate()
                 
             to_save = self.make_datarray_spot(centroids, 
-            estimated_intensity, estimated_background, columns, z_planes)
+            estimated_intensity, estimated_background, estimated_background_perpixel, columns, z_planes)
             to_save = to_save.reset_index(drop=True)
         else:
-            centroids, estimated_intensity, estimated_background = self.default_spotanalysis_routine(image,
+            centroids, estimated_intensity, estimated_background, estimated_background_perpixel = self.default_spotanalysis_routine(image,
             k1, k2, thres, large_thres, areathres, rdl, d)
             
             to_save = self.make_datarray_spot(centroids, 
-                estimated_intensity, estimated_background, columns[:-2])
+                estimated_intensity, estimated_background, estimated_background_perpixel, columns[:-2])
             
         return to_save
     
@@ -905,14 +911,15 @@ class Analysis_Functions():
         n_iter = np.zeros(image_z_shape)
         return clr, norm_std, norm_CSR, expected_spots, n_iter
     
-    def make_datarray_spot(self, centroids, estimated_intensity, estimated_background, columns, z_planes=0):
+    def make_datarray_spot(self, centroids, estimated_intensity, estimated_background, estimated_background_perpixel, columns, z_planes=0):
         """
         makes a datarray in pandas for spot information
     
         Args:
             centroids (ndarray): centroid positions
             estimated_intensity (ndarray): estimated intensities
-            estimated_background (ndarray): estimated backgrounds
+            estimated_background (ndarray): estimated backgrounds per punctum
+            estimated_background_perpixel (np.ndarray): estimated background per pixel
             columns (list of strings): column labels
             z_planes: z_planes to put in array (if needed); if int, assumes only
                 one z-plane
@@ -924,18 +931,18 @@ class Analysis_Functions():
         if isinstance(z_planes, int):
             dataarray = np.vstack([centroids[:, 0], centroids[:, 1], 
             np.full_like(centroids[:, 0], 1), estimated_intensity, 
-            estimated_background])
+            estimated_background, estimated_background_perpixel])
         else:
             for z in z_planes:
                 if z == z_planes[0]:
                     dataarray = np.vstack([centroids[z][:, 0], centroids[z][:, 1], 
                     np.full_like(centroids[z][:, 0], z+1), estimated_intensity[z], 
-                    estimated_background[z], np.full_like(centroids[z][:, 0], 1+z_planes[0]),
+                    estimated_background[z], estimated_background_perpixel[z], np.full_like(centroids[z][:, 0], 1+z_planes[0]),
                     np.full_like(centroids[z][:, 0], 1+z_planes[-1])]) 
                 else:
                     da = np.vstack([centroids[z][:, 0], centroids[z][:, 1], 
                     np.full_like(centroids[z][:, 0], z+1), estimated_intensity[z], 
-                    estimated_background[z], np.full_like(centroids[z][:, 0], 1+z_planes[0]),
+                    estimated_background[z], estimated_background_perpixel[z], np.full_like(centroids[z][:, 0], 1+z_planes[0]),
                     np.full_like(centroids[z][:, 0], 1+z_planes[-1])]) 
                     dataarray = np.hstack([dataarray, da])
         return pd.DataFrame(data=dataarray.T, columns=columns)
@@ -946,8 +953,6 @@ class Analysis_Functions():
     
         Args:
             clr (ndarray): colocalisation likelihood ratios
-            estimated_intensity (ndarray): estimated intensities
-            estimated_background (ndarray): estimated backgrounds
             columns (list of strings): column labels
             zp (string or int): if int, gives out z-plane version of datarray
             z_planes: z_planes to put in array (if needed)
