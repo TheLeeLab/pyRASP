@@ -20,3 +20,4 @@ The RASP concept assumes that you are imaging something that is tissue/cell like
 Getting Started with pyRASP
 ***************************
 
+To get started, one can try the example notebooks, which are individual notebooks that highlight RASP's different capabilities.
