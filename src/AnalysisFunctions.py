@@ -261,7 +261,7 @@ class Analysis_Functions():
             n_spots_in_mask (float): number of spots that overlap with the mask.
         """
         
-        n_spots_in_mask = np.sum(np.isin(mask_indices, spot_indices))
+        n_spots_in_mask = np.sum(np.isin(mask_indices, np.unique(spot_indices)))
         return n_spots_in_mask
     
     def dilate_pixel_matrix(self, index_matrix, image_size, width=5, edge=1):
