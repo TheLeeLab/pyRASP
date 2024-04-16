@@ -12,10 +12,11 @@ from skimage.filters import gaussian
 from skimage.measure import label, regionprops_table
 import skimage.draw as draw
 from scipy.ndimage import binary_opening, binary_closing, binary_fill_holes
+from numba import jit
 import pandas as pd
 import pathos
 from pathos.pools import ThreadPool as Pool
-cpu_number = int(pathos.helpers.cpu_count()*0.75)
+cpu_number = int(pathos.helpers.cpu_count()*0.8)
 
 class Analysis_Functions():
     def __init__(self):
@@ -147,19 +148,16 @@ class Analysis_Functions():
             expected_spots (float): number of spots we expect based on mask % of image
             n_iter (int): how many iterations it took to converge
         """
-        n_spots = len(spot_indices) # get number of spots
+        original_n_spots = len(spot_indices) # get number of spots
         if blur_degree > 0:
-            for i, index in enumerate(spot_indices):
-                if i == 0:
-                    new_spot_indices = self.dilate_pixel(index, image_size, width=blur_degree+1, edge=blur_degree)
-                else:
-                    new_spot_indices = np.hstack([new_spot_indices, self.dilate_pixel(index, image_size, width=blur_degree+1, edge=blur_degree)])
-            spot_indices = new_spot_indices
+            spot_indices = self.dilate_pixels(spot_indices, image_size, width=blur_degree+1, edge=blur_degree)
+        n_spots = len(spot_indices)
         n_iter_rec = n_iter
         possible_indices = np.arange(0, np.prod(image_size)) # get list of where is possible to exist in an image
         mask_fill = self.calculate_mask_fill(mask_indices, image_size) # get mask_fill
-        expected_spots = np.multiply(mask_fill, n_spots) # get expected number of spots
-        if np.isclose(expected_spots, 0., atol=1e-4):
+        expected_spots_iter = np.multiply(mask_fill, n_spots) # get expected number of spots
+        expected_spots = np.multiply(mask_fill, original_n_spots) # get expected number of spots
+        if np.isclose(expected_spots_iter, 0., atol=1e-4):
             n_iter_rec = 0
             colocalisation_likelihood_ratio = np.NAN
             norm_CSR = np.NAN
@@ -167,27 +165,30 @@ class Analysis_Functions():
             return colocalisation_likelihood_ratio, norm_std, norm_CSR, expected_spots, n_iter_rec
         else:
             nspots_in_mask = self.test_spot_mask_overlap(spot_indices, mask_indices) # get nspots in mask
-            colocalisation_likelihood_ratio = np.divide(nspots_in_mask, expected_spots) # generate colocalisation likelihood ratio
+            colocalisation_likelihood_ratio = np.divide(nspots_in_mask, expected_spots_iter) # generate colocalisation likelihood ratio
             
-            random_spot_locations = np.random.choice(possible_indices, size=(n_iter, n_spots)) # get random spot locations
+            random_spot_locations = np.random.choice(possible_indices, size=(n_iter, original_n_spots)) # get random spot locations
+            if blur_degree > 0:
+                random_spot_locations = self.dilate_pixel_matrix(random_spot_locations, image_size, width=blur_degree+1, edge=blur_degree)
             CSR = np.zeros([n_iter]) # generate CSR array to fill in
-            
             for i in np.arange(n_iter):
                 CSR[i] = self.test_spot_mask_overlap(random_spot_locations[i, :], mask_indices)
             
-            meanCSR = np.divide(np.nanmean(CSR), expected_spots) # should be close to 1
+            meanCSR = np.divide(np.nanmean(CSR), expected_spots_iter) # should be close to 1
             CSR_diff = np.abs(meanCSR - 1.)
             while (CSR_diff > tol) and (n_iter_rec < max_iter): # do n_iter more tests iteratively until convergence
                 n_iter_rec = n_iter_rec + n_iter # add n_iter iterations
                 CSR_new = np.zeros([n_iter])
-                random_spot_locations = np.random.choice(possible_indices, size=(n_iter, n_spots)) # get random spot locations
+                random_spot_locations = np.random.choice(possible_indices, size=(n_iter, original_n_spots)) # get random spot locations
+                if blur_degree > 0:
+                    random_spot_locations = self.dilate_pixel_matrix(random_spot_locations, image_size, width=blur_degree+1, edge=blur_degree)
                 for i in np.arange(n_iter):
                     CSR_new[i] = self.test_spot_mask_overlap(random_spot_locations[i, :], mask_indices)
                 CSR = np.hstack([CSR, CSR_new]) # stack
-                meanCSR = np.divide(np.nanmean(CSR), expected_spots) # should be close to 1
+                meanCSR = np.divide(np.nanmean(CSR), expected_spots_iter) # should be close to 1
                 CSR_diff = np.abs(meanCSR - 1.)
             if (expected_spots > 0) and (np.mean(CSR) > 0):    
-                norm_CSR = np.divide(np.nanmean(CSR), expected_spots) # should be close to 1
+                norm_CSR = np.divide(np.nanmean(CSR), expected_spots_iter) # should be close to 1
                 norm_std = np.divide(np.nanstd(CSR), np.nanmean(CSR)) # std dev (normalised)
             else:
                 norm_CSR = np.NAN
@@ -231,7 +232,9 @@ class Analysis_Functions():
         centroids = centroids[to_keep, :]    
         return centroids, estimated_intensity, estimated_background, estimated_background_perpixel
     
-    def calculate_mask_fill(self, mask_indices, image_size):
+    @staticmethod
+    @jit(nopython=True)
+    def calculate_mask_fill(mask_indices, image_size):
         """
         calculate amount of image filled by mask.
     
@@ -243,7 +246,7 @@ class Analysis_Functions():
             mask_fill (float): proportion of image filled by mask.
         """
 
-        mask_fill = np.divide(len(mask_indices), np.prod(image_size))
+        mask_fill = np.divide(len(mask_indices), np.prod(np.array(image_size)))
         return mask_fill
     
     def test_spot_mask_overlap(self, spot_indices, mask_indices):
@@ -257,17 +260,17 @@ class Analysis_Functions():
         Returns:
             n_spots_in_mask (float): number of spots that overlap with the mask.
         """
-
+        
         n_spots_in_mask = np.sum(np.isin(mask_indices, spot_indices))
         return n_spots_in_mask
-
     
-    def dilate_pixel(self, index, image_size, width=5, edge=1):
+    def dilate_pixel_matrix(self, index_matrix, image_size, width=5, edge=1):
         """
-        Dilate a pixel index to form a neighborhood.
+        Dilate a pixel matrix index to form a matrix of neighbourhoods.
     
         Args:
-            index (int): Pixel index.
+            indices (np.2darray): 2D Array of pixel indices. Second dimension
+            is number of spots.
             image_size (tuple): Image dimensions (height, width).
             width: width of dilation (default 5)
             edge: edge of dilation (default 1)
@@ -278,12 +281,41 @@ class Analysis_Functions():
         x,y = np.where(ski.morphology.octagon(width, edge))
         x = x - int(ski.morphology.octagon(width, edge).shape[0]/2)
         y = y - int(ski.morphology.octagon(width, edge).shape[1]/2)
-        centroid = np.asarray(np.unravel_index(index, image_size, order='F'), dtype=int)
-        x = x + int(centroid[0])
-        y = y + int(centroid[1])
+        centroid = np.asarray(np.unravel_index(index_matrix, image_size, order='F'), dtype=int)
+        x = (np.tile(x, (len(index_matrix), 1)).T[:,:,np.newaxis] + np.asarray(centroid[0, :], dtype=int)).T
+        y = (np.tile(y, (len(index_matrix), 1)).T[:,:,np.newaxis] + np.asarray(centroid[1, :], dtype=int)).T
                 
-        dilated_indices = np.ravel_multi_index(np.vstack([x, y]), image_size, order='F', mode='wrap')
-        return dilated_indices
+        new_dims = (index_matrix.shape[0], int(len(x.ravel())/index_matrix.shape[0]))
+        dilated_index_matrix = np.ravel_multi_index(np.vstack([x.ravel(), y.ravel()]), image_size, order='F', mode='wrap').reshape(new_dims)
+
+        return dilated_index_matrix
+    
+    def dilate_pixels(self, indices, image_size, width=5, edge=1):
+        """
+        Dilate a pixel index to form a neighborhood.
+    
+        Args:
+            indices (np.1darray): Array of pixel indices.
+            image_size (tuple): Image dimensions (height, width).
+            width: width of dilation (default 5)
+            edge: edge of dilation (default 1)
+    
+        Returns:
+            dilated_indices (numpy.ndarray): Dilated pixel indices forming a neighborhood.
+        """
+        x,y = np.where(ski.morphology.octagon(width, edge))
+        x = x - int(ski.morphology.octagon(width, edge).shape[0]/2)
+        y = y - int(ski.morphology.octagon(width, edge).shape[1]/2)
+        centroid = np.asarray(np.unravel_index(indices, image_size, order='F'), dtype=int)
+        x = (np.tile(x, (len(indices), 1)).T + np.asarray(centroid[0, :], dtype=int)).T
+        y = (np.tile(y, (len(indices), 1)).T + np.asarray(centroid[1, :], dtype=int)).T
+                
+        new_dims = (len(indices), int(len(x.ravel())/len(indices)))
+        dilated_indices = np.ravel_multi_index(np.vstack([x.ravel(), y.ravel()]), image_size, order='F', mode='wrap').reshape(new_dims)
+        if len(indices) == 1:
+            return dilated_indices[0]
+        else:
+            return dilated_indices.ravel()
     
     def create_kernel(self, background_sigma, wavelet_sigma):
         """
@@ -363,7 +395,9 @@ class Analysis_Functions():
 
         return boolean_matrix
 
-    def infocus_indices(self, focus_scores, threshold_differential):
+    @staticmethod
+    @jit(nopython=True)
+    def infocus_indices(focus_scores, threshold_differential):
         """
         Identify in-focus indices based on focus scores and a threshold differential.
     
@@ -381,13 +415,13 @@ class Analysis_Functions():
         focus_score_diff[focus_score_diff <= 0] = np.nan
         
         # Perform DBSCAN from the start
-        dist1 = np.concatenate(([0], focus_score_diff > threshold_differential))  # Mark as True if distance exceeds threshold
+        dist1 = np.hstack((np.array([False]), focus_score_diff > threshold_differential))  # Mark as True if distance exceeds threshold
     
         # Calculate the Euclidean distance from the end
-        focus_score_diff_end = np.diff(np.flip(focus_scores))
+        focus_score_diff_end = np.diff(focus_scores[::-1].copy())
         
         # Perform DBSCAN from the end
-        dist2 = np.concatenate(([0], focus_score_diff_end < threshold_differential))  # Mark as True if distance is below threshold
+        dist2 = np.hstack((np.array([False]), focus_score_diff_end < threshold_differential))  # Mark as True if distance is below threshold
     
         # Refine the DBSCAN results
         dist1 = np.diff(dist1)
@@ -405,7 +439,7 @@ class Analysis_Functions():
         first_in_focus = first_in_focus if first_in_focus <= last_in_focus else 1
         
         # Return indices for in-focus images
-        in_focus_indices = [first_in_focus, last_in_focus-1]
+        in_focus_indices = np.array([first_in_focus, last_in_focus-1])
         return in_focus_indices
     
     def estimate_intensity(self, image, centroids):
@@ -718,7 +752,9 @@ class Analysis_Functions():
             
         return to_save
     
-    def bincalculator(self, data):
+    @staticmethod
+    @jit(nopython=True)
+    def bincalculator(data):
         """ bincalculator function
         reads in data and generates bins according to Freedman-Diaconis rule
         
@@ -733,7 +769,6 @@ class Analysis_Functions():
         binwidth = np.multiply(np.multiply(np.power(N, np.divide(-1,3)), sigma), 3.5)
         bins = np.linspace(np.min(data), np.max(data), int((np.max(data) - np.min(data))/binwidth)+1)
         return bins
-
     
     def Gauss2DFitting(self, image, pixel_index_list, expanded_area=5):
         """
@@ -837,7 +872,6 @@ class Analysis_Functions():
         nd2 = indices[data <= q1-(1.5*IQR)]
         return np.hstack([nd1, nd2])
 
-    
     def compute_image_props(self, image, k1, k2, thres=0.05, large_thres=450., areathres=30., rdl=[50., 0., 0.], d=2, z_planes=0, calib=False):
         """
         Gets basic image properties (dl_mask, centroids, radiality)

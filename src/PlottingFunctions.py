@@ -25,6 +25,22 @@ class Plotter():
         self = self
         return
     
+    def bincalculator(self, data):
+        """ bincalculator function
+        reads in data and generates bins according to Freedman-Diaconis rule
+        
+        Args:
+            data (np.1darray): data to calculate bins
+        
+        Returns:
+            bins (np.1darray): bins for histogram according to Freedman-Diaconis rule """
+        N = len(data)
+        sigma = np.std(data)
+    
+        binwidth = np.multiply(np.multiply(np.power(N, np.divide(-1,3)), sigma), 3.5)
+        bins = np.linspace(np.min(data), np.max(data), int((np.max(data) - np.min(data))/binwidth)+1)
+        return bins
+    
     def two_column_plot(self, nrows=1, ncolumns=1, heightratio=[1], widthratio=[1], height=0, big=False):
         """ two_column_plot function
         takes data and makes a two-column width figure
