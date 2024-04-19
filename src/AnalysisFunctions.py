@@ -149,6 +149,14 @@ class Analysis_Functions():
             n_iter (int): how many iterations it took to converge
         """
         original_n_spots = len(spot_indices) # get number of spots
+        
+        if original_n_spots == 0:
+            n_iter_rec = 0
+            colocalisation_likelihood_ratio = np.NAN
+            norm_CSR = np.NAN
+            norm_std = np.NAN
+            return colocalisation_likelihood_ratio, norm_std, norm_CSR, 0, n_iter_rec
+        
         if blur_degree > 0:
             spot_indices = self.dilate_pixels(spot_indices, image_size, width=blur_degree+1, edge=blur_degree)
         n_spots = len(spot_indices)
@@ -1003,4 +1011,5 @@ class Analysis_Functions():
             zps[z_planes] = z_planes+1
             dataarray_cell = np.vstack([clr, norm_std, norm_CSR, 
                             expected_spots, n_iter, zps])
+            dataarray_cell = dataarray_cell[:, np.sum(dataarray_cell, axis=0) > 0]
         return pd.DataFrame(data=dataarray_cell.T, columns=columns)

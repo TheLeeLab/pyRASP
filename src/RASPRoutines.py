@@ -202,13 +202,13 @@ class RASP_Routines():
         
         r1_reject = A_F.rejectoutliers_ind(means_rad1)
         if len(r1_reject) > 0:
-            keys_to_del = keys[r1_reject]
-            r1_neg_forplot.pop(keys_to_del)
+            for val in r1_reject:
+                r1_neg_forplot.pop(keys[val])
 
         r2_reject = A_F.rejectoutliers_ind(means_rad2)
         if len(r2_reject) > 0:
-            keys_to_del = keys[r2_reject]
-            r2_neg_forplot.pop(keys_to_del)
+            for val in r2_reject:
+                r2_neg_forplot.pop(keys[val])
         ### IQR filtering complete
         
         for i, key in enumerate(r1_neg_forplot.keys()):
@@ -241,19 +241,16 @@ class RASP_Routines():
         import PlottingFunctions
         plots = PlottingFunctions.Plotter()
         import matplotlib.pyplot as plt
-        from matplotlib.pyplot import cm
         
         fig, axs = plots.two_column_plot(nrows=1, ncolumns=2, heightratio=[1], widthratio=[1,1])
         
-        
-        color = cm.twilight(np.linspace(0, 1, len(r1_neg_forplot.keys())))
-        for i, key in enumerate(r1_neg_forplot.keys()):
-            axs[0] = plots.histogram_plot(axs[0], r1_neg_forplot[key], bins=A_F.bincalculator(r1_neg), histcolor=color[i], alpha=0.5)
-            axs[1] = plots.histogram_plot(axs[1], r2_neg_forplot[key], bins=A_F.bincalculator(r2_neg), histcolor=color[i], alpha=0.5)
+        bins_r1 = A_F.bincalculator(r1_neg)
+        bins_r2 = A_F.bincalculator(r2_neg)
+        axs[0] = plots.histogram_plot(axs[0], r1_neg, bins=bins_r1, alpha=0.5)
+        axs[1] = plots.histogram_plot(axs[1], r2_neg, bins=bins_r2, alpha=0.5)
 
         ylim0, ylim1 = axs[0].get_ylim()[0], axs[0].get_ylim()[1]
         axs[0].vlines(rad_1, ylim0, ylim1, color='k', label='threshold', ls='--')
-        axs[0].vlines(rad_1, ylim0, ylim1, color='k', alpha=0, label='colours are \ndifferent FOVs', ls='--')
 
         axs[0].set_ylim([ylim0, ylim1])
         axs[0].set_xlabel('flatness metric')
@@ -552,11 +549,15 @@ class RASP_Routines():
                                     cell_sigma2=self.cell_sigma2,
                                     d=self.d) 
         
-        # run through z planes here and check data in; if not, abort some
-
+        z_to_plot = np.full_like(np.arange(z_planes[0]+1, z_planes[-1]+1), -1)
+        for i, val in enumerate(np.arange(z_planes[0]+1, z_planes[-1]+1)):
+            if len(to_save[to_save.z == val].sum_intensity_in_photons.values) > 1:
+                z_to_plot[i] = val
+        z_to_plot = z_to_plot[z_to_plot >= 0]
+        
         if cell_analysis == False:
             
-            for i in enumerate(np.arange(z_planes[0]+1, z_planes[-1]+1)):
+            for i in enumerate(z_to_plot):
                 fig, axs = plots.two_column_plot(nrows=1, ncolumns=2, widthratio=[1,1])
                 xpositions = to_save[to_save.z == i[1]].x.values
                 ypositions = to_save[to_save.z == i[1]].y.values
@@ -577,7 +578,7 @@ class RASP_Routines():
                 plt.show()
         else:
             
-            for i in enumerate(np.arange(z_planes[0]+1, z_planes[-1]+1)):
+            for i in enumerate(z_to_plot):
                 fig, axs = plots.two_column_plot(nrows=1, ncolumns=3, widthratio=[1,1,1])
                 xpositions = to_save[to_save.z == i[1]].x.values
                 ypositions = to_save[to_save.z == i[1]].y.values
