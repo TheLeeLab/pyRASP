@@ -260,6 +260,8 @@ consider part of spot). Default 1</p></li>
 <li><p><strong>perc_std</strong> (<em>float</em>) – standard deviation on this CLR based on bootstrapping</p></li>
 <li><p><strong>meanCSR</strong> (<em>float</em>) – mean of randomised spot data</p></li>
 <li><p><strong>expected_spots</strong> (<em>float</em>) – number of spots we expect based on mask % of image</p></li>
+<li><p><strong>coincidence</strong> (<em>float</em>) – coincidence FoV</p></li>
+<li><p><strong>chance_coincidence</strong> (<em>float</em>) – chance coincidence</p></li>
 <li><p><strong>n_iter</strong> (<em>int</em>) – how many iterations it took to converge</p></li>
 </ul>
 </dd>
@@ -514,6 +516,8 @@ used for the determination of large protein aggregates.</p></li>
 <li><p><strong>norm_std</strong> (<em>ndarray</em>) – empty array</p></li>
 <li><p><strong>norm_CSR</strong> (<em>ndarray</em>) – empty array</p></li>
 <li><p><strong>expected_spots</strong> (<em>ndarray</em>) – empty array</p></li>
+<li><p><strong>coincidence</strong> (<em>ndarray</em>) – empty array</p></li>
+<li><p><strong>chance_coincidence</strong> (<em>ndarray</em>) – empty array</p></li>
 <li><p><strong>n_iter</strong> (<em>ndarray</em>) – empty array</p></li>
 </ul>
 </dd>
@@ -580,14 +584,19 @@ used for the determination of large protein aggregates.</p></li>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="AnalysisFunctions.Analysis_Functions.make_datarray_cell">
-<span class="sig-name descname"><span class="pre">make_datarray_cell</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">clr</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">norm_std</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">norm_CSR</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">expected_spots</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_iter</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">columns</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">z_planes</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'none'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#AnalysisFunctions.Analysis_Functions.make_datarray_cell" title="Link to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">make_datarray_cell</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">clr</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">norm_std</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">norm_CSR</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">expected_spots</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">coincidence</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">chance_coincidence</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_iter</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">columns</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">z_planes</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'none'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#AnalysisFunctions.Analysis_Functions.make_datarray_cell" title="Link to this definition"></a></dt>
 <dd><p>makes a datarray in pandas for cell information</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>clr</strong> (<em>ndarray</em>) – colocalisation likelihood ratios</p></li>
+<li><p><strong>norm_std</strong> (<em>np.1darray</em>) – array of standard deviations</p></li>
+<li><p><strong>norm_CSR</strong> (<em>np.1darray</em>) – array of CSRs</p></li>
+<li><p><strong>expected_spots</strong> (<em>np.1darray</em>) – array of expected spots</p></li>
+<li><p><strong>coincidence</strong> (<em>np.1darray</em>) – array of coincidence values</p></li>
+<li><p><strong>chance_coincidence</strong> (<em>np.1darray</em>) – array of chance coincidence values</p></li>
+<li><p><strong>n_iter</strong> (<em>np.1darray</em>) – array of iteration muber</p></li>
 <li><p><strong>columns</strong> (<em>list</em><em> of </em><em>strings</em>) – column labels</p></li>
-<li><p><strong>zp</strong> (<em>string</em><em> or </em><em>int</em>) – if int, gives out z-plane version of datarray</p></li>
 <li><p><strong>z_planes</strong> – z_planes to put in array (if needed)</p></li>
 </ul>
 </dd>

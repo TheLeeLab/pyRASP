@@ -146,6 +146,8 @@ class Analysis_Functions():
             perc_std (float): standard deviation on this CLR based on bootstrapping
             meanCSR (float): mean of randomised spot data
             expected_spots (float): number of spots we expect based on mask % of image
+            coincidence (float): coincidence FoV
+            chance_coincidence (float): chance coincidence
             n_iter (int): how many iterations it took to converge
         """
         original_n_spots = len(spot_indices) # get number of spots
@@ -170,10 +172,13 @@ class Analysis_Functions():
             colocalisation_likelihood_ratio = np.NAN
             norm_CSR = np.NAN
             norm_std = np.NAN
-            return colocalisation_likelihood_ratio, norm_std, norm_CSR, expected_spots, n_iter_rec
+            coincidence = np.NAN
+            chance_coincidence = np.NAN
+            return colocalisation_likelihood_ratio, norm_std, norm_CSR, expected_spots, coincidence, chance_coincidence, n_iter_rec
         else:
             nspots_in_mask = self.test_spot_mask_overlap(spot_indices, mask_indices) # get nspots in mask
             colocalisation_likelihood_ratio = np.divide(nspots_in_mask, expected_spots_iter) # generate colocalisation likelihood ratio
+            coincidence = np.divide(nspots_in_mask, n_spots) # generate coincidence
             
             random_spot_locations = np.random.choice(possible_indices, size=(n_iter, original_n_spots)) # get random spot locations
             if blur_degree > 0:
@@ -183,6 +188,7 @@ class Analysis_Functions():
                 CSR[i] = self.test_spot_mask_overlap(random_spot_locations[i, :], mask_indices)
             
             meanCSR = np.divide(np.nanmean(CSR), expected_spots_iter) # should be close to 1
+            chance_coincidence = np.divide(np.nanmean(CSR), n_spots)
             CSR_diff = np.abs(meanCSR - 1.)
             while (CSR_diff > tol) and (n_iter_rec < max_iter): # do n_iter more tests iteratively until convergence
                 n_iter_rec = n_iter_rec + n_iter # add n_iter iterations
@@ -201,7 +207,7 @@ class Analysis_Functions():
             else:
                 norm_CSR = np.NAN
                 norm_std = np.NAN
-            return colocalisation_likelihood_ratio, norm_std, norm_CSR, expected_spots, n_iter_rec
+            return colocalisation_likelihood_ratio, norm_std, norm_CSR, expected_spots, coincidence, chance_coincidence, n_iter_rec
     
     def default_spotanalysis_routine(self, image, k1, k2, thres=0.05, 
                                      large_thres=450., areathres=30.,
@@ -549,7 +555,9 @@ class Analysis_Functions():
             if len(idx1) > 0:
                 large_mask = self.create_filled_region(image.shape, pixel_index_list[idx1])
                 large_mask = binary_fill_holes(large_mask)
-
+                
+            # add in pixel threshold?
+            
         return large_mask.astype(bool)
 
 
@@ -661,12 +669,12 @@ class Analysis_Functions():
         
         columns = ['x', 'y', 'z', 'sum_intensity_in_photons', 'bg_per_punctum', 'bg_per_pixel', 'zi', 'zf']
         columns_cell = ['colocalisation_likelihood_ratio', 'std', 
-                            'CSR', 'expected_spots', 'n_iterations', 'z']
+                            'CSR', 'expected_spots', 'coincidence', 'chance_coincidence', 'n_iterations', 'z']
 
         if not isinstance(z, int):
             z_planes = np.arange(z[0], z[1])
             cell_mask = np.zeros_like(image_cell, dtype=bool)
-            clr, norm_std, norm_CSR, expected_spots, n_iter = self.gen_CSRmats(image_cell.shape[2])
+            clr, norm_std, norm_CSR, expected_spots, coincidence, chance_coincidence, n_iter = self.gen_CSRmats(image_cell.shape[2])
             
             centroids = {} # do this so can parallelise
             estimated_intensity = {}
@@ -685,7 +693,7 @@ class Analysis_Functions():
                 mask_indices, spot_indices = self.generate_mask_and_spot_indices(cell_mask[:,:,zp], 
                                         np.asarray(centroids[zp], dtype=int), image_size)
 
-                clr[zp], norm_std[zp], norm_CSR[zp], expected_spots[zp], n_iter[zp] = self.calculate_spot_colocalisation_likelihood_ratio(spot_indices, mask_indices, image_size)
+                clr[zp], norm_std[zp], norm_CSR[zp], expected_spots[zp], coincidence[zp], chance_coincidence[zp], n_iter[zp] = self.calculate_spot_colocalisation_likelihood_ratio(spot_indices, mask_indices, image_size)
                 
             pool = Pool(nodes=cpu_number); pool.restart()
             pool.map(analyse_zplanes, z_planes)
@@ -696,7 +704,7 @@ class Analysis_Functions():
             to_save = to_save.reset_index(drop=True)
             
             to_save_cell = self.make_datarray_cell(clr, norm_std,
-                        norm_CSR, expected_spots, n_iter, columns_cell, z_planes)
+                        norm_CSR, expected_spots, coincidence, chance_coincidence, n_iter, columns_cell, z_planes)
         else:
             centroids, estimated_intensity, estimated_background, estimated_background_perpixel = self.default_spotanalysis_routine(image,
             k1, k2, prot_thres, large_prot_thres, areathres, rdl, d)
@@ -707,13 +715,14 @@ class Analysis_Functions():
             image_size = image.shape
             mask_indices, spot_indices = self.generate_mask_and_spot_indices(cell_mask, centroids, image_size)
 
-            clr, norm_std, norm_CSR, expected_spots, n_iter = self.calculate_spot_colocalisation_likelihood_ratio(spot_indices, mask_indices, image_size)
+            clr, norm_std, norm_CSR, expected_spots, coincidence, chance_coincidence, n_iter = self.calculate_spot_colocalisation_likelihood_ratio(spot_indices, mask_indices, image_size)
 
             to_save = self.make_datarray_spot(centroids, 
                 estimated_intensity, estimated_background, estimated_background_perpixel, columns[:-2])
             
             to_save_cell = self.make_datarray_cell(clr, norm_std, norm_CSR, 
-                                expected_spots, n_iter, columns_cell[:-1])
+                                expected_spots, coincidence, chance_coincidence,
+                                n_iter, columns_cell[:-1])
         return to_save, to_save_cell, cell_mask 
 
     def compute_spot_props(self, image, k1, k2, thres=0.05, large_thres=450., 
@@ -942,6 +951,8 @@ class Analysis_Functions():
             norm_std (ndarray): empty array
             norm_CSR (ndarray): empty array
             expected_spots (ndarray): empty array
+            coincidence (ndarray): empty array
+            chance_coincidence (ndarray): empty array
             n_iter (ndarray): empty array
         
         """
@@ -950,8 +961,10 @@ class Analysis_Functions():
         norm_std = np.zeros(image_z_shape)
         norm_CSR = np.zeros(image_z_shape)
         expected_spots = np.zeros(image_z_shape)
+        coincidence = np.zeros(image_z_shape)
+        chance_coincidence = np.zeros(image_z_shape)
         n_iter = np.zeros(image_z_shape)
-        return clr, norm_std, norm_CSR, expected_spots, n_iter
+        return clr, norm_std, norm_CSR, expected_spots, coincidence, chance_coincidence, n_iter
     
     def make_datarray_spot(self, centroids, estimated_intensity, estimated_background, estimated_background_perpixel, columns, z_planes=0):
         """
@@ -989,14 +1002,19 @@ class Analysis_Functions():
                     dataarray = np.hstack([dataarray, da])
         return pd.DataFrame(data=dataarray.T, columns=columns)
     
-    def make_datarray_cell(self, clr, norm_std, norm_CSR, expected_spots, n_iter, columns, z_planes='none'):
+    def make_datarray_cell(self, clr, norm_std, norm_CSR, expected_spots, coincidence, chance_coincidence, n_iter, columns, z_planes='none'):
         """
         makes a datarray in pandas for cell information
     
         Args:
             clr (ndarray): colocalisation likelihood ratios
+            norm_std (np.1darray): array of standard deviations
+            norm_CSR (np.1darray): array of CSRs
+            expected_spots (np.1darray): array of expected spots
+            coincidence (np.1darray): array of coincidence values
+            chance_coincidence (np.1darray): array of chance coincidence values
+            n_iter (np.1darray): array of iteration muber
             columns (list of strings): column labels
-            zp (string or int): if int, gives out z-plane version of datarray
             z_planes: z_planes to put in array (if needed)
         
         Returns:
@@ -1005,11 +1023,12 @@ class Analysis_Functions():
         """
         if isinstance(z_planes, str):
             dataarray_cell = np.vstack([clr, norm_std, norm_CSR, 
-                            expected_spots, n_iter])
+                            expected_spots, coincidence, chance_coincidence, n_iter])
         else:
             zps = np.zeros_like(clr)
             zps[z_planes] = z_planes+1
             dataarray_cell = np.vstack([clr, norm_std, norm_CSR, 
-                            expected_spots, n_iter, zps])
+                            expected_spots, coincidence, 
+                            chance_coincidence, n_iter, zps])
             dataarray_cell = dataarray_cell[:, np.sum(dataarray_cell, axis=0) > 0]
         return pd.DataFrame(data=dataarray_cell.T, columns=columns)
