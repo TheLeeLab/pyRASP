@@ -392,15 +392,13 @@ class RASP_Routines():
             disp (boolean): If true, prints when analysed an image stack.
 
         """
-        files = self.file_search(folder, oligomer_string, imtype)
-        if cell_analysis == True:
-            cell_files = self.file_search(folder, cell_string, imtype)
+        all_files = self.file_search(folder, oligomer_string, imtype) # first get all files in any subfolders
+        folders = np.unique([os.path.split(i)[0] for i in all_files]) # get unique folders in this
+        
         k1, k2 = A_F.create_kernel(gsigma, rwave) # create image processing kernels
         rdl = [self.flatness, self.integratedGrad, 0.]
-
-        # create analysis and analysis parameter directories
-        analysis_directory = os.path.abspath(folder)+'_analysis'
-        IO.make_directory(analysis_directory)
+        
+        # save analysis parameters in overall directory
         analysis_p_directory = os.path.abspath(folder)+'_analysisparameters'
 
         to_save = {'areathres': self.areathres, 'flatness': self.flatness, 'd': self.d,
@@ -415,81 +413,91 @@ class RASP_Routines():
                        'QE': self.QE}
         IO.save_analysis_params(analysis_p_directory, 
                 to_save, gain_map=self.gain_map, offset_map=self.offset_map)
+
         
-        for i in np.arange(len(files)):
-            img = IO.read_tiff_tophotons(os.path.join(folder, files[i]), 
-            QE=self.QE, gain_map=self.gain_map, offset_map=self.offset_map)
+        for val in folders:
+            subfolder = os.path.abspath(val)
+            files = self.file_search(subfolder, oligomer_string, imtype) # first get all files in any subfolders
             if cell_analysis == True:
-                img_cell = IO.read_tiff_tophotons(os.path.join(folder, cell_files[i]), 
+                cell_files = self.file_search(subfolder, cell_string, imtype) # get all files in any subfolders
+            # create analysis and analysis parameter directories
+            analysis_directory = os.path.abspath(subfolder)+'_analysis'
+            IO.make_directory(analysis_directory)
+            
+            for i in np.arange(len(files)):
+                img = IO.read_tiff_tophotons(os.path.join(folder, files[i]), 
                 QE=self.QE, gain_map=self.gain_map, offset_map=self.offset_map)
-            if im_start > 1:
-                img = img[:, :, im_start:]
-            if len(img.shape) > 2: # if a z-stack
-                z_planes = self.get_infocus_planes(img, k1)
-
-                if cell_analysis == False:
-                    to_save = A_F.compute_spot_props(img, 
-                    k1, k2, thres=thres, large_thres=large_thres, 
-                    areathres=self.areathres, rdl=rdl, z=z_planes, d=self.d)
-                else:
-                    to_save, to_save_cell, cell_mask = A_F.compute_spot_and_cell_props(img, img_cell, k1, k2,
-                                        prot_thres=thres, large_prot_thres=large_thres, 
-                                        areathres=self.areathres, rdl=rdl, z=z_planes, 
-                                        cell_threshold1=self.cell_threshold1, 
-                                        cell_threshold2=self.cell_threshold1, 
-                                        cell_sigma1=self.cell_sigma1,
-                                        cell_sigma2=self.cell_sigma2,
-                                        d=self.d)
-                
-                if one_savefile == False:
-                    savename = os.path.join(analysis_directory, 
-                    os.path.split(files[i])[-1].split(imtype)[0]+'.csv')
-                    to_save.to_csv(savename, index=False)
-                    if cell_analysis == True:
-                        to_save_cell.to_csv(os.path.join(analysis_directory, 
-                        os.path.split(files[i])[-1].split(imtype)[0]+'_cell_analysis.csv'), index=False)
-                        IO.write_tiff(cell_mask, os.path.join(analysis_directory, 
-                        os.path.split(files[i])[-1].split(imtype)[0]+'_cellMask.tiff'), bit=np.uint8)
-                else:
-                    to_save['image_filename'] = np.full_like(to_save.z.values, files[i], dtype='object')
-                    savename = os.path.join(analysis_directory, 'spot_analysis.csv')
-                    savename_spot = os.path.join(analysis_directory, 'spot_numbers.csv')
-                    n_spots = self.count_spots(to_save, np.arange(z_planes[0], z_planes[1]))
-                    n_spots['image_filename'] = np.full_like(n_spots.z.values, files[i], dtype='object')
-
-                    if cell_analysis == True:
-                        to_save_cell['image_filename'] = np.full_like(to_save_cell.z.values, files[i], dtype='object')
-                        savename_cell = os.path.join(analysis_directory, 'cell_colocalisation_analysis.csv')
-                        IO.write_tiff(cell_mask, os.path.join(analysis_directory, 
-                        os.path.split(files[i])[-1].split(imtype)[0]+'_cellMask.tiff'), bit=np.uint8)
-
-                    if i != 0:
-                        to_save.to_csv(savename, mode='a', header=False, index=False)
-                        n_spots.to_csv(savename_spot, mode='a', header=False, index=False)
-                        if cell_analysis == True:
-                            to_save_cell.to_csv(savename_cell, mode='a', header=False, index=False)
+                if cell_analysis == True:
+                    img_cell = IO.read_tiff_tophotons(os.path.join(folder, cell_files[i]), 
+                    QE=self.QE, gain_map=self.gain_map, offset_map=self.offset_map)
+                if im_start > 1:
+                    img = img[:, :, im_start:]
+                if len(img.shape) > 2: # if a z-stack
+                    z_planes = self.get_infocus_planes(img, k1)
+    
+                    if cell_analysis == False:
+                        to_save = A_F.compute_spot_props(img, 
+                        k1, k2, thres=thres, large_thres=large_thres, 
+                        areathres=self.areathres, rdl=rdl, z=z_planes, d=self.d)
                     else:
-                        to_save.to_csv(savename, index=False)
-                        n_spots.to_csv(savename_spot, index=False)
-                        if cell_analysis == True:
-                            to_save_cell.to_csv(savename_cell, index=False)
-            else: # if not a z-stack
-                to_save = A_F.compute_spot_props(img, k1, k2, thres=thres,
-                large_thres=large_thres, areathres=self.areathres, rdl=rdl, d=self.d)
-                
-                if one_savefile == False:
-                    savename = os.path.join(analysis_directory, 
+                        to_save, to_save_cell, cell_mask = A_F.compute_spot_and_cell_props(img, img_cell, k1, k2,
+                                            prot_thres=thres, large_prot_thres=large_thres, 
+                                            areathres=self.areathres, rdl=rdl, z=z_planes, 
+                                            cell_threshold1=self.cell_threshold1, 
+                                            cell_threshold2=self.cell_threshold1, 
+                                            cell_sigma1=self.cell_sigma1,
+                                            cell_sigma2=self.cell_sigma2,
+                                            d=self.d)
+                    
+                    if one_savefile == False:
+                        savename = os.path.join(analysis_directory, 
                         os.path.split(files[i])[-1].split(imtype)[0]+'.csv')
-                    to_save.to_csv(savename, index=False)
-                else:
-                    to_save['image_filename'] = np.full_like(to_save.z.values, files[i], dtype='object')
-                    savename = os.path.join(analysis_directory, 'spot_analysis.csv')
-                    if i != 0:
-                        to_save.to_csv(savename, mode='a', header=False, index=False)
-                    else:
                         to_save.to_csv(savename, index=False)
-            if disp == True:
-                print("Analysed image", os.path.split(files[i])[-1], "data saved in", analysis_directory)
+                        if cell_analysis == True:
+                            to_save_cell.to_csv(os.path.join(analysis_directory, 
+                            os.path.split(files[i])[-1].split(imtype)[0]+'_cell_analysis.csv'), index=False)
+                            IO.write_tiff(cell_mask, os.path.join(analysis_directory, 
+                            os.path.split(files[i])[-1].split(imtype)[0]+'_cellMask.tiff'), bit=np.uint8)
+                    else:
+                        to_save['image_filename'] = np.full_like(to_save.z.values, files[i], dtype='object')
+                        savename = os.path.join(analysis_directory, 'spot_analysis.csv')
+                        savename_spot = os.path.join(analysis_directory, 'spot_numbers.csv')
+                        n_spots = self.count_spots(to_save, np.arange(z_planes[0], z_planes[1]))
+                        n_spots['image_filename'] = np.full_like(n_spots.z.values, files[i], dtype='object')
+    
+                        if cell_analysis == True:
+                            to_save_cell['image_filename'] = np.full_like(to_save_cell.z.values, files[i], dtype='object')
+                            savename_cell = os.path.join(analysis_directory, 'cell_colocalisation_analysis.csv')
+                            IO.write_tiff(cell_mask, os.path.join(analysis_directory, 
+                            os.path.split(files[i])[-1].split(imtype)[0]+'_cellMask.tiff'), bit=np.uint8)
+    
+                        if i != 0:
+                            to_save.to_csv(savename, mode='a', header=False, index=False)
+                            n_spots.to_csv(savename_spot, mode='a', header=False, index=False)
+                            if cell_analysis == True:
+                                to_save_cell.to_csv(savename_cell, mode='a', header=False, index=False)
+                        else:
+                            to_save.to_csv(savename, index=False)
+                            n_spots.to_csv(savename_spot, index=False)
+                            if cell_analysis == True:
+                                to_save_cell.to_csv(savename_cell, index=False)
+                else: # if not a z-stack
+                    to_save = A_F.compute_spot_props(img, k1, k2, thres=thres,
+                    large_thres=large_thres, areathres=self.areathres, rdl=rdl, d=self.d)
+                    
+                    if one_savefile == False:
+                        savename = os.path.join(analysis_directory, 
+                            os.path.split(files[i])[-1].split(imtype)[0]+'.csv')
+                        to_save.to_csv(savename, index=False)
+                    else:
+                        to_save['image_filename'] = np.full_like(to_save.z.values, files[i], dtype='object')
+                        savename = os.path.join(analysis_directory, 'spot_analysis.csv')
+                        if i != 0:
+                            to_save.to_csv(savename, mode='a', header=False, index=False)
+                        else:
+                            to_save.to_csv(savename, index=False)
+                if disp == True:
+                    print("Analysed image", os.path.split(files[i])[-1], "data saved in", analysis_directory)
         return
     
     def single_image_analysis(self, protein_file, thres=0.05, 
@@ -695,185 +703,3 @@ class RASP_Routines():
         file_list = np.sort([e for e in file_list if string2 in e])
         return file_list
     
-    def analyse_round_subfolder(self, folder, k1, k2, rdl, imtype='.tif', thres=0.05, 
-                             large_thres=450., gsigma=1.4, rwave=2., 
-                             oligomer_string='C1', cell_string='C0',
-                             if_filter=True, im_start=1, cell_analysis=False, 
-                             one_savefile=True, disp=True):
-        """
-        analyses data in a folder specified,
-        folder has either "Round" in the title
-        or multiple rounds below; 
-        structure as in Lee Lab Cambridge Experiment
-        saves spots, locations, intensities and backgrounds in a folder created
-        next to the folder analysed with _analysis string attached
-        also writes a folder with _analysisparameters and saves analysis parameters
-        used for particular experiment
-    
-        Args:
-            folder (string): Folder containing images
-            k1 (matrix): convolution kernel 1
-            k2 (matrix): convolution kernel 2
-            rdl (vector): radiality filter
-            thres (float): fraction of bright pixels accepted
-            large_thres (float): large object intensity threshold
-            imtype (string): Type of images being analysed, default tif
-            gisgma (float): gaussian blurring parameter (default 1.4)
-            rwave (float): Ricker wavelent sigma (default 2.)
-            oligomer_string (string): string for oligomer-containing data (default C1)
-            cell string (string): string for cell-containing data (default C0)
-            if_filter (boolean): Filter images for focus (default True)
-            im_start (integer): Images to start from (default 1)
-            one_savefile (boolean): Parameter that, if true, doesn't save a file
-                per image but amalgamates them into one file
-            cell_analysis (boolean): Parameter where script also analyses cell
-                images and computes colocalisation likelihood ratios.
-            disp (boolean): If True, outputs a message saying analysed image.
-        """
-
-        r = float(os.path.split(folder)[1].split('Round')[1]) # get round for rsid later
-        
-        # create analysis parameter directory
-        analysis_p_directory = os.path.abspath(folder)+'_analysisparameters'
-
-        to_save = {'areathres': self.areathres, 'flatness': self.flatness,
-                   'd': self.d, 'integratedGrad': self.integratedGrad,
-                   'gaussian_sigma': gsigma, 'ricker_sigma': rwave, 
-                   'thres': thres, 'large_thres': large_thres, 
-                       'focus_score_diff': self.focus_score_diff,
-                       'cell_sigma1': self.cell_sigma1,
-                       'cell_sigma2': self.cell_sigma2,
-                       'cell_threshold1': self.cell_threshold1,
-                       'cell_threshold2': self.cell_threshold2,
-                       'QE': self.QE}
-        IO.save_analysis_params(analysis_p_directory, 
-                to_save, gain_map=self.gain_map, offset_map=self.offset_map)
-       
-        oligomer_files = self.file_search(folder, oligomer_string, imtype)
-        if cell_analysis == True:
-            cell_files = self.file_search(folder, cell_string, imtype)
-    
-        if one_savefile == True:
-            analysis_directory = os.path.abspath(folder)+'_analysis'
-            IO.make_directory(analysis_directory)
-        
-        for i in np.arange(len(oligomer_files)):
-            if 'Sample' in oligomer_files[i]:
-                s = float(os.path.split(os.path.split(os.path.split(oligomer_files[i])[0])[0])[1].split('Sample')[1])/100
-            else:
-                s = float(os.path.split(os.path.split(os.path.split(oligomer_files[i])[0])[0])[1].split('S')[1])/100
-            rsid = r + s
-            img = IO.read_tiff_tophotons(oligomer_files[i], 
-            QE=self.QE, gain_map=self.gain_map, offset_map=self.offset_map)
-            if cell_analysis == True:
-                img_cell = IO.read_tiff_tophotons(cell_files[i], 
-                QE=self.QE, gain_map=self.gain_map, offset_map=self.offset_map)
-
-            if len(img.shape) > 2: # if a z-stack
-                z_planes = self.get_infocus_planes(img, k1)
-                
-                if cell_analysis == False:
-                    to_save = A_F.compute_spot_props(img, 
-                    k1, k2, thres=thres, large_thres=large_thres, 
-                    areathres=self.areathres, rdl=rdl, z=z_planes, d=self.d)
-                else:
-                    to_save, to_save_cell, cell_mask = A_F.compute_spot_and_cell_props(img, img_cell, k1, k2,
-                                        prot_thres=thres, large_prot_thres=large_thres, 
-                                        areathres=self.areathres, rdl=rdl, z=z_planes, 
-                                        cell_threshold1=self.cell_threshold1, 
-                                        cell_threshold2=self.cell_threshold1, 
-                                        cell_sigma1=self.cell_sigma1,
-                                        cell_sigma2=self.cell_sigma2,
-                                        d=self.d)
-                
-                file = oligomer_files[i]
-                directory = os.path.split(os.path.split(file)[0])[0]+'_analysis'
-                
-
-                if one_savefile == False:
-                    if cell_analysis == True:
-                        self.save_analysis_results(self, directory, 
-                        file, to_save, rsid, cell_analysis, to_save_cell, cell_mask)
-                    else:
-                        self.save_analysis_results(self, directory, 
-                        file, to_save, rsid, cell_analysis)                    
-                else:
-                    if cell_analysis == True:
-                        self.save_analysis_results_onesavefile(analysis_directory, file, 
-                            to_save, rsid, z_planes, i, cell_analysis, cell_files[i], to_save_cell, cell_mask)
-                    else:
-                        self.save_analysis_results_onesavefile(analysis_directory, file, 
-                            to_save, rsid, z_planes, i, False)
-            else: # if not a z-stack
-                to_save = A_F.compute_spot_props(img, k1, k2, thres=thres,
-                large_thres=large_thres, areathres=self.areathres, rdl=rdl,
-                d=self.d)
-                
-                if one_savefile == False:
-                    directory = os.path.split(os.path.split(oligomer_files[i])[0])+'_analysis'
-                    IO.make_directory(directory)
-                    to_save['rsid'] = np.full_like(to_save.z.values, rsid)
-                    to_save['image_filename'] = np.full_like(to_save.z.values, os.path.split(oligomer_files[i])[-1], dtype='object')
-                    savefile = os.path.split(oligomer_files[i])[-1]
-                    savename = os.path.join(directory, 
-                    savefile+'.csv')
-                    to_save.to_csv(savename, index=False)
-                else:
-                    to_save['rsid'] = np.full_like(to_save.z.values, rsid)
-                    savename = os.path.join(analysis_directory, 'spot_analysis.csv')
-                    if i != 0:
-                        to_save.to_csv(savename, mode='a', header=False, index=False)
-                    else:
-                        to_save.to_csv(savename, index=False)
-            if disp == True:
-                print("Analysed image", os.path.split(oligomer_files[i])[-1], "data saved in", analysis_directory)
-
-        return
-    
-    def analyse_round_images(self, folder, imtype='.tif', thres=0.05, 
-                             large_thres=450., gsigma=1.4, rwave=2., 
-                             oligomer_string='C1', cell_string='C0',
-                             if_filter=True, im_start=1, cell_analysis=False, one_savefile=True):
-        """
-        analyses data in a folder specified,
-        folder has either "Round" in the title
-        or multiple rounds below; 
-        structure as in Lee Lab Cambridge Experiment
-        saves spots, locations, intensities and backgrounds in a folder created
-        next to the folder analysed with _analysis string attached
-        also writes a folder with _analysisparameters and saves analysis parameters
-        used for particular experiment
-    
-        Args:
-            folder (string): Folder containing images
-            imtype (string): Type of images being analysed, default tif
-            gisgma (float): gaussian blurring parameter (default 1.4)
-            rwave (float): Ricker wavelent sigma (default 2.)
-            oligomer_string (string): string for oligomer-containing data (default C1)
-            cell string (string): string for cell-containing data (default C0)
-            if_filter (boolean): Filter images for focus (default True)
-            im_start (integer): Images to start from (default 1)
-            one_savefile (boolean): Parameter that, if true, doesn't save a file
-                per image but amalgamates them into one file
-            cell_analysis (boolean): Parameter where script also analyses cell
-                images and computes colocalisation likelihood ratios.
-        """
-        k1, k2 = A_F.create_kernel(gsigma, rwave) # create image processing kernels
-        rdl = [self.flatness, self.integratedGrad, 0.]
-
-        if 'Round' in folder:
-            self.analyse_round_subfolder(folder, k1, k2, rdl, imtype, thres, 
-                                     large_thres, gsigma, rwave, 
-                                     oligomer_string, cell_string,
-                                     if_filter, im_start, cell_analysis, one_savefile)
-        else:
-            folders = np.sort([e for e in os.listdir(folder) if 'Round' in e])
-            folders = np.sort([e for e in folders if 2 > len(e.split('_'))]) # remove any folders that aren't just roundN
-            if len(folders) > 0:
-                for f in folders:
-                    self.analyse_round_subfolder(os.path.join(folder, f), k1, k2, rdl, imtype, thres, 
-                                             large_thres, gsigma, rwave, 
-                                             oligomer_string, cell_string,
-                                             if_filter, im_start, 
-                                             cell_analysis, one_savefile)
-        return
