@@ -157,7 +157,9 @@ class Analysis_Functions():
             colocalisation_likelihood_ratio = np.NAN
             norm_CSR = np.NAN
             norm_std = np.NAN
-            return colocalisation_likelihood_ratio, norm_std, norm_CSR, 0, n_iter_rec
+            coincidence = np.NAN
+            chance_coincidence = np.NAN
+            return colocalisation_likelihood_ratio, norm_std, norm_CSR, 0, coincidence, chance_coincidence, n_iter_rec
         
         if blur_degree > 0:
             spot_indices = self.dilate_pixels(spot_indices, image_size, width=blur_degree+1, edge=blur_degree)
