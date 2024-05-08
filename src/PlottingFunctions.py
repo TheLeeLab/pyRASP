@@ -40,7 +40,7 @@ class Plotter():
         binwidth = np.multiply(np.multiply(np.power(N, np.divide(-1,3)), sigma), 3.5)
         bins = np.linspace(np.min(data), np.max(data), int((np.max(data) - np.min(data))/binwidth)+1)
         return bins
-    
+        
     def two_column_plot(self, nrows=1, ncolumns=1, heightratio=[1], widthratio=[1], height=0, big=False):
         """ two_column_plot function
         takes data and makes a two-column width figure
@@ -122,11 +122,13 @@ class Plotter():
         return fig, axs
 
     def histogram_plot(self, axs, data, bins, xlim=None, ylim=None, 
-        histcolor='gray', xaxislabel='x axis', alpha=1, histtype='bar', density=True): 
+        histcolor='gray', xaxislabel='x axis', alpha=1, histtype='bar', 
+        density=True, label=''): 
         """ histogram_plot function
         takes data and makes a histogram
         
         Args:
+            axs (axis): axis object
             data (np.1darray): data array
             bins (np.1darray): bin array
             xlim (boolean or list of two floats): default is None (which computes min/max of x), otherwise provide a min/max
@@ -136,6 +138,7 @@ class Plotter():
             alpha (float): histogram transparency (default 1)
             histtype (string): histogram type, default bar
             density (boolean): if to plot as pdf, default True
+            label (string): label for histogram
         
         Returns:
             axs (axis): axis object """
@@ -147,7 +150,8 @@ class Plotter():
         if xlim is None:
             xlim = np.array([np.min(data), np.max(data)])
 
-        axs.hist(data, bins=bins, density=density, color=histcolor, alpha=alpha, histtype=histtype);
+        axs.hist(data, bins=bins, density=density, color=histcolor, 
+                 alpha=alpha, histtype=histtype, label=label);
         axs.grid(True,which="both",ls="--",c='gray', lw=0.25, alpha=0.25) 
         if density==True:
             axs.set_ylabel('probability density', fontsize=fontsz)
@@ -165,6 +169,7 @@ class Plotter():
         takes image data and makes an image plot
         
         Args:
+            axs (axis): axis object
             data (np.2darray): image
             vmin (float): minimum pixel intensity displayed (default 0.1%)
             vmax (float): minimum pixel intensity displayed (default 99.9%)
@@ -221,6 +226,7 @@ class Plotter():
         takes image data and makes an image plot
         
         Args:
+            axs (axis): axis object
             data (np.2darray): image
             xdata (np.1darray): scatter points, x
             ydata (np.1darray): scatter points, y

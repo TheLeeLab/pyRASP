@@ -18,7 +18,10 @@ A_F = AnalysisFunctions.Analysis_Functions()
 
 
 class RASP_Routines():
-    def __init__(self, defaultfolder=None, defaultarea=True, defaultd=True, defaultrad=True, defaultflat=True, defaultdfocus=True, defaultintfocus=True, defaultcellparams=True, defaultcameraparams=True):
+    def __init__(self, defaultfolder=None, defaultarea=True, 
+                 defaultd=True, defaultrad=True, defaultflat=True, 
+                 defaultdfocus=True, defaultintfocus=True, defaultcellparams=True, 
+                 defaultcameraparams=True):
         """
         Initialises class.
     

@@ -431,13 +431,13 @@ class Analysis_Functions():
         focus_score_diff[focus_score_diff <= 0] = np.nan
         
         # Perform DBSCAN from the start
-        dist1 = np.hstack((np.array([False]), focus_score_diff > threshold_differential))  # Mark as True if distance exceeds threshold
+        dist1 = np.hstack((np.array([0.]), focus_score_diff > threshold_differential))  # Mark as True if distance exceeds threshold
     
         # Calculate the Euclidean distance from the end
         focus_score_diff_end = np.diff(focus_scores[::-1].copy())
         
         # Perform DBSCAN from the end
-        dist2 = np.hstack((np.array([False]), focus_score_diff_end < threshold_differential))  # Mark as True if distance is below threshold
+        dist2 = np.hstack((np.array([0.]), focus_score_diff_end < threshold_differential))  # Mark as True if distance is below threshold
     
         # Refine the DBSCAN results
         dist1 = np.diff(dist1)
@@ -449,13 +449,15 @@ class Analysis_Functions():
     
         # Determine the first and last slices in focus
         first_in_focus = 0 if len(transition_to_in_focus) == 0 else transition_to_in_focus[0]  # First slice in focus
-        last_in_focus = len(focus_scores) if len(transition_to_out_focus) == 0 else len(focus_scores) - transition_to_out_focus[-1] + 1  # Last slice in focus
+        last_in_focus = len(focus_scores) if len(transition_to_out_focus) == 0 else (len(focus_scores) - transition_to_out_focus[-1]) + 1  # Last slice in focus
+        if last_in_focus > len(focus_scores):
+            last_in_focus = len(focus_scores)
         
         # Ensure consistency and handle cases where the first in-focus slice comes after the last
         first_in_focus = first_in_focus if first_in_focus <= last_in_focus else 1
         
         # Return indices for in-focus images
-        in_focus_indices = np.array([first_in_focus, last_in_focus-1])
+        in_focus_indices = np.array([first_in_focus, last_in_focus])
         return in_focus_indices
     
     def estimate_intensity(self, image, centroids):
