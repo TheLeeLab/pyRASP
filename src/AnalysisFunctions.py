@@ -212,7 +212,7 @@ class Analysis_Functions():
             return colocalisation_likelihood_ratio, norm_std, norm_CSR, expected_spots, coincidence, chance_coincidence, n_iter_rec
     
     def default_spotanalysis_routine(self, image, k1, k2, thres=0.05, 
-                                     large_thres=450., areathres=30.,
+                                     large_thres=100., areathres=30.,
                                      rdl=[50., 0., 0.], d=2):
         """
         Daisy-chains analyses to get
@@ -232,10 +232,19 @@ class Analysis_Functions():
             estimated_intensity (numpy.ndarray): Estimated sum intensity per oligomer.
             estimated_background (numpy.ndarray): Estimated mean background per oligomer.
             estimated_background_perpixel (numpy.ndarray): Estimated mean background per pixel.
-
+            areas_large (np.1darray): 1d array of areas of large objects
+            centroids_large (np.2darray): centroids of large objects
+            meanintensities_large (np.1darray): mean intensities of large objects
+            sumintensities_large (np.1darray): sum intensities of large objects
 
         """
         large_mask = self.detect_large_features(image, large_thres)
+        pil_large, areas_large, centroids_large = self.calculate_region_properties(large_mask)
+        meanintensities_large = np.zeros_like(areas_large)
+        sumintensities_large = np.zeros_like(areas_large)
+        for i in np.arange(len(centroids_large)):
+            meanintensities_large[i] = np.mean(image[pil_large[i][:,0], pil_large[i][:,1]])
+            sumintensities_large[i] = np.sum(image[pil_large[i][:,0], pil_large[i][:,1]])
         img2, Gx, Gy, focusScore, cfactor = self.calculate_gradient_field(image, k1)
         dl_mask, centroids, radiality, idxs = self.small_feature_kernel(image, 
         large_mask, img2, Gx, Gy,
@@ -246,7 +255,7 @@ class Analysis_Functions():
         estimated_background = estimated_background[to_keep]
         estimated_background_perpixel = estimated_background_perpixel[to_keep]
         centroids = centroids[to_keep, :]    
-        return centroids, estimated_intensity, estimated_background, estimated_background_perpixel
+        return centroids, estimated_intensity, estimated_background, estimated_background_perpixel, areas_large, centroids_large, meanintensities_large, sumintensities_large
     
     @staticmethod
     @jit(nopython=True)
@@ -646,7 +655,7 @@ class Analysis_Functions():
             dl_mask = np.full_like(img, False)
         return dl_mask, centroids, radiality, idxs
 
-    def compute_spot_and_cell_props(self, image, image_cell, k1, k2, prot_thres=0.05, large_prot_thres=450., 
+    def compute_spot_and_cell_props(self, image, image_cell, k1, k2, prot_thres=0.05, large_prot_thres=100., 
                            areathres=30., rdl=[50., 0., 0.], z=0, 
                            cell_threshold1=200., cell_threshold2=200, 
                            cell_sigma1=2., cell_sigma2=40., d=2):
@@ -669,9 +678,16 @@ class Analysis_Functions():
             cell_sigma1 (float): cell blur value 1
             cell_sigma2 (float): cell blur value 2
             d (integer): pixel radius value
+        
+        Returns:
+            to_save (pd.DataFrame): spot properties ready to save
+            to_save_largeobjects (pd.DataFrame): large object properties ready to save
+            to_save_cell (pd.DataFrame): cell properties ready to save
+            cell_mask (np.ndarray): cell mask
         """
         
         columns = ['x', 'y', 'z', 'sum_intensity_in_photons', 'bg_per_punctum', 'bg_per_pixel', 'zi', 'zf']
+        columns_large = ['x', 'y', 'z', 'area', 'sum_intensity_in_photons', 'mean_intensity_in_photons', 'zi', 'zf']
         columns_cell = ['colocalisation_likelihood_ratio', 'std', 
                             'CSR', 'expected_spots', 'coincidence', 'chance_coincidence', 'n_iterations', 'z']
 
@@ -684,10 +700,14 @@ class Analysis_Functions():
             estimated_intensity = {}
             estimated_background = {}
             estimated_background_perpixel = {}
+            areas_large = {}
+            centroids_large = {}
+            meanintensities_large = {}
+            sumintensities_large = {}
             def analyse_zplanes(zp):
                 img_z = image[:, :, zp]
                 img_cell_z = image_cell[:, :, zp]
-                centroids[zp], estimated_intensity[zp], estimated_background[zp], estimated_background_perpixel[zp] = self.default_spotanalysis_routine(img_z,
+                centroids[zp], estimated_intensity[zp], estimated_background[zp], estimated_background_perpixel[zp], areas_large[zp], centroids_large[zp], meanintensities_large[zp], sumintensities_large[zp] = self.default_spotanalysis_routine(img_z,
                 k1, k2, prot_thres, large_prot_thres, areathres, rdl, d)
                 
                 cell_mask[:,:,zp] = self.detect_large_features(img_cell_z,
@@ -707,10 +727,16 @@ class Analysis_Functions():
             estimated_intensity, estimated_background, estimated_background_perpixel, columns, z_planes)
             to_save = to_save.reset_index(drop=True)
             
+            to_save_largeobjects = self.make_datarray_largeobjects(areas_large, 
+                                    centroids_large, sumintensities_large, meanintensities_large, columns_large, z_planes)
+            to_save_largeobjects = to_save_largeobjects.reset_index(drop=True)
+            
             to_save_cell = self.make_datarray_cell(clr, norm_std,
                         norm_CSR, expected_spots, coincidence, chance_coincidence, n_iter, columns_cell, z_planes)
+            to_save_cell = to_save_cell.reset_index(drop=True)
+
         else:
-            centroids, estimated_intensity, estimated_background, estimated_background_perpixel = self.default_spotanalysis_routine(image,
+            centroids, estimated_intensity, estimated_background, estimated_background_perpixel, areas_large, centroids_large, meanintensities_large, sumintensities_large = self.default_spotanalysis_routine(image,
             k1, k2, prot_thres, large_prot_thres, areathres, rdl, d)
             
             cell_mask = self.detect_large_features(image_cell,
@@ -724,12 +750,15 @@ class Analysis_Functions():
             to_save = self.make_datarray_spot(centroids, 
                 estimated_intensity, estimated_background, estimated_background_perpixel, columns[:-2])
             
+            to_save_largeobjects = self.make_datarray_largeobjects(areas_large, 
+                                    centroids_large, sumintensities_large, meanintensities_large, columns_large[:-2])
+            
             to_save_cell = self.make_datarray_cell(clr, norm_std, norm_CSR, 
                                 expected_spots, coincidence, chance_coincidence,
                                 n_iter, columns_cell[:-1])
-        return to_save, to_save_cell, cell_mask 
+        return to_save, to_save_largeobjects, to_save_cell, cell_mask 
 
-    def compute_spot_props(self, image, k1, k2, thres=0.05, large_thres=450., 
+    def compute_spot_props(self, image, k1, k2, thres=0.05, large_thres=100., 
                            areathres=30., rdl=[50., 0., 0.], z=0, d=2):
         """
         Gets basic image properties (centroids, radiality)
@@ -744,17 +773,26 @@ class Analysis_Functions():
             rdl (array): radiality thresholds
             z (array): z planes to image, default 0
             d (int): Pixel radius value
+            
+        Returns:
+            to_save (pd.DataFrame): data array to save as pandas object
+            to_save_largeobjects (pd.DataFrame): data array of large objects
         """
         
         columns = ['x', 'y', 'z', 'sum_intensity_in_photons', 'bg_per_punctum', 'bg_per_pixel', 'zi', 'zf']
+        columns_large = ['x', 'y', 'z', 'area', 'sum_intensity_in_photons', 'mean_intensity_in_photons', 'zi', 'zf']
         if not isinstance(z, int):
             z_planes = np.arange(z[0], z[1])
             centroids = {}
             estimated_intensity = {}
             estimated_background = {}
             estimated_background_perpixel = {}
+            areas_large = {}
+            centroids_large = {}
+            meanintensities_large = {}
+            sumintensities_large = {}
             def analyse_zplanes(zp):
-                centroids[zp], estimated_intensity[zp], estimated_background[zp], estimated_background_perpixel[zp] = self.default_spotanalysis_routine(image[:, :, zp],
+                centroids[zp], estimated_intensity[zp], estimated_background[zp], estimated_background_perpixel[zp], areas_large[zp], centroids_large[zp], meanintensities_large[zp], sumintensities_large[zp] = self.default_spotanalysis_routine(image[:, :, zp],
                 k1, k2, thres, large_thres, areathres, rdl, d)
                 
             pool = Pool(nodes=cpu_number); pool.restart()
@@ -764,14 +802,21 @@ class Analysis_Functions():
             to_save = self.make_datarray_spot(centroids, 
             estimated_intensity, estimated_background, estimated_background_perpixel, columns, z_planes)
             to_save = to_save.reset_index(drop=True)
+            
+            to_save_largeobjects = self.make_datarray_largeobjects(areas_large, 
+                                    centroids_large, sumintensities_large, meanintensities_large, columns_large, z_planes)
+            to_save_largeobjects = to_save_largeobjects.reset_index(drop=True)
         else:
-            centroids, estimated_intensity, estimated_background, estimated_background_perpixel = self.default_spotanalysis_routine(image,
+            centroids, estimated_intensity, estimated_background, estimated_background_perpixel, areas_large, centroids_large, meanintensities_large, sumintensities_large = self.default_spotanalysis_routine(image,
             k1, k2, thres, large_thres, areathres, rdl, d)
             
             to_save = self.make_datarray_spot(centroids, 
                 estimated_intensity, estimated_background, estimated_background_perpixel, columns[:-2])
             
-        return to_save
+            to_save_largeobjects = self.make_datarray_largeobjects(areas_large, 
+                                    centroids_large, sumintensities_large, meanintensities_large, columns_large[:-2])
+
+        return to_save, to_save_largeobjects
     
     @staticmethod
     @jit(nopython=True)
@@ -908,6 +953,12 @@ class Analysis_Functions():
             d (int): radiality ring
             z_planes (array): If multiple z planes, give z planes
             calib (bool): If True, for radiality calibration
+        
+        Returns:
+            dl_mask (numpy.ndarray): Binary mask for diffraction-limited (dl) features.
+            centroids (numpy.ndarray): Centroids for dl features.
+            radiality (numpy.ndarray): Radiality value for all features (before the filtering based on the radiality).
+            large_mask (np.ndarray): Binary mask for large (above diffraction-limited) features.
    
         """
         if isinstance(z_planes, int):
@@ -923,25 +974,26 @@ class Analysis_Functions():
         else:
             radiality = {}
             centroids = {}
+            large_mask = np.zeros_like(image)
             dl_mask = np.zeros_like(image)
             img2 = np.zeros_like(image)
             Gx = np.zeros_like(image)
             Gy = np.zeros_like(image)
             def run_over_z(z):
                 if calib == True:
-                    large_mask = np.full_like(image[:,:,z], False)
+                    large_mask[:,:,z] = np.full_like(image[:,:,z], False)
                 else:
-                    large_mask = self.detect_large_features(image[:,:,z], large_thres)
+                    large_mask[:,:,z] = self.detect_large_features(image[:,:,z], large_thres)
                 img2[:,:,z], Gx[:,:,z], Gy[:,:,z], focusScore, cfactor = self.calculate_gradient_field(image[:,:,z], k1)
                 dl_mask[:,:,z], centroids[z], radiality[z], idxs = self.small_feature_kernel(image[:,:,z], 
-                large_mask, img2[:,:,z], Gx[:,:,z], Gy[:,:,z],
+                large_mask[:,:,z], img2[:,:,z], Gx[:,:,z], Gy[:,:,z],
                 k2, thres, areathres, rdl, d)
                 
             pool = Pool(nodes=cpu_number); pool.restart()
             pool.map(run_over_z, z_planes)
             pool.close(); pool.terminate()
                     
-        return dl_mask, centroids, radiality
+        return dl_mask, centroids, radiality, large_mask
 
     def gen_CSRmats(self, image_z_shape):
         """
@@ -970,6 +1022,45 @@ class Analysis_Functions():
         n_iter = np.zeros(image_z_shape)
         return clr, norm_std, norm_CSR, expected_spots, coincidence, chance_coincidence, n_iter
     
+    def make_datarray_largeobjects(self, areas_large, centroids_large, sumintensities_large, meanintensities_large, columns, z_planes=0):
+        """
+        makes a datarray in pandas for large object information
+    
+        Args:
+            areas_large (np.1darray): areas in pixels
+            centroids_large (np.1darray): centroids of large objects
+            meanintensities_large (np.1darray): mean intensities of large objects
+            columns (list of strings): column labels
+            z_planes: z_planes to put in array (if needed); if int, assumes only
+                one z-plane
+        
+        Returns:
+            to_save_largeobjects (pandas DataArray) pandas array to save
+            columns_large = ['x', 'y', 'z', 'area', 'mean_intensity_in_photons', 'zi', 'zf']
+
+        """
+        if isinstance(z_planes, int):
+            dataarray = np.vstack([centroids_large[:, 0], centroids_large[:, 1], 
+            np.full_like(centroids_large[:, 0], 1), areas_large, sumintensities_large, 
+            meanintensities_large])
+        else:
+            for z in z_planes:
+                if z == z_planes[0]:
+                    dataarray = np.vstack([centroids_large[z][:, 0], centroids_large[z][:, 1], 
+                    np.full_like(centroids_large[z][:, 0], z+1), areas_large[z], 
+                    sumintensities_large[z], 
+                    meanintensities_large[z], np.full_like(centroids_large[z][:, 0], 1+z_planes[0]),
+                    np.full_like(centroids_large[z][:, 0], 1+z_planes[-1])]) 
+                else:
+                    da = np.vstack([centroids_large[z][:, 0], centroids_large[z][:, 1], 
+                    np.full_like(centroids_large[z][:, 0], z+1), areas_large[z], 
+                    sumintensities_large[z],
+                    meanintensities_large[z], np.full_like(centroids_large[z][:, 0], 1+z_planes[0]),
+                    np.full_like(centroids_large[z][:, 0], 1+z_planes[-1])]) 
+                    dataarray = np.hstack([dataarray, da])
+        return pd.DataFrame(data=dataarray.T, columns=columns)
+
+    
     def make_datarray_spot(self, centroids, estimated_intensity, estimated_background, estimated_background_perpixel, columns, z_planes=0):
         """
         makes a datarray in pandas for spot information
@@ -984,7 +1075,7 @@ class Analysis_Functions():
                 one z-plane
         
         Returns:
-            to_save (pandas DataArray) pandas array to save
+            to_save (pd.DataFrame) pandas array to save
         
         """
         if isinstance(z_planes, int):
