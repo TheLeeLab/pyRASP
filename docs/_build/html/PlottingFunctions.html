@@ -123,12 +123,13 @@ reads in data and generates bins according to Freedman-Diaconis rule</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="PlottingFunctions.Plotter.histogram_plot">
-<span class="sig-name descname"><span class="pre">histogram_plot</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">axs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bins</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">xlim</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ylim</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">histcolor</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'gray'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">xaxislabel</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'x</span> <span class="pre">axis'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">alpha</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">histtype</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'bar'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">density</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#PlottingFunctions.Plotter.histogram_plot" title="Link to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">histogram_plot</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">axs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bins</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">xlim</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ylim</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">histcolor</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'gray'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">xaxislabel</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'x</span> <span class="pre">axis'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">alpha</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">histtype</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'bar'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">density</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">label</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#PlottingFunctions.Plotter.histogram_plot" title="Link to this definition"></a></dt>
 <dd><p>histogram_plot function
 takes data and makes a histogram</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
+<li><p><strong>axs</strong> (<em>axis</em>) – axis object</p></li>
 <li><p><strong>data</strong> (<em>np.1darray</em>) – data array</p></li>
 <li><p><strong>bins</strong> (<em>np.1darray</em>) – bin array</p></li>
 <li><p><strong>xlim</strong> (<em>boolean</em><em> or </em><em>list</em><em> of </em><em>two floats</em>) – default is None (which computes min/max of x), otherwise provide a min/max</p></li>
@@ -138,6 +139,7 @@ takes data and makes a histogram</p>
 <li><p><strong>alpha</strong> (<em>float</em>) – histogram transparency (default 1)</p></li>
 <li><p><strong>histtype</strong> (<em>string</em>) – histogram type, default bar</p></li>
 <li><p><strong>density</strong> (<em>boolean</em>) – if to plot as pdf, default True</p></li>
+<li><p><strong>label</strong> (<em>string</em>) – label for histogram</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
@@ -154,6 +156,7 @@ takes image data and makes an image plot</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
+<li><p><strong>axs</strong> (<em>axis</em>) – axis object</p></li>
 <li><p><strong>data</strong> (<em>np.2darray</em>) – image</p></li>
 <li><p><strong>vmin</strong> (<em>float</em>) – minimum pixel intensity displayed (default 0.1%)</p></li>
 <li><p><strong>vmax</strong> (<em>float</em>) – minimum pixel intensity displayed (default 99.9%)</p></li>
@@ -180,6 +183,7 @@ takes image data and makes an image plot</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
+<li><p><strong>axs</strong> (<em>axis</em>) – axis object</p></li>
 <li><p><strong>data</strong> (<em>np.2darray</em>) – image</p></li>
 <li><p><strong>xdata</strong> (<em>np.1darray</em>) – scatter points, x</p></li>
 <li><p><strong>ydata</strong> (<em>np.1darray</em>) – scatter points, y</p></li>
