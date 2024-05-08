@@ -274,6 +274,23 @@ class Analysis_Functions():
         mask_fill = np.divide(len(mask_indices), np.prod(np.array(image_size)))
         return mask_fill
     
+    def test_spot_spot_overlap(self, spot_1_indices, spot_2_indices, n_spot1):
+        """
+        Tests which spots overlap with a given mask.
+    
+        Args:
+            spot_1_indices (1D array): indices of spots 1
+            spot_2_indices (1D array): indices of spots 2
+            n_spot1 (int): n spots in spot 1 array
+    
+        Returns:
+            n_spots1_in_spots2 (float): number of spots that overlap with the mask.
+        """
+        
+        n_spots1_in_spots2 = np.sum(np.isin(spot_2_indices, spot_1_indices))
+        return n_spots1_in_spots2
+
+    
     def test_spot_mask_overlap(self, spot_indices, mask_indices):
         """
         Tests which spots overlap with a given mask.
@@ -307,8 +324,8 @@ class Analysis_Functions():
         x = x - int(ski.morphology.octagon(width, edge).shape[0]/2)
         y = y - int(ski.morphology.octagon(width, edge).shape[1]/2)
         centroid = np.asarray(np.unravel_index(index_matrix, image_size, order='F'), dtype=int)
-        x = (np.tile(x, (len(index_matrix), 1)).T[:,:,np.newaxis] + np.asarray(centroid[0, :], dtype=int)).T
-        y = (np.tile(y, (len(index_matrix), 1)).T[:,:,np.newaxis] + np.asarray(centroid[1, :], dtype=int)).T
+        x = (np.tile(x, (len(index_matrix), 1)).T[:,np.newaxis] + np.asarray(centroid[0, :], dtype=int)).T
+        y = (np.tile(y, (len(index_matrix), 1)).T[:,np.newaxis] + np.asarray(centroid[1, :], dtype=int)).T
                 
         new_dims = (index_matrix.shape[0], int(len(x.ravel())/index_matrix.shape[0]))
         dilated_index_matrix = np.ravel_multi_index(np.vstack([x.ravel(), y.ravel()]), image_size, order='F', mode='wrap').reshape(new_dims)
