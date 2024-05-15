@@ -456,16 +456,10 @@ class RASP_Routines():
                 if cell_analysis == True:
                     img_cell = IO.read_tiff_tophotons(os.path.join(folder, cell_files[i]), 
                                             QE=self.QE, gain_map=self.gain_map, offset_map=self.offset_map)[:, :, im_start:]
-                if len(files) > 1:
-                    z_test = len(img[0].shape) > 2
-                else:
-                    z_test = len(img.shape) > 2
+                z_test = len(img.shape) > 2
                 
                 if z_test: # if a z-stack
-                    if len(files) > 1:
-                        z_planes = self.get_infocus_planes(img[0], k1)
-                    else:
-                        z_planes = self.get_infocus_planes(img, k1)
+                    z_planes = self.get_infocus_planes(img, k1)
     
                     if cell_analysis == False:
                             to_save, to_save_largeobjects = A_F.compute_spot_props(img, 
@@ -495,7 +489,7 @@ class RASP_Routines():
                                           to_save_cell=False,
                                           one_savefile=one_savefile)
                 if disp == True:
-                    print("Analysed image", os.path.split(files[0][i])[-1], "data saved in", analysis_directory)
+                    print("Analysed image", os.path.split(files[i])[-1], "data saved in", analysis_directory)
         return
     
     def single_image_analysis(self, protein_file, thres=0.05, 

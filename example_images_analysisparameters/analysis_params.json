@@ -1,0 +1,16 @@
+{
+    "flatness": 0.9728548995676096,
+    "integratedGrad": 34.55474299530229,
+    "areathres": 27.0,
+    "d": 2,
+    "gaussian_sigma": 1.4,
+    "ricker_sigma": 2.0,
+    "thres": 0.05,
+    "large_thres": 450.0,
+    "focus_score_diff": 0.236103223425232,
+    "cell_sigma1": 2.0,
+    "cell_sigma2": 40.0,
+    "cell_threshold1": 200.0,
+    "cell_threshold2": 200.0,
+    "QE": 0.95
+}
