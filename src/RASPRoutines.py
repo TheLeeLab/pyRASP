@@ -134,27 +134,7 @@ class RASP_Routines():
         na, na, na, focus_score, na = A_F.calculate_gradient_field(image, kernel)
         z_planes = A_F.infocus_indices(focus_score, self.focus_score_diff)
         return z_planes
-        
-    def count_spots(self, database, z_planes):
-        """
-        Counts spots per z plane
-    
-        Args:
-            database (pandas array): pandas array of spots
-            z_planes (np.1darray): is range of zplanes
-            
-        Returns:
-            n_spots 
-        """
-        columns = ['z', 'n_spots']
-        
-        spots_per_plane = np.zeros_like(z_planes)
-        for z in enumerate(z_planes):
-            spots_per_plane[z[0]] = len(database.z[database.z == z[1]+1])
-        n_spots = pd.DataFrame(data=np.vstack([z_planes+1, spots_per_plane]).T, 
-                               columns=columns)
-        return n_spots
-        
+                
     def calibrate_radiality(self, folder, imtype='.tif', gsigma=1.4, rwave=2., accepted_ratio=1):
         """
         Calibrates radility parameters. Given a folder of negative controls,
@@ -365,10 +345,50 @@ class RASP_Routines():
 
         return
     
+    def analyse_images_mchannel(self, folder, imtype='.tif', thres=0.05, 
+                       large_thres=100., gsigma=1.4, rwave=2.,
+                       protein_imagestrings=['C1'], cell_imagestrings=['C0'],
+                       if_filter=True, im_start=0, cell_analysis=True, 
+                       one_savefile=False, disp=True,
+                       rdl=False, protein_protein_coinc=True):
+        """
+        analyses data from images in a specified folder,
+        saves spots, locations, intensities and backgrounds in a folder created
+        next to the folder analysed with _analysis string attached
+        also writes a folder with _analysisparameters and saves analysis parameters
+        used for particular experiment
+    
+        Args:
+            folder (string): Folder containing images
+            imtype (string): Type of images being analysed, default tif
+            thres (float): fraction of bright pixels accepted
+            large_thres (float): large object intensity threshold
+            gisgma (float): gaussian blurring parameter (default 1.4)
+            rwave (float): Ricker wavelent sigma (default 2.)
+            protein_imagestrings (np.1darray): strings for protein-containing data (default ['C1'])
+            cell cell_imagestrings (np.1darray): strings for cell-containing data (default ['C0'])
+            if_filter (boolean): Filter images for focus (default True)
+            im_start (integer): Images to start from (default 0)
+            cell_analysis (boolean): Parameter where script also analyses cell
+                images and computes colocalisation likelihood ratios.
+            one_savefile (boolean): Parameter that, if true, doesn't save a file
+                per image but amalgamates them into one file
+            disp (boolean): If true, prints when analysed an image stack.
+            rdl (np.ndarray): If False, just uses the default flatness and 
+                            integratedGrad parameters that RASP has loaded.
+                            If running over multiple protein channels, should
+                            be an N_protein by 3 matrix.
+            protein_protein_coinc (boolean): if True, does coincidence analysis
+                                            across multiple protein channels
+
+        """
+
+        return
+    
     def analyse_images(self, folder, imtype='.tif', thres=0.05, 
                        large_thres=100., gsigma=1.4, rwave=2.,
-                       oligomer_string='C1', cell_string='C0',
-                       if_filter=True, im_start=1, cell_analysis=True, 
+                       protein_string='C1', cell_string='C0',
+                       if_filter=True, im_start=0, cell_analysis=True, 
                        one_savefile=False, disp=True):
         """
         analyses data from images in a specified folder,
@@ -384,10 +404,10 @@ class RASP_Routines():
             large_thres (float): large object intensity threshold
             gisgma (float): gaussian blurring parameter (default 1.4)
             rwave (float): Ricker wavelent sigma (default 2.)
-            oligomer_string (string): string for oligomer-containing data (default C1)
-            cell string (string): string for cell-containing data (default C0)
+            protein_string (np.1darray): strings for protein-stained data (default C1)
+            cell_string (np.1darray): strings for cell-containing data (default C0)
             if_filter (boolean): Filter images for focus (default True)
-            im_start (integer): Images to start from (default 1)
+            im_start (integer): Images to start from (default 0)
             cell_analysis (boolean): Parameter where script also analyses cell
                 images and computes colocalisation likelihood ratios.
             one_savefile (boolean): Parameter that, if true, doesn't save a file
@@ -395,18 +415,18 @@ class RASP_Routines():
             disp (boolean): If true, prints when analysed an image stack.
 
         """
-        all_files = self.file_search(folder, oligomer_string, imtype) # first get all files in any subfolders
+        all_files = self.file_search(folder, protein_string, imtype) # first get all files in any subfolders
+        
         folders = np.unique([os.path.split(i)[0] for i in all_files]) # get unique folders in this
         
         k1, k2 = A_F.create_kernel(gsigma, rwave) # create image processing kernels
         rdl = [self.flatness, self.integratedGrad, 0.]
-        
-        # save analysis parameters in overall directory
-        analysis_p_directory = os.path.abspath(folder)+'_analysisparameters'
 
-        to_save = {'areathres': self.areathres, 'flatness': self.flatness, 'd': self.d,
-                   'integratedGrad': self.integratedGrad, 'gaussian_sigma':
-                       gsigma, 'ricker_sigma': rwave, 'thres': thres,
+        to_save = {'flatness': self.flatness, 
+                   'integratedGrad': self.integratedGrad,
+                   'areathres': self.areathres, 'd': self.d,
+                       'gaussian_sigma': gsigma, 'ricker_sigma': rwave, 
+                       'thres': thres,
                        'large_thres': large_thres, 
                        'focus_score_diff': self.focus_score_diff,
                        'cell_sigma1': self.cell_sigma1,
@@ -414,13 +434,16 @@ class RASP_Routines():
                        'cell_threshold1': self.cell_threshold1,
                        'cell_threshold2': self.cell_threshold2,
                        'QE': self.QE}
+        
+        # save analysis parameters in overall directory
+        analysis_p_directory = os.path.abspath(folder)+'_analysisparameters'
+
         IO.save_analysis_params(analysis_p_directory, 
                 to_save, gain_map=self.gain_map, offset_map=self.offset_map)
 
-        
         for val in folders:
             subfolder = os.path.abspath(val)
-            files = self.file_search(subfolder, oligomer_string, imtype) # first get all files in any subfolders
+            files = self.file_search(subfolder, protein_string, imtype) # first get all files in any subfolders
             if cell_analysis == True:
                 cell_files = self.file_search(subfolder, cell_string, imtype) # get all files in any subfolders
             # create analysis and analysis parameter directories
@@ -429,19 +452,26 @@ class RASP_Routines():
             
             for i in np.arange(len(files)):
                 img = IO.read_tiff_tophotons(os.path.join(folder, files[i]), 
-                QE=self.QE, gain_map=self.gain_map, offset_map=self.offset_map)
+                                    QE=self.QE, gain_map=self.gain_map, offset_map=self.offset_map)[:, :, im_start:]
                 if cell_analysis == True:
                     img_cell = IO.read_tiff_tophotons(os.path.join(folder, cell_files[i]), 
-                    QE=self.QE, gain_map=self.gain_map, offset_map=self.offset_map)
-                if im_start > 1:
-                    img = img[:, :, im_start:]
-                if len(img.shape) > 2: # if a z-stack
-                    z_planes = self.get_infocus_planes(img, k1)
+                                            QE=self.QE, gain_map=self.gain_map, offset_map=self.offset_map)[:, :, im_start:]
+                if len(files) > 1:
+                    z_test = len(img[0].shape) > 2
+                else:
+                    z_test = len(img.shape) > 2
+                
+                if z_test: # if a z-stack
+                    if len(files) > 1:
+                        z_planes = self.get_infocus_planes(img[0], k1)
+                    else:
+                        z_planes = self.get_infocus_planes(img, k1)
     
                     if cell_analysis == False:
-                        to_save, to_save_largeobjects = A_F.compute_spot_props(img, 
-                        k1, k2, thres=thres, large_thres=large_thres, 
-                        areathres=self.areathres, rdl=rdl, z=z_planes, d=self.d)
+                            to_save, to_save_largeobjects = A_F.compute_spot_props(img, 
+                            k1, k2, thres=thres, large_thres=large_thres, 
+                            areathres=self.areathres, rdl=rdl, z=z_planes, 
+                            d=self.d)
                     else:
                         to_save, to_save_largeobjects, to_save_cell, cell_mask = A_F.compute_spot_and_cell_props(img, img_cell, k1, k2,
                                             prot_thres=thres, large_prot_thres=large_thres, 
@@ -452,78 +482,20 @@ class RASP_Routines():
                                             cell_sigma2=self.cell_sigma2,
                                             d=self.d)
                     
-                    if one_savefile == False:
-                        savename = os.path.join(analysis_directory, 
-                        os.path.split(files[i])[-1].split(imtype)[0]+'.csv')
-                        savename_lo = os.path.join(analysis_directory, 
-                        os.path.split(files[i])[-1].split(imtype)[0]+'_largeobjects.csv')
-                        to_save.to_csv(savename, index=False)
-                        to_save_largeobjects.to_csv(savename_lo, index=False)
-                        if cell_analysis == True:
-                            to_save_cell.to_csv(os.path.join(analysis_directory, 
-                            os.path.split(files[i])[-1].split(imtype)[0]+'_cell_analysis.csv'), index=False)
-                            IO.write_tiff(cell_mask, os.path.join(analysis_directory, 
-                            os.path.split(files[i])[-1].split(imtype)[0]+'_cellMask.tiff'), bit=np.uint8)
+                    if cell_analysis == True:
+                        IO.save_analysis(to_save, to_save_largeobjects, analysis_directory,
+                                          imtype, files, i, z_planes,
+                                          cell_analysis=cell_analysis, cell_mask=cell_mask,
+                                          to_save_cell=to_save_cell,
+                                          one_savefile=one_savefile)
                     else:
-                        to_save['image_filename'] = np.full_like(to_save.z.values, files[i], dtype='object')
-                        to_save_largeobjects['image_filename'] = np.full_like(to_save_largeobjects.z.values, files[i], dtype='object')
-                        
-                        savename = os.path.join(analysis_directory, 'spot_analysis.csv')
-                        savename_lo = os.path.join(analysis_directory, 'largeobject_analysis.csv')
-                        savename_spot = os.path.join(analysis_directory, 'spot_numbers.csv')
-                        savename_nlargeobjects = os.path.join(analysis_directory, 'largeobject_numbers.csv')
-                        
-                        n_spots = self.count_spots(to_save, np.arange(z_planes[0], z_planes[1]))
-                        n_spots['image_filename'] = np.full_like(n_spots.z.values, files[i], dtype='object')
-                        
-                        n_largeobjects = self.count_spots(to_save_largeobjects, np.arange(z_planes[0], z_planes[1]))
-                        n_largeobjects['image_filename'] = np.full_like(n_largeobjects.z.values, files[i], dtype='object')
-                        
-                        if cell_analysis == True:
-                            to_save_cell['image_filename'] = np.full_like(to_save_cell.z.values, files[i], dtype='object')
-                            savename_cell = os.path.join(analysis_directory, 'cell_colocalisation_analysis.csv')
-                            IO.write_tiff(cell_mask, os.path.join(analysis_directory, 
-                            os.path.split(files[i])[-1].split(imtype)[0]+'_cellMask.tiff'), bit=np.uint8)
-    
-                        if i != 0:
-                            to_save.to_csv(savename, mode='a', header=False, index=False)
-                            to_save_largeobjects.to_csv(savename_lo, mode='a', header=False, index=False)
-                            n_spots.to_csv(savename_spot, mode='a', header=False, index=False)
-                            n_largeobjects.to_csv(savename_nlargeobjects, mode='a', header=False, index=False)
-                            if cell_analysis == True:
-                                to_save_cell.to_csv(savename_cell, mode='a', header=False, index=False)
-                        else:
-                            to_save.to_csv(savename, index=False)
-                            to_save_largeobjects.to_csv(savename_lo, index=False)
-                            n_spots.to_csv(savename_spot, index=False)
-                            n_largeobjects.to_csv(savename_nlargeobjects, index=False)
-                            if cell_analysis == True:
-                                to_save_cell.to_csv(savename_cell, index=False)
-                else: # if not a z-stack
-                    to_save, to_save_largeobjects = A_F.compute_spot_props(img, k1, k2, thres=thres,
-                    large_thres=large_thres, areathres=self.areathres, rdl=rdl, d=self.d)
-                    
-                    if one_savefile == False:
-                        savename = os.path.join(analysis_directory, 
-                            os.path.split(files[i])[-1].split(imtype)[0]+'.csv')
-                        to_save.to_csv(savename, index=False)
-                        
-                        savename_lo = os.path.join(analysis_directory, 
-                            os.path.split(files[i])[-1].split(imtype)[0]+'_largeobjects.csv')
-                        to_save_largeobjects.to_csv(savename_lo, index=False)
-                    else:
-                        to_save['image_filename'] = np.full_like(to_save.z.values, files[i], dtype='object')
-                        to_save_largeobjects['image_filename'] = np.full_like(to_save_largeobjects.z.values, files[i], dtype='object')
-                        savename = os.path.join(analysis_directory, 'spot_analysis.csv')
-                        savename_lo = os.path.join(analysis_directory, 'largeobject_analysis.csv')
-                        if i != 0:
-                            to_save.to_csv(savename, mode='a', header=False, index=False)
-                            to_save_largeobjects.to_csv(savename_lo, mode='a', header=False, index=False)
-                        else:
-                            to_save.to_csv(savename, index=False)
-                            to_save_largeobjects.to_csv(savename_lo, index=False)
+                        IO.save_analysis(to_save, to_save_largeobjects, analysis_directory,
+                                          imtype, files, i, z_planes,
+                                          cell_analysis=False, cell_mask=False,
+                                          to_save_cell=False,
+                                          one_savefile=one_savefile)
                 if disp == True:
-                    print("Analysed image", os.path.split(files[i])[-1], "data saved in", analysis_directory)
+                    print("Analysed image", os.path.split(files[0][i])[-1], "data saved in", analysis_directory)
         return
     
     def single_image_analysis(self, protein_file, thres=0.05, 

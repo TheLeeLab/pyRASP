@@ -7,10 +7,90 @@ import json
 import os
 from skimage import io
 import numpy as np
+import pandas as pd
+
+import sys
+module_dir = os.path.dirname(__file__)
+sys.path.append(module_dir)
+import AnalysisFunctions
+A_F = AnalysisFunctions.Analysis_Functions()
+
 
 class IO_Functions():
     def __init__(self):
         self = self
+        return
+    
+    def save_analysis(self, to_save, to_save_largeobjects, analysis_directory,
+                      imtype, files, i=0, z_planes=[0, 0],
+                      cell_analysis=False, cell_mask=False,
+                      to_save_cell=False,
+                      one_savefile=True):
+        
+        """
+        saves analysis.
+    
+        Args:
+            to_save (pd.DataFrame): pandas dataframe.
+            to_save_largeobjects (pd.DataFrame): pandas dataframe of large objects.
+            analysis_directory (string): analysis directory to save in
+            imtype (string): string of image type
+            i (int): location in files where we're analysing
+            z_planes (np.1darray): array of z locations to count spots
+            cell_analysis (boolean): if doing cell analysis saving
+            cell_mask (np.ndarray): cell mask if cell analysis saving
+            to_save_cell (pd.DataFrame): pandas dataframe
+            one_savefile (boolean): if True, saving all analysis in one csv
+        """
+
+        
+        if one_savefile == False:
+            savename = os.path.join(analysis_directory, 
+            os.path.split(files[i])[-1].split(imtype)[0]+'.csv')
+            savename_lo = os.path.join(analysis_directory, 
+            os.path.split(files[i])[-1].split(imtype)[0]+'_largeobjects.csv')
+            to_save.to_csv(savename, index=False)
+            to_save_largeobjects.to_csv(savename_lo, index=False)
+            if cell_analysis == True:
+                to_save_cell.to_csv(os.path.join(analysis_directory, 
+                os.path.split(files[i])[-1].split(imtype)[0]+'_cell_analysis.csv'), index=False)
+                self.write_tiff(cell_mask, os.path.join(analysis_directory, 
+                os.path.split(files[i])[-1].split(imtype)[0]+'_cellMask.tiff'), bit=np.uint8)
+        else:
+            to_save['image_filename'] = np.full_like(to_save.z.values, files[i], dtype='object')
+            to_save_largeobjects['image_filename'] = np.full_like(to_save_largeobjects.z.values, files[i], dtype='object')
+            
+            savename = os.path.join(analysis_directory, 'spot_analysis.csv')
+            savename_lo = os.path.join(analysis_directory, 'largeobject_analysis.csv')
+            savename_spot = os.path.join(analysis_directory, 'spot_numbers.csv')
+            savename_nlargeobjects = os.path.join(analysis_directory, 'largeobject_numbers.csv')
+            
+            n_spots = A_F.count_spots(to_save, np.arange(z_planes[0], z_planes[1]))
+            n_spots['image_filename'] = np.full_like(n_spots.z.values, files[i], dtype='object')
+            
+            n_largeobjects = A_F.count_spots(to_save_largeobjects, np.arange(z_planes[0], z_planes[1]))
+            n_largeobjects['image_filename'] = np.full_like(n_largeobjects.z.values, files[i], dtype='object')
+            
+            if cell_analysis == True:
+                to_save_cell['image_filename'] = np.full_like(to_save_cell.z.values, files[i], dtype='object')
+                savename_cell = os.path.join(analysis_directory, 'cell_colocalisation_analysis.csv')
+                self.write_tiff(cell_mask, os.path.join(analysis_directory, 
+                os.path.split(files[i])[-1].split(imtype)[0]+'_cellMask.tiff'), bit=np.uint8)
+
+            if i != 0:
+                to_save.to_csv(savename, mode='a', header=False, index=False)
+                to_save_largeobjects.to_csv(savename_lo, mode='a', header=False, index=False)
+                n_spots.to_csv(savename_spot, mode='a', header=False, index=False)
+                n_largeobjects.to_csv(savename_nlargeobjects, mode='a', header=False, index=False)
+                if cell_analysis == True:
+                    to_save_cell.to_csv(savename_cell, mode='a', header=False, index=False)
+            else:
+                to_save.to_csv(savename, index=False)
+                to_save_largeobjects.to_csv(savename_lo, index=False)
+                n_spots.to_csv(savename_spot, index=False)
+                n_largeobjects.to_csv(savename_nlargeobjects, index=False)
+                if cell_analysis == True:
+                    to_save_cell.to_csv(savename_cell, index=False)
         return
     
     def save_analysis_params(self, analysis_p_directory, to_save, gain_map=0, offset_map=0):
