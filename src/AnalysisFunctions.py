@@ -133,6 +133,25 @@ class Analysis_Functions():
 
         return radiality
     
+    def generate_largeaggregate_indices(self, pil, image_size):
+        """
+        makes large aggregate indices from list of xy coordinates
+    
+        Args:
+            pil (list): list of 2d arrays
+            image_size (tuple): Image dimensions (height, width).
+        
+        Returns:
+            la_indices (list): list of indices of large aggregates
+        """
+        la_indices = []
+        for i in np.arange(len(pil)):
+            if i == 0:
+                la_indices = [np.ravel_multi_index([pil[i][:, 0], pil[i][:, 1]], image_size)]
+            else:
+                la_indices.append(np.ravel_multi_index([pil[i][:, 0], pil[i][:, 1]], image_size))
+        return la_indices
+    
     def generate_mask_and_spot_indices(self, mask, centroids, image_size):
         """
         makes mask and spot indices from xy coordinates
@@ -208,6 +227,47 @@ class Analysis_Functions():
             chance_coincidence = np.nanmean(CC)
         return coincidence, chance_coincidence
 
+    def calculate_largeobj_coincidence(self, largeobj_indices, mask_indices, n_largeobjs, image_size):
+        """
+        gets spot colocalisation likelihood ratio, as well as reporting error
+        bounds on the likelihood ratio for one image
+    
+        Args:
+            largeobj_indices (1D array): indices of large objects
+            mask_indices (1D array): indices of pixels in mask
+            image_size (tuple): Image dimensions (height, width).
+
+        Returns:
+            coincidence (float): coincidence FoV
+            chance_coincidence (float): chance coincidence
+            raw_colocalisation (np.1darray): binary yes/no of coincidence per spot
+        """
+        
+        if n_largeobjs == 0:
+            coincidence = 0
+            chance_coincidence = 0
+            raw_colocalisation = np.zeros(n_largeobjs)
+            return coincidence, chance_coincidence, raw_colocalisation
+        
+        highest_index = np.prod(image_size)
+        mask_fill = self.calculate_mask_fill(mask_indices, image_size) # get mask_fill
+        expected_spots = np.multiply(mask_fill, n_largeobjs) # get expected number of spots
+        if np.isclose(expected_spots, 0., atol=1e-4):
+            coincidence = 0
+            chance_coincidence = 0
+            raw_colocalisation = np.zeros(n_largeobjs)
+            return coincidence, chance_coincidence, raw_colocalisation
+        else:
+            raw_colocalisation = self.test_largeobj_mask_overlap(largeobj_indices, mask_indices, n_largeobjs, raw=True)
+            nspots_in_mask = np.sum(raw_colocalisation)
+            coincidence = np.divide(nspots_in_mask, n_largeobjs) # generate coincidence
+            
+            n_iter = 1000
+            random_spot_locations = self.random_largeobj_locations(largeobj_indices, highest_index, n_iter) # need to write large aggregate randomisation function
+            chance_coincidence_raw = np.zeros(n_iter)
+            for i in np.arange(n_iter):
+                chance_coincidence_raw[i] = np.divide(self.test_largeobj_mask_overlap(random_spot_locations[i], mask_indices, n_largeobjs, raw=False), n_largeobjs)
+            return coincidence, chance_coincidence, raw_colocalisation
     
     def calculate_spot_colocalisation_likelihood_ratio(self, spot_indices, mask_indices, image_size, tol=0.01, n_iter=100, blur_degree=1, max_iter=10000):
         """
@@ -370,6 +430,56 @@ class Analysis_Functions():
 
         mask_fill = np.divide(len(mask_indices), np.prod(np.array(image_size)))
         return mask_fill
+    
+    def random_largeobj_locations(self, largeobj_indices, possible_index_high, n_iter):
+        """
+        Randomises large object locations.
+    
+        Args:
+            largeobj_indices (list): indices of large objects
+            possible_index_high (int): highest possible index
+            n_iter (int): number of random permutations to make
+    
+        Returns:
+            largeobj_locations (dict): dict of n_iter in size of randomised large object locations.
+        """
+        largeobj_locations = {}
+        
+        for i in np.arange(n_iter):
+            largeobj_locations[i] = []
+            for j in np.arange(len(largeobj_indices)):
+                if j == 0:
+                    high = possible_index_high - np.max(largeobj_indices[j])
+                    low = -np.min(largeobj_indices[j])
+                    largeobj_locations[i] = [largeobj_indices[j] + np.random.randint(low=low, high=high, size=1)]
+                else:
+                    high = possible_index_high - np.max(largeobj_indices[j])
+                    low = -np.min(largeobj_indices[j])
+                    largeobj_locations[i].append(largeobj_indices[j] + np.random.randint(low=low, high=high, size=1))
+        return largeobj_locations
+    
+    def test_largeobj_mask_overlap(self, largeobj_indices, mask_indices, n_largeobjects, raw=False):
+        """
+        Tests which spots overlap with a given mask.
+    
+        Args:
+            largeobj_indices (list): indices of large objects
+            mask_indices (1D array): indices of mask
+            n_largeobjects (int): n large objects
+            raw (boolean): if raw is true, will report "per object" overlap
+    
+        Returns:
+            n_large_objects_in_mask (float): number of spots that overlap with the other spots.
+        """
+        n_large_objects_in_mask = np.zeros(n_largeobjects)
+        for i in np.arange(n_largeobjects):
+            n_large_objects_in_mask[i] = np.asarray(np.sum(np.isin(largeobj_indices[i], 
+                                    mask_indices)), dtype=bool)
+        if raw == True:
+            return n_large_objects_in_mask
+        else:
+            return np.sum(n_large_objects_in_mask)
+
     
     def test_spot_spot_overlap(self, spot_1_indices, spot_2_indices, n_spot1, raw=False):
         """
@@ -820,14 +930,17 @@ class Analysis_Functions():
         """
         
         columns = ['x', 'y', 'z', 'sum_intensity_in_photons', 'bg_per_punctum', 'bg_per_pixel', 'incell', 'zi', 'zf']
-        columns_large = ['x', 'y', 'z', 'area', 'sum_intensity_in_photons', 'mean_intensity_in_photons', 'zi', 'zf']
+        columns_large = ['x', 'y', 'z', 'area', 'sum_intensity_in_photons', 'mean_intensity_in_photons', 'incell', 'zi', 'zf']
         columns_cell = ['colocalisation_likelihood_ratio', 'std', 
-                            'CSR', 'expected_spots', 'coincidence', 'chance_coincidence', 'n_iterations', 'z']
+                            'CSR', 'expected_spots', 'coincidence', 
+                            'chance_coincidence', 'coincidence_largeobj',
+                            'chance_coincidence_largeobj',
+                            'n_iterations', 'z']
 
         if not isinstance(z, int):
             z_planes = np.arange(z[0], z[1])
             cell_mask = np.zeros_like(image_cell, dtype=bool)
-            clr, norm_std, norm_CSR, expected_spots, coincidence, chance_coincidence, raw_colocalisation, n_iter = self.gen_CSRmats(image_cell.shape[2])
+            clr, norm_std, norm_CSR, expected_spots, coincidence, chance_coincidence, raw_colocalisation, n_iter, coincidence_large, chance_coincidence_large, raw_coloc_large = self.gen_CSRmats(image_cell.shape[2])
             
             centroids = {} # do this so can parallelise
             raw_colocalisation = {}
@@ -838,10 +951,11 @@ class Analysis_Functions():
             centroids_large = {}
             meanintensities_large = {}
             sumintensities_large = {}
+            pil_large = {}
             def analyse_zplanes(zp):
                 img_z = image[:, :, zp]
                 img_cell_z = image_cell[:, :, zp]
-                centroids[zp], estimated_intensity[zp], estimated_background[zp], estimated_background_perpixel[zp], areas_large[zp], centroids_large[zp], meanintensities_large[zp], sumintensities_large[zp], _ = self.default_spotanalysis_routine(img_z,
+                centroids[zp], estimated_intensity[zp], estimated_background[zp], estimated_background_perpixel[zp], areas_large[zp], centroids_large[zp], meanintensities_large[zp], sumintensities_large[zp], pil_large[zp] = self.default_spotanalysis_routine(img_z,
                 k1, k2, prot_thres, large_prot_thres, areathres, rdl, d)
                 
                 cell_mask[:,:,zp] = self.detect_large_features(img_cell_z,
@@ -853,24 +967,33 @@ class Analysis_Functions():
 
                 clr[zp], norm_std[zp], norm_CSR[zp], expected_spots[zp], coincidence[zp], chance_coincidence[zp], raw_colocalisation[zp], n_iter[zp] = self.calculate_spot_colocalisation_likelihood_ratio(spot_indices, mask_indices, image_size)
                 
+                large_aggregate_indices = self.generate_largeaggregate_indices(pil_large[zp], image_size)
+                coincidence_large[zp], chance_coincidence_large[zp], raw_coloc_large[zp] = self.calculate_largeobj_coincidence(large_aggregate_indices, mask_indices, len(pil_large[zp]), image_size)
+
             pool = Pool(nodes=cpu_number); pool.restart()
             pool.map(analyse_zplanes, z_planes)
             pool.close(); pool.terminate()
             
             to_save = self.make_datarray_spot(centroids, 
-            estimated_intensity, estimated_background, estimated_background_perpixel, raw_colocalisation, columns, z_planes)
+            estimated_intensity, estimated_background, estimated_background_perpixel, 
+            raw_colocalisation, columns, z_planes)
+            
             to_save = to_save.reset_index(drop=True)
             
             to_save_largeobjects = self.make_datarray_largeobjects(areas_large, 
-                                    centroids_large, sumintensities_large, meanintensities_large, columns_large, z_planes)
+                                    centroids_large, sumintensities_large, 
+                                    meanintensities_large, raw_coloc_large, 
+                                    columns_large, z_planes)
             to_save_largeobjects = to_save_largeobjects.reset_index(drop=True)
             
             to_save_cell = self.make_datarray_cell(clr, norm_std,
-                        norm_CSR, expected_spots, coincidence, chance_coincidence, n_iter, columns_cell, z_planes)
+                        norm_CSR, expected_spots, coincidence, chance_coincidence,
+                        coincidence_large, chance_coincidence_large,
+                        n_iter, columns_cell, z_planes)
             to_save_cell = to_save_cell.reset_index(drop=True)
 
         else:
-            centroids, estimated_intensity, estimated_background, estimated_background_perpixel, areas_large, centroids_large, meanintensities_large, sumintensities_large, _ = self.default_spotanalysis_routine(image,
+            centroids, estimated_intensity, estimated_background, estimated_background_perpixel, areas_large, centroids_large, meanintensities_large, sumintensities_large, pil_large = self.default_spotanalysis_routine(image,
             k1, k2, prot_thres, large_prot_thres, areathres, rdl, d)
             
             cell_mask = self.detect_large_features(image_cell,
@@ -882,15 +1005,22 @@ class Analysis_Functions():
 
             clr, norm_std, norm_CSR, expected_spots, coincidence, chance_coincidence, raw_localisation, n_iter = self.calculate_spot_colocalisation_likelihood_ratio(
                 spot_indices, mask_indices, image_size)
+            
+            large_aggregate_indices = self.generate_largeaggregate_indices(pil_large, image_size)
+            coincidence_large, chance_coincidence_large, raw_coloc_large = self.calculate_largeobj_coincidence(large_aggregate_indices, mask_indices, len(pil_large), image_size)
 
             to_save = self.make_datarray_spot(centroids, 
-                estimated_intensity, estimated_background, estimated_background_perpixel, raw_localisation, columns[:-2])
+                estimated_intensity, estimated_background, 
+                estimated_background_perpixel, raw_localisation, columns[:-2])
             
             to_save_largeobjects = self.make_datarray_largeobjects(areas_large, 
-                                    centroids_large, sumintensities_large, meanintensities_large, columns_large[:-2])
+                                    centroids_large, sumintensities_large,
+                                    meanintensities_large, raw_coloc_large, 
+                                    columns_large[:-2])
             
             to_save_cell = self.make_datarray_cell(clr, norm_std, norm_CSR, 
                                 expected_spots, coincidence, chance_coincidence,
+                                coincidence_large, chance_coincidence_large,
                                 n_iter, columns_cell[:-1])
         return to_save, to_save_largeobjects, to_save_cell, cell_mask 
     
@@ -1189,8 +1319,8 @@ class Analysis_Functions():
             to_save_largeobjects (pd.DataFrame): data array of large objects
                                                         or dict of large objects
         """
-        columns = ['x', 'y', 'z', 'sum_intensity_in_photons', 'bg_per_punctum', 'bg_per_pixel', 'zi', 'zf']
-        columns_large = ['x', 'y', 'z', 'area', 'sum_intensity_in_photons', 'mean_intensity_in_photons', 'zi', 'zf']
+        columns = ['x', 'y', 'z', 'sum_intensity_in_photons', 'bg_per_punctum', 'bg_per_pixel', 'incell', 'zi', 'zf']
+        columns_large = ['x', 'y', 'z', 'area', 'sum_intensity_in_photons', 'mean_intensity_in_photons', 'incell', 'zi', 'zf']
         if not isinstance(z, int):
             z_planes = np.arange(z[0], z[1])
             centroids = {}
@@ -1202,24 +1332,27 @@ class Analysis_Functions():
             meanintensities_large = {}
             sumintensities_large = {}
             pil_large = {}
-            
+            incell_large = {} 
+            incell_small = {}
             def analyse_zplanes(zp):
-                centroids[zp], estimated_intensity[zp], 
-                estimated_background[zp], estimated_background_perpixel[zp],
-                areas_large[zp], centroids_large[zp], meanintensities_large[zp],
-                sumintensities_large[zp], pil_large[zp] = self.default_spotanalysis_routine(image[:, :, zp],
+                centroids[zp], estimated_intensity[zp], estimated_background[zp], estimated_background_perpixel[zp], areas_large[zp], centroids_large[zp], meanintensities_large[zp], sumintensities_large[zp], pil_large[zp] = self.default_spotanalysis_routine(image[:, :, zp],
                                                 k1, k2, thres, large_thres, areathres, rdl, d)
-                
+                incell_large[zp] = np.zeros_like(meanintensities_large)
+                incell_small[zp] = np.zeros_like(estimated_background)
+            
             pool = Pool(nodes=cpu_number); pool.restart()
             pool.map(analyse_zplanes, z_planes)
             pool.close(); pool.terminate()
         
             to_save = self.make_datarray_spot(centroids, 
-            estimated_intensity, estimated_background, estimated_background_perpixel, columns, z_planes)
+            estimated_intensity, estimated_background, 
+            estimated_background_perpixel, incell_small, columns, z_planes)
+            
             to_save = to_save.reset_index(drop=True)
             
             to_save_largeobjects = self.make_datarray_largeobjects(areas_large, 
-                                    centroids_large, sumintensities_large, meanintensities_large, columns_large, z_planes)
+                                    centroids_large, sumintensities_large, meanintensities_large,
+                                    incell_large, columns_large, z_planes)
             to_save_largeobjects = to_save_largeobjects.reset_index(drop=True)
         
         else:
@@ -1229,10 +1362,15 @@ class Analysis_Functions():
                                                             k1, k2, thres, large_thres, areathres, rdl, d)
                 
             to_save = self.make_datarray_spot(centroids, 
-                estimated_intensity, estimated_background, estimated_background_perpixel, columns[:-2])
+                estimated_intensity, estimated_background, 
+                estimated_background_perpixel, np.zeros_like(estimated_intensity),
+                columns[:-2])
                 
             to_save_largeobjects = self.make_datarray_largeobjects(areas_large, 
-                                    centroids_large, sumintensities_large, meanintensities_large, columns_large[:-2])
+                                    centroids_large, sumintensities_large, 
+                                    meanintensities_large, 
+                                    np.zeros_like(sumintensities_large),
+                                    columns_large[:-2])
 
         return to_save, to_save_largeobjects
     
@@ -1438,9 +1576,12 @@ class Analysis_Functions():
         expected_spots = np.zeros(image_z_shape)
         coincidence = np.zeros(image_z_shape)
         chance_coincidence = np.zeros(image_z_shape)
-        raw_localisation = {}
+        raw_colocalisation = {}
         n_iter = np.zeros(image_z_shape)
-        return clr, norm_std, norm_CSR, expected_spots, coincidence, chance_coincidence, raw_localisation, n_iter
+        coincidence_large = np.zeros(image_z_shape)
+        chance_coincidence_large = np.zeros(image_z_shape)
+        raw_colocalisation_large = {}
+        return clr, norm_std, norm_CSR, expected_spots, coincidence, chance_coincidence, raw_colocalisation, n_iter, coincidence_large, chance_coincidence_large, raw_colocalisation_large
     
     def make_datarray_largeobjects_ppc(self, areas_large, centroids_large, 
                                        sumintensities_large, meanintensities_large, 
@@ -1493,7 +1634,10 @@ class Analysis_Functions():
                     dataarray = np.hstack([dataarray, da])
         return pd.DataFrame(data=dataarray.T, columns=columns)
     
-    def make_datarray_largeobjects(self, areas_large, centroids_large, sumintensities_large, meanintensities_large, columns, z_planes=0):
+    def make_datarray_largeobjects(self, areas_large, centroids_large, 
+                                   sumintensities_large, meanintensities_large,
+                                   raw_coloc,
+                                   columns, z_planes=0):
         """
         makes a datarray in pandas for large object information
     
@@ -1501,6 +1645,7 @@ class Analysis_Functions():
             areas_large (np.1darray): areas in pixels
             centroids_large (np.1darray): centroids of large objects
             meanintensities_large (np.1darray): mean intensities of large objects
+            raw_coloc (np.1darray): if large spot is in cell or not
             columns (list of strings): column labels
             z_planes: z_planes to put in array (if needed); if int, assumes only
                 one z-plane
@@ -1513,20 +1658,24 @@ class Analysis_Functions():
         if isinstance(z_planes, int):
             dataarray = np.vstack([centroids_large[:, 0], centroids_large[:, 1], 
             np.full_like(centroids_large[:, 0], 1), areas_large, sumintensities_large, 
-            meanintensities_large])
+            meanintensities_large, raw_coloc])
         else:
             for z in z_planes:
                 if z == z_planes[0]:
                     dataarray = np.vstack([centroids_large[z][:, 0], centroids_large[z][:, 1], 
                     np.full_like(centroids_large[z][:, 0], z+1), areas_large[z], 
                     sumintensities_large[z], 
-                    meanintensities_large[z], np.full_like(centroids_large[z][:, 0], 1+z_planes[0]),
+                    meanintensities_large[z],
+                    raw_coloc[z],
+                    np.full_like(centroids_large[z][:, 0], 1+z_planes[0]),
                     np.full_like(centroids_large[z][:, 0], 1+z_planes[-1])]) 
                 else:
                     da = np.vstack([centroids_large[z][:, 0], centroids_large[z][:, 1], 
                     np.full_like(centroids_large[z][:, 0], z+1), areas_large[z], 
                     sumintensities_large[z],
-                    meanintensities_large[z], np.full_like(centroids_large[z][:, 0], 1+z_planes[0]),
+                    meanintensities_large[z],
+                    raw_coloc[z],
+                    np.full_like(centroids_large[z][:, 0], 1+z_planes[0]),
                     np.full_like(centroids_large[z][:, 0], 1+z_planes[-1])]) 
                     dataarray = np.hstack([dataarray, da])
         return pd.DataFrame(data=dataarray.T, columns=columns)
@@ -1693,7 +1842,10 @@ class Analysis_Functions():
                     dataarray_cell = np.hstack([dataarray_cell, temp])
         return pd.DataFrame(data=dataarray_cell.T, columns=overall_columns)
     
-    def make_datarray_cell(self, clr, norm_std, norm_CSR, expected_spots, coincidence, chance_coincidence, n_iter, columns, z_planes='none'):
+    def make_datarray_cell(self, clr, norm_std, norm_CSR, expected_spots, 
+                           coincidence, chance_coincidence, coincidence_large, 
+                           chance_coincidence_large, n_iter, columns, 
+                           z_planes='none'):
         """
         makes a datarray in pandas for cell information
     
@@ -1704,6 +1856,8 @@ class Analysis_Functions():
             expected_spots (np.1darray): array of expected spots
             coincidence (np.1darray): array of coincidence values
             chance_coincidence (np.1darray): array of chance coincidence values
+            coincidence_large (np.1darray): array of coincidence values (large objects)
+            chance_coincidence_large (np.1darray): array of chance coincidence values (large objects)
             n_iter (np.1darray): array of iteration muber
             columns (list of strings): column labels
             z_planes: z_planes to put in array (if needed)
@@ -1714,12 +1868,14 @@ class Analysis_Functions():
         """
         if isinstance(z_planes, str):
             dataarray_cell = np.vstack([clr, norm_std, norm_CSR, 
-                            expected_spots, coincidence, chance_coincidence, n_iter])
+                            expected_spots, coincidence, chance_coincidence, coincidence_large, 
+                            chance_coincidence_large, n_iter])
         else:
             zps = np.zeros_like(clr)
             zps[z_planes] = z_planes+1
             dataarray_cell = np.vstack([clr, norm_std, norm_CSR, 
                             expected_spots, coincidence, 
-                            chance_coincidence, n_iter, zps])
+                            chance_coincidence, coincidence_large, 
+                            chance_coincidence_large, n_iter, zps])
             dataarray_cell = dataarray_cell[:, np.sum(dataarray_cell, axis=0) > 0]
         return pd.DataFrame(data=dataarray_cell.T, columns=columns)
