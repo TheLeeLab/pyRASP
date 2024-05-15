@@ -267,7 +267,7 @@ class Analysis_Functions():
             chance_coincidence_raw = np.zeros(n_iter)
             for i in np.arange(n_iter):
                 chance_coincidence_raw[i] = np.divide(self.test_largeobj_mask_overlap(random_spot_locations[i], mask_indices, n_largeobjs, raw=False), n_largeobjs)
-            return coincidence, chance_coincidence, raw_colocalisation
+            return coincidence, np.mean(chance_coincidence_raw), raw_colocalisation
     
     def calculate_spot_colocalisation_likelihood_ratio(self, spot_indices, mask_indices, image_size, tol=0.01, n_iter=100, blur_degree=1, max_iter=10000):
         """
