@@ -476,7 +476,7 @@ class RASP_Routines():
                                             cell_threshold2=self.cell_threshold1, 
                                             cell_sigma1=self.cell_sigma1,
                                             cell_sigma2=self.cell_sigma2,
-                                            d=self.d)
+                                            d=self.d, analyse_clr=analyse_clr)
                     
                     if cell_analysis == True:
                         IO.save_analysis(to_save, to_save_largeobjects, analysis_directory,

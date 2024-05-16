@@ -950,7 +950,8 @@ class Analysis_Functions():
     def compute_spot_and_cell_props(self, image, image_cell, k1, k2, prot_thres=0.05, large_prot_thres=100., 
                            areathres=30., rdl=[50., 0., 0.], z=0, 
                            cell_threshold1=200., cell_threshold2=200, 
-                           cell_sigma1=2., cell_sigma2=40., d=2):
+                           cell_sigma1=2., cell_sigma2=40., d=2, 
+                           analyse_clr=True):
         """
         Gets basic image properties (centroids, radiality)
         from a single image and compare to a cell mask from another image channel
@@ -970,6 +971,7 @@ class Analysis_Functions():
             cell_sigma1 (float): cell blur value 1
             cell_sigma2 (float): cell blur value 2
             d (integer): pixel radius value
+            analyse_clr (boolean): analyse clr yes/no
         
         Returns:
             to_save (pd.DataFrame): spot properties ready to save
@@ -980,11 +982,17 @@ class Analysis_Functions():
         
         columns = ['x', 'y', 'z', 'sum_intensity_in_photons', 'bg_per_punctum', 'bg_per_pixel', 'incell', 'zi', 'zf']
         columns_large = ['x', 'y', 'z', 'area', 'sum_intensity_in_photons', 'mean_intensity_in_photons', 'incell', 'zi', 'zf']
-        columns_cell = ['colocalisation_likelihood_ratio', 'std', 
-                            'CSR', 'expected_spots', 'coincidence', 
-                            'chance_coincidence', 'coincidence_largeobj',
-                            'chance_coincidence_largeobj',
-                            'n_iterations', 'z']
+        if analyse_clr == True:
+            columns_cell = ['colocalisation_likelihood_ratio', 'std', 
+                                'CSR', 'expected_spots', 'coincidence', 
+                                'chance_coincidence', 'coincidence_largeobj',
+                                'chance_coincidence_largeobj',
+                                'n_iterations', 'z']
+        else:
+            columns_cell = ['coincidence', 'chance_coincidence', 
+                            'coincidence_largeobj', 'chance_coincidence_largeobj',
+                                'n_iterations', 'z']
+
 
         if not isinstance(z, int):
             z_planes = np.arange(z[0], z[1])
@@ -1014,7 +1022,10 @@ class Analysis_Functions():
                 mask_indices, spot_indices = self.generate_mask_and_spot_indices(cell_mask[:,:,zp], 
                                         np.asarray(centroids[zp], dtype=int), image_size)
 
-                clr[zp], norm_std[zp], norm_CSR[zp], expected_spots[zp], coincidence[zp], chance_coincidence[zp], raw_colocalisation[zp], n_iter[zp] = self.calculate_spot_colocalisation_likelihood_ratio(spot_indices, mask_indices, image_size)
+                if analyse_clr == True:
+                    clr[zp], norm_std[zp], norm_CSR[zp], expected_spots[zp], coincidence[zp], chance_coincidence[zp], raw_colocalisation[zp], n_iter[zp] = self.calculate_spot_colocalisation_likelihood_ratio(spot_indices, mask_indices, image_size)
+                else:
+                    coincidence[zp], chance_coincidence[zp], raw_colocalisation[zp], n_iter[zp] = self.calculate_spot_to_mask_coincidence(spot_indices, mask_indices, image_size)
                 
                 large_aggregate_indices = self.generate_largeaggregate_indices(pil_large[zp], image_size)
                 coincidence_large[zp], chance_coincidence_large[zp], raw_coloc_large[zp] = self.calculate_largeobj_coincidence(large_aggregate_indices, mask_indices, len(pil_large[zp]), image_size)
@@ -1038,7 +1049,7 @@ class Analysis_Functions():
             to_save_cell = self.make_datarray_cell(clr, norm_std,
                         norm_CSR, expected_spots, coincidence, chance_coincidence,
                         coincidence_large, chance_coincidence_large,
-                        n_iter, columns_cell, z_planes)
+                        n_iter, columns_cell, z_planes, analyse_clr)
             to_save_cell = to_save_cell.reset_index(drop=True)
 
         else:
@@ -1052,8 +1063,13 @@ class Analysis_Functions():
             mask_indices, spot_indices = self.generate_mask_and_spot_indices(cell_mask, 
                                                         centroids, image_size)
 
-            clr, norm_std, norm_CSR, expected_spots, coincidence, chance_coincidence, raw_localisation, n_iter = self.calculate_spot_colocalisation_likelihood_ratio(
-                spot_indices, mask_indices, image_size)
+            if analyse_clr == True:
+                clr, norm_std, norm_CSR, expected_spots, coincidence, chance_coincidence, raw_localisation, n_iter = self.calculate_spot_colocalisation_likelihood_ratio(
+                    spot_indices, mask_indices, image_size)
+            else:
+                coincidence, chance_coincidence, raw_localisation, n_iter = self.calculate_spot_to_mask_coincidence(
+                    spot_indices, mask_indices, image_size)
+
             
             large_aggregate_indices = self.generate_largeaggregate_indices(pil_large, image_size)
             coincidence_large, chance_coincidence_large, raw_coloc_large = self.calculate_largeobj_coincidence(large_aggregate_indices, mask_indices, len(pil_large), image_size)
@@ -1070,7 +1086,7 @@ class Analysis_Functions():
             to_save_cell = self.make_datarray_cell(clr, norm_std, norm_CSR, 
                                 expected_spots, coincidence, chance_coincidence,
                                 coincidence_large, chance_coincidence_large,
-                                n_iter, columns_cell[:-1])
+                                n_iter, columns_cell[:-1], analyse_clr)
         return to_save, to_save_largeobjects, to_save_cell, cell_mask 
     
     def compute_spot_props_dict(self, image, image_cell, k1, k2, thres=0.05, large_thres=100., 
@@ -1894,7 +1910,7 @@ class Analysis_Functions():
     def make_datarray_cell(self, clr, norm_std, norm_CSR, expected_spots, 
                            coincidence, chance_coincidence, coincidence_large, 
                            chance_coincidence_large, n_iter, columns, 
-                           z_planes='none'):
+                           z_planes='none', analyse_clr=True):
         """
         makes a datarray in pandas for cell information
     
@@ -1910,21 +1926,32 @@ class Analysis_Functions():
             n_iter (np.1darray): array of iteration muber
             columns (list of strings): column labels
             z_planes: z_planes to put in array (if needed)
+            analyse_clr (boolean): If true, save clr
         
         Returns:
             to_save (pandas DataArray): pandas array to save
         
         """
         if isinstance(z_planes, str):
-            dataarray_cell = np.vstack([clr, norm_std, norm_CSR, 
-                            expected_spots, coincidence, chance_coincidence, coincidence_large, 
-                            chance_coincidence_large, n_iter])
+            if analyse_clr==True:
+                dataarray_cell = np.vstack([clr, norm_std, norm_CSR, 
+                                expected_spots, coincidence, chance_coincidence, coincidence_large, 
+                                chance_coincidence_large, n_iter])
+            else:
+                dataarray_cell = np.vstack([coincidence, chance_coincidence, 
+                                            coincidence_large, 
+                                chance_coincidence_large, n_iter])
         else:
-            zps = np.zeros_like(clr)
+            zps = np.zeros_like(coincidence)
             zps[z_planes] = z_planes+1
-            dataarray_cell = np.vstack([clr, norm_std, norm_CSR, 
-                            expected_spots, coincidence, 
-                            chance_coincidence, coincidence_large, 
-                            chance_coincidence_large, n_iter, zps])
+            if analyse_clr==True:
+                dataarray_cell = np.vstack([clr, norm_std, norm_CSR, 
+                                expected_spots, coincidence, 
+                                chance_coincidence, coincidence_large, 
+                                chance_coincidence_large, n_iter, zps])
+            else:
+                dataarray_cell = np.vstack([coincidence, 
+                                chance_coincidence, coincidence_large, 
+                                chance_coincidence_large, n_iter, zps])
             dataarray_cell = dataarray_cell[:, np.sum(dataarray_cell, axis=0) > 0]
         return pd.DataFrame(data=dataarray_cell.T, columns=columns)
