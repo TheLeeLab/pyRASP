@@ -1837,15 +1837,15 @@ class Analysis_Functions():
             estimated_background, estimated_background_perpixel, raw_colocalisation])
         else:
             for z in z_planes:
-            	dataarray = []
+                dataarray = []
                 if len(centroids[z][:,0]) > 0:
-			da = np.vstack([centroids[z][:, 0], centroids[z][:, 1],
-			np.full_like(centroids[z][:, 0], z+1), estimated_intensity[z],
-			estimated_background[z], estimated_background_perpixel[z],
-			raw_colocalisation[z],
-			np.full_like(centroids[z][:, 0], 1+z_planes[0]),
-			np.full_like(centroids[z][:, 0], 1+z_planes[-1])])
-			dataarray = np.hstack([dataarray, da])
+                    da = np.vstack([centroids[z][:, 0], centroids[z][:, 1],
+                                    np.full_like(centroids[z][:, 0], z+1), estimated_intensity[z],
+                                    estimated_background[z], estimated_background_perpixel[z],
+                                    raw_colocalisation[z],
+                                    np.full_like(centroids[z][:, 0], 1+z_planes[0]),
+                                    np.full_like(centroids[z][:, 0], 1+z_planes[-1])])
+                    dataarray = np.hstack([dataarray, da])
         return pd.DataFrame(data=dataarray.T, columns=columns)
     
     def make_datarray_cell_dict(self, clr, norm_std, norm_CSR, expected_spots, coincidence, chance_coincidence, n_iter, columns, z_planes='none'):
