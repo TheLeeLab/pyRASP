@@ -211,9 +211,9 @@ class Analysis_Functions():
         
         if original_n_spots == 0:
             n_iter_rec = 0
-            coincidence = np.NAN
-            chance_coincidence = np.NAN
-            raw_colocalisation = np.NAN
+            coincidence = np.zeros_like(spot_indices)
+            chance_coincidence = np.zeros_like(spot_indices)
+            raw_colocalisation = np.zeros_like(spot_indices)
             return coincidence, chance_coincidence, raw_colocalisation, n_iter_rec
 
         if blur_degree > 0:
