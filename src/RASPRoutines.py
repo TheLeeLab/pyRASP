@@ -389,7 +389,8 @@ class RASP_Routines():
                        large_thres=100., gsigma=1.4, rwave=2.,
                        protein_string='C1', cell_string='C0',
                        if_filter=True, im_start=0, cell_analysis=True, 
-                       one_savefile=False, disp=True):
+                       one_savefile=False, disp=True,
+                       analyse_clr=True):
         """
         analyses data from images in a specified folder,
         saves spots, locations, intensities and backgrounds in a folder created
@@ -412,8 +413,10 @@ class RASP_Routines():
                 images and computes colocalisation likelihood ratios.
             one_savefile (boolean): Parameter that, if true, doesn't save a file
                 per image but amalgamates them into one file
+            calccsr (boolean): Do CSR?
             disp (boolean): If true, prints when analysed an image stack.
-
+            analyse_clr (boolean): If true, calculates the clr. If not, just coincidence
+            
         """
         all_files = self.file_search(folder, protein_string, imtype) # first get all files in any subfolders
         
@@ -459,8 +462,7 @@ class RASP_Routines():
                 z_test = len(img.shape) > 2
                 
                 if z_test: # if a z-stack
-                    z_planes = self.get_infocus_planes(img, k1)
-    
+                    z_planes = self.get_infocus_planes(img, k1)    
                     if cell_analysis == False:
                             to_save, to_save_largeobjects = A_F.compute_spot_props(img, 
                             k1, k2, thres=thres, large_thres=large_thres, 

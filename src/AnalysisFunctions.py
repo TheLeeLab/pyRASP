@@ -187,6 +187,54 @@ class Analysis_Functions():
         spot2_indices = np.ravel_multi_index(centroids2.T, image_size, order='F')
         return spot1_indices, spot2_indices
     
+    def calculate_spot_to_mask_coincidence(self, spot_indices, mask_indices, image_size, n_iter=100, blur_degree=1):
+        """
+        gets spot colocalisation likelihood ratio, as well as reporting error
+        bounds on the likelihood ratio for one image
+    
+        Args:
+            spot_indices (1D array): indices of spots
+            mask_indices (1D array): indices of pixels in mask
+            image_size (tuple): Image dimensions (height, width).
+            n_iter (int): default 100; number of iterations to start with
+            blur_degree (int): number of pixels to blur spot indices with 
+                                (i.e. number of pixels surrounding centroid to 
+                                consider part of spot). Default 1
+        
+        Returns:
+            coincidence (float): coincidence FoV
+            chance_coincidence (float): chance coincidence
+            raw_colocalisation (np.1darray): binary yes/no of coincidence per spot
+            n_iter (int): how many iterations it took to converge
+        """
+        original_n_spots = len(spot_indices) # get number of spots
+        
+        if original_n_spots == 0:
+            n_iter_rec = 0
+            coincidence = np.NAN
+            chance_coincidence = np.NAN
+            raw_colocalisation = np.NAN
+            return coincidence, chance_coincidence, raw_colocalisation, n_iter_rec
+
+        if blur_degree > 0:
+            spot_indices = self.dilate_pixels(spot_indices, image_size, width=blur_degree+1, edge=blur_degree)
+        n_spots = len(spot_indices)
+        n_iter_rec = n_iter
+        possible_indices = np.arange(0, np.prod(image_size)) # get list of where is possible to exist in an image
+        raw_colocalisation = self.test_spot_spot_overlap(spot_indices, mask_indices, original_n_spots, raw=True)
+        nspots_in_mask = self.test_spot_mask_overlap(spot_indices, mask_indices) # get nspots in mask
+        coincidence = np.divide(nspots_in_mask, n_spots) # generate coincidence
+            
+        random_spot_locations = np.random.choice(possible_indices, size=(n_iter, original_n_spots)) # get random spot locations
+        if blur_degree > 0:
+            random_spot_locations = self.dilate_pixel_matrix(random_spot_locations, image_size, width=blur_degree+1, edge=blur_degree)
+        chance_coincidence_raw = np.zeros([n_iter]) # generate CSR array to fill in
+        for i in np.arange(n_iter):
+            chance_coincidence_raw[i] = self.test_spot_mask_overlap(random_spot_locations[i, :], mask_indices)
+            
+        chance_coincidence = np.divide(np.nanmean(chance_coincidence_raw), n_spots)
+        return coincidence, chance_coincidence, raw_colocalisation, n_iter_rec
+    
     def calculate_spot_to_spot_coincidence(self, spot_1_indices, spot_2_indices, image_size, n_iter=1000, blur_degree=1):
         """
         gets spot to spot coincidence between two channels
@@ -262,14 +310,14 @@ class Analysis_Functions():
             nspots_in_mask = np.sum(raw_colocalisation)
             coincidence = np.divide(nspots_in_mask, n_largeobjs) # generate coincidence
             
-            n_iter = 1000
+            n_iter = 100
             random_spot_locations = self.random_largeobj_locations(largeobj_indices, highest_index, n_iter) # need to write large aggregate randomisation function
             chance_coincidence_raw = np.zeros(n_iter)
             for i in np.arange(n_iter):
                 chance_coincidence_raw[i] = np.divide(self.test_largeobj_mask_overlap(random_spot_locations[i], mask_indices, n_largeobjs, raw=False), n_largeobjs)
             return coincidence, np.mean(chance_coincidence_raw), raw_colocalisation
     
-    def calculate_spot_colocalisation_likelihood_ratio(self, spot_indices, mask_indices, image_size, tol=0.01, n_iter=100, blur_degree=1, max_iter=10000):
+    def calculate_spot_colocalisation_likelihood_ratio(self, spot_indices, mask_indices, image_size, tol=0.01, n_iter=100, blur_degree=1, max_iter=1000):
         """
         gets spot colocalisation likelihood ratio, as well as reporting error
         bounds on the likelihood ratio for one image
@@ -303,8 +351,9 @@ class Analysis_Functions():
             norm_std = np.NAN
             coincidence = np.NAN
             chance_coincidence = np.NAN
-            return colocalisation_likelihood_ratio, norm_std, norm_CSR, 0, coincidence, chance_coincidence, n_iter_rec
-        
+            raw_colocalisation = np.NAN
+            return colocalisation_likelihood_ratio, norm_std, norm_CSR, 0, coincidence, chance_coincidence, raw_colocalisation, n_iter_rec
+
         if blur_degree > 0:
             spot_indices = self.dilate_pixels(spot_indices, image_size, width=blur_degree+1, edge=blur_degree)
         n_spots = len(spot_indices)
@@ -394,8 +443,8 @@ class Analysis_Functions():
         meanintensities_large = np.zeros_like(areas_large)
         sumintensities_large = np.zeros_like(areas_large)
         for i in np.arange(len(centroids_large)):
-            meanintensities_large[i] = np.mean(image[pil_large[i][:,0], pil_large[i][:,1]])
             sumintensities_large[i] = np.sum(image[pil_large[i][:,0], pil_large[i][:,1]])
+        meanintensities_large = np.divide(sumintensities_large, areas_large);
         img2, Gx, Gy, focusScore, cfactor = self.calculate_gradient_field(image, k1)
         dl_mask, centroids, radiality, idxs = self.small_feature_kernel(image, 
         large_mask, img2, Gx, Gy,
