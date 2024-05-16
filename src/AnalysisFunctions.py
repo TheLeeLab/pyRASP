@@ -213,7 +213,7 @@ class Analysis_Functions():
             n_iter_rec = 0
             coincidence = np.NAN
             chance_coincidence = np.NAN
-            raw_colocalisation = np.zeros_like(spot_indices)
+            raw_colocalisation = np.full_like(spot_indices, np.NAN)
             return coincidence, chance_coincidence, raw_colocalisation, n_iter_rec
 
         if blur_degree > 0:
@@ -1837,8 +1837,14 @@ class Analysis_Functions():
             estimated_background, estimated_background_perpixel, raw_colocalisation])
         else:
             for z in z_planes:
-                dataarray = []
-                if len(centroids[z][:,0]) > 0:
+                if z == z_planes[0]:
+                    dataarray = np.vstack([centroids[z][:, 0], centroids[z][:, 1],
+                                    np.full_like(centroids[z][:, 0], z+1), estimated_intensity[z],
+                                    estimated_background[z], estimated_background_perpixel[z],
+                                    raw_colocalisation[z],
+                                    np.full_like(centroids[z][:, 0], 1+z_planes[0]),
+                                    np.full_like(centroids[z][:, 0], 1+z_planes[-1])])
+                else:
                     da = np.vstack([centroids[z][:, 0], centroids[z][:, 1],
                                     np.full_like(centroids[z][:, 0], z+1), estimated_intensity[z],
                                     estimated_background[z], estimated_background_perpixel[z],
