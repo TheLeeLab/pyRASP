@@ -1384,8 +1384,8 @@ class Analysis_Functions():
             to_save_largeobjects (pd.DataFrame): data array of large objects
                                                         or dict of large objects
         """
-        columns = ['x', 'y', 'z', 'sum_intensity_in_photons', 'bg_per_punctum', 'bg_per_pixel', 'incell', 'zi', 'zf']
-        columns_large = ['x', 'y', 'z', 'area', 'sum_intensity_in_photons', 'mean_intensity_in_photons', 'incell', 'zi', 'zf']
+        columns = ['x', 'y', 'z', 'sum_intensity_in_photons', 'bg_per_punctum', 'bg_per_pixel', 'zi', 'zf']
+        columns_large = ['x', 'y', 'z', 'area', 'sum_intensity_in_photons', 'mean_intensity_in_photons', 'zi', 'zf']
         if not isinstance(z, int):
             z_planes = np.arange(z[0], z[1])
             centroids = {}
@@ -1397,13 +1397,9 @@ class Analysis_Functions():
             meanintensities_large = {}
             sumintensities_large = {}
             pil_large = {}
-            incell_large = {} 
-            incell_small = {}
             def analyse_zplanes(zp):
                 centroids[zp], estimated_intensity[zp], estimated_background[zp], estimated_background_perpixel[zp], areas_large[zp], centroids_large[zp], meanintensities_large[zp], sumintensities_large[zp], pil_large[zp] = self.default_spotanalysis_routine(image[:, :, zp],
                                                 k1, k2, thres, large_thres, areathres, rdl, d)
-                incell_large[zp] = np.zeros_like(meanintensities_large)
-                incell_small[zp] = np.zeros_like(estimated_background)
             
             pool = Pool(nodes=cpu_number); pool.restart()
             pool.map(analyse_zplanes, z_planes)
@@ -1411,13 +1407,14 @@ class Analysis_Functions():
         
             to_save = self.make_datarray_spot(centroids, 
             estimated_intensity, estimated_background, 
-            estimated_background_perpixel, incell_small, columns, z_planes)
+            estimated_background_perpixel, 0, columns, z_planes, cell_analysis=False)
             
             to_save = to_save.reset_index(drop=True)
             
             to_save_largeobjects = self.make_datarray_largeobjects(areas_large, 
                                     centroids_large, sumintensities_large, meanintensities_large,
-                                    incell_large, columns_large, z_planes)
+                                    0,
+                                    columns_large, z_planes, cell_analysis=False)
             to_save_largeobjects = to_save_largeobjects.reset_index(drop=True)
         
         else:
@@ -1428,14 +1425,13 @@ class Analysis_Functions():
                 
             to_save = self.make_datarray_spot(centroids, 
                 estimated_intensity, estimated_background, 
-                estimated_background_perpixel, np.zeros_like(estimated_intensity),
+                estimated_background_perpixel, 0,
                 columns[:-2])
                 
             to_save_largeobjects = self.make_datarray_largeobjects(areas_large, 
                                     centroids_large, sumintensities_large, 
-                                    meanintensities_large, 
-                                    np.zeros_like(sumintensities_large),
-                                    columns_large[:-2])
+                                    meanintensities_large, 0,
+                                    columns_large[:-2], cell_analysis=False)
 
         return to_save, to_save_largeobjects
     
@@ -1702,7 +1698,7 @@ class Analysis_Functions():
     def make_datarray_largeobjects(self, areas_large, centroids_large, 
                                    sumintensities_large, meanintensities_large,
                                    raw_coloc,
-                                   columns, z_planes=0):
+                                   columns, z_planes=0, cell_analysis=True):
         """
         makes a datarray in pandas for large object information
     
@@ -1721,13 +1717,18 @@ class Analysis_Functions():
 
         """
         if isinstance(z_planes, int):
-            dataarray = np.vstack([centroids_large[:, 0], centroids_large[:, 1], 
-            np.full_like(centroids_large[:, 0], 1), areas_large, sumintensities_large, 
-            meanintensities_large, raw_coloc])
+            if cell_analysis == True:
+                dataarray = np.vstack([centroids_large[:, 0], centroids_large[:, 1], 
+                np.full_like(centroids_large[:, 0], 1), areas_large, sumintensities_large, 
+                meanintensities_large, raw_coloc])
+            else:
+                dataarray = np.vstack([centroids_large[:, 0], centroids_large[:, 1], 
+                np.full_like(centroids_large[:, 0], 1), areas_large, sumintensities_large, 
+                meanintensities_large])
         else:
             for z in z_planes:
-                if z == z_planes[0]:
-                    dataarray = np.vstack([centroids_large[z][:, 0], centroids_large[z][:, 1], 
+                if cell_analysis == True:
+                    stack = np.vstack([centroids_large[z][:, 0], centroids_large[z][:, 1], 
                     np.full_like(centroids_large[z][:, 0], z+1), areas_large[z], 
                     sumintensities_large[z], 
                     meanintensities_large[z],
@@ -1735,13 +1736,16 @@ class Analysis_Functions():
                     np.full_like(centroids_large[z][:, 0], 1+z_planes[0]),
                     np.full_like(centroids_large[z][:, 0], 1+z_planes[-1])]) 
                 else:
-                    da = np.vstack([centroids_large[z][:, 0], centroids_large[z][:, 1], 
+                    stack = np.vstack([centroids_large[z][:, 0], centroids_large[z][:, 1], 
                     np.full_like(centroids_large[z][:, 0], z+1), areas_large[z], 
-                    sumintensities_large[z],
+                    sumintensities_large[z], 
                     meanintensities_large[z],
-                    raw_coloc[z],
                     np.full_like(centroids_large[z][:, 0], 1+z_planes[0]),
                     np.full_like(centroids_large[z][:, 0], 1+z_planes[-1])]) 
+                if z == z_planes[0]:
+                    dataarray = stack
+                else:
+                    da = stack
                     dataarray = np.hstack([dataarray, da])
         return pd.DataFrame(data=dataarray.T, columns=columns)
 
@@ -1813,7 +1817,7 @@ class Analysis_Functions():
                            estimated_background, 
                            estimated_background_perpixel, 
                            raw_colocalisation,
-                           columns, z_planes=0):
+                           columns, z_planes=0, cell_analysis=True):
         """
         makes a datarray in pandas for spot information
     
@@ -1832,25 +1836,33 @@ class Analysis_Functions():
         
         """
         if isinstance(z_planes, int):
-            dataarray = np.vstack([centroids[:, 0], centroids[:, 1], 
-            np.full_like(centroids[:, 0], 1), estimated_intensity, 
-            estimated_background, estimated_background_perpixel, raw_colocalisation])
+            if cell_analysis == True:
+                dataarray = np.vstack([centroids[:, 0], centroids[:, 1], 
+                np.full_like(centroids[:, 0], 1), estimated_intensity, 
+                estimated_background, estimated_background_perpixel, raw_colocalisation])
+            else:
+                dataarray = np.vstack([centroids[:, 0], centroids[:, 1], 
+                np.full_like(centroids[:, 0], 1), estimated_intensity, 
+                estimated_background, estimated_background_perpixel])
         else:
             for z in z_planes:
-                if z == z_planes[0]:
-                    dataarray = np.vstack([centroids[z][:, 0], centroids[z][:, 1],
+                if cell_analysis == True:   
+                    stack = np.vstack([centroids[z][:, 0], centroids[z][:, 1],
                                     np.full_like(centroids[z][:, 0], z+1), estimated_intensity[z],
                                     estimated_background[z], estimated_background_perpixel[z],
                                     raw_colocalisation[z],
                                     np.full_like(centroids[z][:, 0], 1+z_planes[0]),
                                     np.full_like(centroids[z][:, 0], 1+z_planes[-1])])
                 else:
-                    da = np.vstack([centroids[z][:, 0], centroids[z][:, 1],
+                    stack = np.vstack([centroids[z][:, 0], centroids[z][:, 1],
                                     np.full_like(centroids[z][:, 0], z+1), estimated_intensity[z],
                                     estimated_background[z], estimated_background_perpixel[z],
-                                    raw_colocalisation[z],
                                     np.full_like(centroids[z][:, 0], 1+z_planes[0]),
                                     np.full_like(centroids[z][:, 0], 1+z_planes[-1])])
+                if z == z_planes[0]:
+                    dataarray = stack
+                else:
+                    da = stack
                     dataarray = np.hstack([dataarray, da])
         return pd.DataFrame(data=dataarray.T, columns=columns)
     
