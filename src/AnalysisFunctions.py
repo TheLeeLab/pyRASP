@@ -42,6 +42,38 @@ class Analysis_Functions():
         n_spots = pd.DataFrame(data=np.vstack([z_planes+1, spots_per_plane]).T, 
                                columns=columns)
         return n_spots
+    
+    def count_spots_withthreshold(self, database, threshold):
+        """
+        Counts spots per z plane
+    
+        Args:
+            database (pandas array): pandas array of spots
+            threshold (float): intensity threshold
+            
+        Returns:
+            n_spots (pandas array)
+        """
+        columns = ['z', 'n_spots_abovethreshold', 'n_spots_belowthreshold', 'filename', 'threshold']
+        
+        for i, filename in enumerate(np.unique(database.image_filename)):
+            dataslice = database[database.image_filename == filename]
+            z_planes = np.unique(dataslice.z.values)
+            spots_per_plane = np.zeros([2, len(z_planes)])
+            for z in enumerate(z_planes):
+                spots_per_plane[0, z[0]] = sum(dataslice.sum_intensity_in_photons[dataslice.z == z[1]].values > threshold)
+                spots_per_plane[1, z[0]] = sum(dataslice.sum_intensity_in_photons[dataslice.z == z[1]].values <= threshold)
+            
+            stack = np.vstack([z_planes, spots_per_plane[0, :], 
+                               spots_per_plane[1, :],
+                               np.full_like(z_planes, filename, dtype='object'),
+                               np.full_like(z_planes, threshold)]).T
+            if i == 0:
+                data = stack
+            else:
+                data = np.vstack([data, stack])
+        n_spots = pd.DataFrame(data=data, columns=columns)
+        return n_spots
 
     def calculate_gradient_field(self, image, kernel):
         """
@@ -294,7 +326,7 @@ class Analysis_Functions():
         if n_largeobjs == 0:
             coincidence = 0
             chance_coincidence = 0
-            raw_colocalisation = np.zeros(n_largeobjs)
+            raw_colocalisation = np.full_like(largeobj_indices, np.NAN)
             return coincidence, chance_coincidence, raw_colocalisation
         
         highest_index = np.prod(image_size)
@@ -351,7 +383,7 @@ class Analysis_Functions():
             norm_std = np.NAN
             coincidence = np.NAN
             chance_coincidence = np.NAN
-            raw_colocalisation = np.NAN
+            raw_colocalisation = np.full_like(spot_indices, np.NAN)
             return colocalisation_likelihood_ratio, norm_std, norm_CSR, 0, coincidence, chance_coincidence, raw_colocalisation, n_iter_rec
 
         if blur_degree > 0:
@@ -369,7 +401,7 @@ class Analysis_Functions():
             norm_std = np.NAN
             coincidence = np.NAN
             chance_coincidence = np.NAN
-            raw_colocalisation = np.NAN
+            raw_colocalisation = np.full_like(spot_indices, np.NAN)
             return colocalisation_likelihood_ratio, norm_std, norm_CSR, expected_spots, coincidence, chance_coincidence, raw_colocalisation, n_iter_rec
         else:
             raw_colocalisation = self.test_spot_spot_overlap(spot_indices, mask_indices, original_n_spots, raw=True)
@@ -1846,7 +1878,7 @@ class Analysis_Functions():
                 estimated_background, estimated_background_perpixel])
         else:
             for z in z_planes:
-                if cell_analysis == True:   
+                if cell_analysis == True:
                     stack = np.vstack([centroids[z][:, 0], centroids[z][:, 1],
                                     np.full_like(centroids[z][:, 0], z+1), estimated_intensity[z],
                                     estimated_background[z], estimated_background_perpixel[z],
