@@ -216,7 +216,7 @@ class Plotter():
                         xycoords='data', color=labelcolor, fontsize=fontsz-1)
         
         if plotmask == True:
-            axs.contour(mask, [0.5], linewidths=1.5, colors='blue')
+            axs.contour(mask, [0.5], linewidths=0.75, colors='blue')
 
         return axs
     
