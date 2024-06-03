@@ -296,14 +296,15 @@ class Analysis_Functions():
         possible_indices = np.arange(0, np.prod(image_size)) # get list of where is possible to exist in an image
         nspots_in_mask = self.test_spot_spot_overlap(spot_1_indices, spot_2_indices, original_n_spots) # get nspots in mask
             
-        coincidence = np.divide(nspots_in_mask, original_n_spots) # generate coincidence
+        coincidence = np.divide(np.sum(nspots_in_mask), original_n_spots) # generate coincidence
             
         random_spot_locations = np.random.choice(possible_indices, size=(n_iter, original_n_spots)) # get random spot locations
         if blur_degree > 0:
             random_spot_locations = self.dilate_pixel_matrix(random_spot_locations, image_size, width=blur_degree+1, edge=blur_degree)
         CC = np.zeros([n_iter]) # generate CSR array to fill in
         for i in np.arange(n_iter):
-            CC[i] = np.divide(self.test_spot_spot_overlap(random_spot_locations[i, :], spot_2_indices, original_n_spots), original_n_spots)
+            CC[i] = np.divide(np.sum(self.test_spot_spot_overlap(random_spot_locations[i, :], 
+                            spot_2_indices, original_n_spots)), original_n_spots)
             chance_coincidence = np.nanmean(CC)
         return coincidence, chance_coincidence
 
