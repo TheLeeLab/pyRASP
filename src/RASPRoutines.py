@@ -563,8 +563,8 @@ class RASP_Routines():
                 fig, axs = plots.two_column_plot(nrows=1, ncolumns=2, widthratio=[1,1])
                 xpositions = to_save[to_save.z == i[1]].x.values
                 ypositions = to_save[to_save.z == i[1]].y.values
-                xpositions_large = to_save_largeobjects[to_save.z == i[1]].x.values
-                ypositions_large = to_save_largeobjects[to_save.z == i[1]].y.values
+                xpositions_large = to_save_largeobjects[to_save_largeobjects.z == i[1]].x.values
+                ypositions_large = to_save_largeobjects[to_save_largeobjects.z == i[1]].y.values
                 testvals = (xpositions < image_size)*(ypositions < image_size)
                 xpositions = xpositions[testvals]
                 ypositions = ypositions[testvals]
@@ -580,13 +580,12 @@ class RASP_Routines():
                     plt.savefig(protein_file.split('.')[0]+'_ExampleFigure_zplane'+str(int(i[1]))+'.svg', format='svg', dpi=600)
                 plt.show()
         else:
-            
             for i in enumerate(z_to_plot):
                 fig, axs = plots.two_column_plot(nrows=1, ncolumns=3, widthratio=[1,1,1])
                 xpositions = to_save[to_save.z == i[1]].x.values
                 ypositions = to_save[to_save.z == i[1]].y.values
-                xpositions_large = to_save_largeobjects[to_save.z == i[1]].x.values
-                ypositions_large = to_save_largeobjects[to_save.z == i[1]].y.values
+                xpositions_large = to_save_largeobjects[to_save_largeobjects.z == i[1]].x.values
+                ypositions_large = to_save_largeobjects[to_save_largeobjects.z == i[1]].y.values
                 testvals = (xpositions < image_size)*(ypositions < image_size)
                 xpositions = xpositions[testvals]
                 ypositions = ypositions[testvals]
