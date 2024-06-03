@@ -589,9 +589,6 @@ class RASP_Routines():
                 testvals = (xpositions < image_size)*(ypositions < image_size)
                 xpositions = xpositions[testvals]
                 ypositions = ypositions[testvals]
-                testvals_large = (xpositions_large < image_size)*(ypositions_large < image_size)
-                xpositions_large = xpositions_large[testvals_large]
-                ypositions_large = ypositions_large[testvals_large]
                 axs[0] = plots.image_scatter_plot(axs[0], 
                             img[:image_size, :image_size, i[1]-1], 
                             xdata=xpositions, ydata=ypositions, label='puncta, z plane = '+str(int(i[1])))
