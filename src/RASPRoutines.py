@@ -563,6 +563,8 @@ class RASP_Routines():
                 fig, axs = plots.two_column_plot(nrows=1, ncolumns=2, widthratio=[1,1])
                 xpositions = to_save[to_save.z == i[1]].x.values
                 ypositions = to_save[to_save.z == i[1]].y.values
+                xpositions_large = to_save_largeobjects[to_save.z == i[1]].x.values
+                ypositions_large = to_save_largeobjects[to_save.z == i[1]].y.values
                 testvals = (xpositions < image_size)*(ypositions < image_size)
                 xpositions = xpositions[testvals]
                 ypositions = ypositions[testvals]
@@ -570,10 +572,9 @@ class RASP_Routines():
                             img[:image_size, :image_size, i[1]-1], 
                             xdata=xpositions, ydata=ypositions, label='z plane = '+str(int(i[1])))
     
-                axs[1] = plots.histogram_plot(axs[1], 
-                                    to_save[to_save.z == i[1]].sum_intensity_in_photons.values, 
-                                bins=A_F.bincalculator(to_save[to_save.z == i[1]].sum_intensity_in_photons.values), 
-                                xaxislabel='puncta intensity (photons)', density=False)
+                axs[1] = plots.image_scatter_plot(axs[1], 
+                            img[:, :, i[1]-1], 
+                            xdata=xpositions_large, ydata=ypositions_large, label='z plane = '+str(int(i[1])))
                 plt.tight_layout()
                 if save_figure == True:
                     plt.savefig(protein_file.split('.')[0]+'_ExampleFigure_zplane'+str(int(i[1]))+'.svg', format='svg', dpi=600)
@@ -584,21 +585,26 @@ class RASP_Routines():
                 fig, axs = plots.two_column_plot(nrows=1, ncolumns=3, widthratio=[1,1,1])
                 xpositions = to_save[to_save.z == i[1]].x.values
                 ypositions = to_save[to_save.z == i[1]].y.values
+                xpositions_large = to_save_largeobjects[to_save.z == i[1]].x.values
+                ypositions_large = to_save_largeobjects[to_save.z == i[1]].y.values
                 testvals = (xpositions < image_size)*(ypositions < image_size)
                 xpositions = xpositions[testvals]
                 ypositions = ypositions[testvals]
+                testvals_large = (xpositions_large < image_size)*(ypositions_large < image_size)
+                xpositions_large = xpositions_large[testvals_large]
+                ypositions_large = ypositions_large[testvals_large]
                 axs[0] = plots.image_scatter_plot(axs[0], 
                             img[:image_size, :image_size, i[1]-1], 
                             xdata=xpositions, ydata=ypositions, label='puncta, z plane = '+str(int(i[1])))
                 
-                axs[1] = plots.image_plot(axs[1], 
-                            img_cell[:image_size, :image_size, i[1]-1], 
-                            label='cell, z plane = '+str(int(i[1])), plotmask=True, mask=cell_mask[:image_size, :image_size, i[1]-1])
+                axs[1] = plots.image_scatter_plot(axs[1], 
+                            img[:, :, i[1]-1], 
+                            xdata=xpositions_large, ydata=ypositions_large, label='z plane = '+str(int(i[1])))
+
+                axs[2] = plots.image_plot(axs[2], 
+                            img_cell[:, :, i[1]-1], 
+                            label='cell, z plane = '+str(int(i[1])), plotmask=True, mask=cell_mask[:, :, i[1]-1])
                 
-                axs[2] = plots.histogram_plot(axs[2], 
-                                    to_save[to_save.z == i[1]].sum_intensity_in_photons.values, 
-                                bins=A_F.bincalculator(to_save[to_save.z == i[1]].sum_intensity_in_photons.values), 
-                                xaxislabel='puncta intensity (photons)', density=False)
 
                 plt.tight_layout()
         
