@@ -10,27 +10,38 @@ import numpy as np
 import pandas as pd
 
 import sys
+
 module_dir = os.path.dirname(__file__)
 sys.path.append(module_dir)
 import AnalysisFunctions
+
 A_F = AnalysisFunctions.Analysis_Functions()
 
 
-class IO_Functions():
+class IO_Functions:
     def __init__(self):
         self = self
         return
-    
-    def save_analysis(self, to_save, to_save_largeobjects, analysis_directory,
-                      imtype, protein_string, cell_string,
-                      files, i=0, z_planes=[0, 0],
-                      cell_analysis=False, cell_mask=False,
-                      to_save_cell=False,
-                      one_savefile=True):
-        
+
+    def save_analysis(
+        self,
+        to_save,
+        to_save_largeobjects,
+        analysis_directory,
+        imtype,
+        protein_string,
+        cell_string,
+        files,
+        i=0,
+        z_planes=[0, 0],
+        cell_analysis=False,
+        cell_mask=False,
+        to_save_cell=False,
+        one_savefile=True,
+    ):
         """
         saves analysis.
-    
+
         Args:
             to_save (pd.DataFrame): pandas dataframe.
             to_save_largeobjects (pd.DataFrame): pandas dataframe of large objects.
@@ -46,47 +57,101 @@ class IO_Functions():
             one_savefile (boolean): if True, saving all analysis in one csv
         """
 
-        
         if one_savefile == False:
-            savename = os.path.join(analysis_directory, 
-            os.path.split(files[i])[-1].split(imtype)[0]+'.csv')
-            savename_lo = os.path.join(analysis_directory, 
-            os.path.split(files[i])[-1].split(imtype)[0]+'_largeobjects.csv')
+            savename = os.path.join(
+                analysis_directory,
+                os.path.split(files[i])[-1].split(imtype)[0] + ".csv",
+            )
+            savename_lo = os.path.join(
+                analysis_directory,
+                os.path.split(files[i])[-1].split(imtype)[0] + "_largeobjects.csv",
+            )
             to_save.to_csv(savename, index=False)
             to_save_largeobjects.to_csv(savename_lo, index=False)
             if cell_analysis == True:
-                to_save_cell.to_csv(os.path.join(analysis_directory, 
-                os.path.split(files[i])[-1].split(imtype)[0].split(protein_string)[0]+str(cell_string)+'_cell_analysis.csv'), index=False)
-                self.write_tiff(cell_mask, os.path.join(analysis_directory, 
-                os.path.split(files[i])[-1].split(imtype)[0].split(protein_string)[0]+str(cell_string)+'_cellMask.tiff'), bit=np.uint8)
+                to_save_cell.to_csv(
+                    os.path.join(
+                        analysis_directory,
+                        os.path.split(files[i])[-1]
+                        .split(imtype)[0]
+                        .split(protein_string)[0]
+                        + str(cell_string)
+                        + "_cell_analysis.csv",
+                    ),
+                    index=False,
+                )
+                self.write_tiff(
+                    cell_mask,
+                    os.path.join(
+                        analysis_directory,
+                        os.path.split(files[i])[-1]
+                        .split(imtype)[0]
+                        .split(protein_string)[0]
+                        + str(cell_string)
+                        + "_cellMask.tiff",
+                    ),
+                    bit=np.uint8,
+                )
         else:
-            to_save['image_filename'] = np.full_like(to_save.z.values, files[i], dtype='object')
-            to_save_largeobjects['image_filename'] = np.full_like(to_save_largeobjects.z.values, files[i], dtype='object')
-            
-            savename = os.path.join(analysis_directory, 'spot_analysis.csv')
-            savename_lo = os.path.join(analysis_directory, 'largeobject_analysis.csv')
-            savename_spot = os.path.join(analysis_directory, 'spot_numbers.csv')
-            savename_nlargeobjects = os.path.join(analysis_directory, 'largeobject_numbers.csv')
-            
+            to_save["image_filename"] = np.full_like(
+                to_save.z.values, files[i], dtype="object"
+            )
+            to_save_largeobjects["image_filename"] = np.full_like(
+                to_save_largeobjects.z.values, files[i], dtype="object"
+            )
+
+            savename = os.path.join(analysis_directory, "spot_analysis.csv")
+            savename_lo = os.path.join(analysis_directory, "largeobject_analysis.csv")
+            savename_spot = os.path.join(analysis_directory, "spot_numbers.csv")
+            savename_nlargeobjects = os.path.join(
+                analysis_directory, "largeobject_numbers.csv"
+            )
+
             n_spots = A_F.count_spots(to_save, np.arange(z_planes[0], z_planes[1]))
-            n_spots['image_filename'] = np.full_like(n_spots.z.values, files[i], dtype='object')
-            
-            n_largeobjects = A_F.count_spots(to_save_largeobjects, np.arange(z_planes[0], z_planes[1]))
-            n_largeobjects['image_filename'] = np.full_like(n_largeobjects.z.values, files[i], dtype='object')
-            
+            n_spots["image_filename"] = np.full_like(
+                n_spots.z.values, files[i], dtype="object"
+            )
+
+            n_largeobjects = A_F.count_spots(
+                to_save_largeobjects, np.arange(z_planes[0], z_planes[1])
+            )
+            n_largeobjects["image_filename"] = np.full_like(
+                n_largeobjects.z.values, files[i], dtype="object"
+            )
+
             if cell_analysis == True:
-                to_save_cell['image_filename'] = np.full_like(to_save_cell.z.values, files[i], dtype='object')
-                savename_cell = os.path.join(analysis_directory, 'cell_colocalisation_analysis.csv')
-                self.write_tiff(cell_mask, os.path.join(analysis_directory, 
-                os.path.split(files[i])[-1].split(imtype)[0].split(protein_string)[0]+str(cell_string)+'_cellMask.tiff'), bit=np.uint8)
+                to_save_cell["image_filename"] = np.full_like(
+                    to_save_cell.z.values, files[i], dtype="object"
+                )
+                savename_cell = os.path.join(
+                    analysis_directory, "cell_colocalisation_analysis.csv"
+                )
+                self.write_tiff(
+                    cell_mask,
+                    os.path.join(
+                        analysis_directory,
+                        os.path.split(files[i])[-1]
+                        .split(imtype)[0]
+                        .split(protein_string)[0]
+                        + str(cell_string)
+                        + "_cellMask.tiff",
+                    ),
+                    bit=np.uint8,
+                )
 
             if i != 0:
-                to_save.to_csv(savename, mode='a', header=False, index=False)
-                to_save_largeobjects.to_csv(savename_lo, mode='a', header=False, index=False)
-                n_spots.to_csv(savename_spot, mode='a', header=False, index=False)
-                n_largeobjects.to_csv(savename_nlargeobjects, mode='a', header=False, index=False)
+                to_save.to_csv(savename, mode="a", header=False, index=False)
+                to_save_largeobjects.to_csv(
+                    savename_lo, mode="a", header=False, index=False
+                )
+                n_spots.to_csv(savename_spot, mode="a", header=False, index=False)
+                n_largeobjects.to_csv(
+                    savename_nlargeobjects, mode="a", header=False, index=False
+                )
                 if cell_analysis == True:
-                    to_save_cell.to_csv(savename_cell, mode='a', header=False, index=False)
+                    to_save_cell.to_csv(
+                        savename_cell, mode="a", header=False, index=False
+                    )
             else:
                 to_save.to_csv(savename, index=False)
                 to_save_largeobjects.to_csv(savename_lo, index=False)
@@ -95,40 +160,50 @@ class IO_Functions():
                 if cell_analysis == True:
                     to_save_cell.to_csv(savename_cell, index=False)
         return
-    
-    def save_analysis_params(self, analysis_p_directory, to_save, gain_map=0, offset_map=0):
+
+    def save_analysis_params(
+        self, analysis_p_directory, to_save, gain_map=0, offset_map=0
+    ):
         """
         saves analysis parameters.
-    
+
         Args:
             analysis_p_directory (str): The folder to save to.
             to_save (dict): dict to save of analysis parameters.
             gain_map (array): gain_map to save
             offset_map (array): offset_map to save
-    
+
         """
         self.make_directory(analysis_p_directory)
-        self.save_as_json(to_save, os.path.join(analysis_p_directory, 'analysis_params.json'))
+        self.save_as_json(
+            to_save, os.path.join(analysis_p_directory, "analysis_params.json")
+        )
         if type(gain_map) != float:
-            self.write_tiff(gain_map, os.path.join(analysis_p_directory, 'gain_map.tif'), np.uint32)
+            self.write_tiff(
+                gain_map, os.path.join(analysis_p_directory, "gain_map.tif"), np.uint32
+            )
         if type(offset_map) != float:
-            self.write_tiff(offset_map, os.path.join(analysis_p_directory, 'offset_map.tif'), np.uint32)
+            self.write_tiff(
+                offset_map,
+                os.path.join(analysis_p_directory, "offset_map.tif"),
+                np.uint32,
+            )
         return
-    
+
     def load_json(self, filename):
         """
         Loads data from a JSON file.
-    
+
         Args:
             filename (str): The name of the JSON file to load.
-    
+
         Returns:
             data (dict): The loaded JSON data.
         """
-        with open(filename, 'r') as file:
+        with open(filename, "r") as file:
             data = json.load(file)
         return data
-    
+
     def make_directory(self, directory_path):
         """
         Creates a directory if it doesn't exist.
@@ -142,19 +217,19 @@ class IO_Functions():
     def save_as_json(self, data, file_name):
         """
         Saves data to a JSON file.
-    
+
         Args:
             data (dict): The data to be saved in JSON format.
             file_name (str): The name of the JSON file.
         """
-        with open(file_name, 'w') as json_file:
+        with open(file_name, "w") as json_file:
             json.dump(data, json_file, indent=4)
-            
+
     # def read_multichannel_tiff_tophotons(self, file_path, order='tzc', n_t=1, n_z=1, n_c=1):
     #     """
-    #     Read a multichannel TIFF file using the skimage library, 
+    #     Read a multichannel TIFF file using the skimage library,
     #     averaging/splitting as appropriate. Converts to photons.
-    
+
     #     Args:
     #     - file_path (str): The path to the TIFF file to be read.
     #     - order (str): default 'tzc', order images are saved in (this defines the averaging).
@@ -168,7 +243,7 @@ class IO_Functions():
     #     - n_t (int): number of time steps per condition. Default 1
     #     - n_z (int): number of z stacks per condition. Default 1
     #     - n_c (int): number of colours per condition. Default 1
-        
+
     #     Returns:
     #     - image_colourchannels (dict of numpy.ndarrays): Dict of the image data
     #     from the TIFF file. Dict will contain N objects that are N colour channels.
@@ -181,7 +256,7 @@ class IO_Functions():
     #         image = np.zeros([image_unaveraged.shape[0], image_unaveraged.shape[0], n_z*n_c])
     #         for t in np.arange(len(tlocs)-1):
     #             image[:, :, t] = np.mean(image_unaveraged[:, :, tlocs[t]:tlocs[t+1]], axis=-1)
-                
+
     #         if 'z' == order[1]: # if then does z-steps
     #             dividing_locations = np.arange(0, image.shape[-1]+n_z, n_z)
     #             for i in np.arange(len(dividing_locations)-1):
@@ -197,67 +272,83 @@ class IO_Functions():
     def read_tiff(self, file_path):
         """
         Read a TIFF file using the skimage library.
-    
+
         Args:
             file_path (str): The path to the TIFF file to be read.
-    
+
         Returns:
             image (numpy.ndarray): The image data from the TIFF file.
         """
         # Use skimage's imread function to read the TIFF file
         # specifying the 'tifffile' plugin explicitly
-        image = io.imread(file_path, plugin='tifffile')
-        if len(image.shape) > 2: # if image a stack
+        image = io.imread(file_path, plugin="tifffile")
+        if len(image.shape) > 2:  # if image a stack
             image = image.T
-        return np.asarray(np.swapaxes(image,0,1), dtype='double')
-    
-    def read_tiff_tophotons(self, file_path, QE=0.95, gain_map=1., offset_map=0.):
+        return np.asarray(np.swapaxes(image, 0, 1), dtype="double")
+
+    def read_tiff_tophotons(self, file_path, QE=0.95, gain_map=1.0, offset_map=0.0):
         """
         Read a TIFF file using the skimage library.
         Use camera parameters to convert output to photons
-    
+
         Args:
             file_path (str): The path to the TIFF file to be read.
             QR (float): QE of camera
             gain_map (matrix, or float): gain map. Assumes units of ADU/photoelectrons
             offset_map (matrix, or float): offset map. Assumes units of ADU
-    
+
         Returns:
             image (numpy.ndarray): The image data from the TIFF file.
         """
         # Use skimage's imread function to read the TIFF file
         # specifying the 'tifffile' plugin explicitly
-        image = io.imread(file_path, plugin='tifffile')
-        if len(image.shape) > 2: # if image a stack
+        image = io.imread(file_path, plugin="tifffile")
+        if len(image.shape) > 2:  # if image a stack
             image = image.T
-        data = np.asarray(np.swapaxes(image,0,1), dtype='double')
+        data = np.asarray(np.swapaxes(image, 0, 1), dtype="double")
         if type(gain_map) is not float:
             if data.shape[:2] != gain_map.shape:
-                print("Gain and offset map not compatible with image dimensions. Defaulting to gain of 1 and offset of 0.")
-                gain_map = 1.
-                offset_map = 0.
-        
+                print(
+                    "Gain and offset map not compatible with image dimensions. Defaulting to gain of 1 and offset of 0."
+                )
+                gain_map = 1.0
+                offset_map = 0.0
+
         if type(gain_map) is not float:
-            data = np.divide(np.divide(np.subtract(data, offset_map[:, :, np.newaxis]), gain_map[:, :, np.newaxis]), QE)
+            data = np.divide(
+                np.divide(
+                    np.subtract(data, offset_map[:, :, np.newaxis]),
+                    gain_map[:, :, np.newaxis],
+                ),
+                QE,
+            )
         else:
             data = np.divide(np.divide(np.subtract(data, offset_map), gain_map), QE)
         return data
-    
+
     def write_tiff(self, volume, file_path, bit=np.uint16):
         """
         Write a TIFF file using the skimage library.
-    
+
         Args:
             volume (numpy.ndarray): The volume data to be saved as a TIFF file.
             file_path (str): The path where the TIFF file will be saved.
             bit (int): Bit-depth for the saved TIFF file (default is 16).
-    
+
         Notes:
             The function uses skimage's imsave to save the volume as a TIFF file.
             The plugin is set to 'tifffile' and photometric to 'minisblack'.
             Additional metadata specifying the software as 'Python' is included.
         """
-        if len(volume.shape) > 2: # if image a stack
+        if len(volume.shape) > 2:  # if image a stack
             volume = volume.T
-            volume = np.asarray(np.swapaxes(volume,1,2), dtype='double')
-        io.imsave(file_path, np.asarray(volume, dtype=bit), plugin='tifffile', bigtiff=True, photometric='minisblack', metadata={'Software': 'Python'}, check_contrast=False)
+            volume = np.asarray(np.swapaxes(volume, 1, 2), dtype="double")
+        io.imsave(
+            file_path,
+            np.asarray(volume, dtype=bit),
+            plugin="tifffile",
+            bigtiff=True,
+            photometric="minisblack",
+            metadata={"Software": "Python"},
+            check_contrast=False,
+        )

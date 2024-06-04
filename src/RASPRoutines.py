@@ -12,19 +12,29 @@ import sys
 module_dir = os.path.dirname(__file__)
 sys.path.append(module_dir)
 import IOFunctions
+
 IO = IOFunctions.IO_Functions()
 import AnalysisFunctions
+
 A_F = AnalysisFunctions.Analysis_Functions()
 
 
-class RASP_Routines():
-    def __init__(self, defaultfolder=None, defaultarea=True, 
-                 defaultd=True, defaultrad=True, defaultflat=True, 
-                 defaultdfocus=True, defaultintfocus=True, defaultcellparams=True, 
-                 defaultcameraparams=True):
+class RASP_Routines:
+    def __init__(
+        self,
+        defaultfolder=None,
+        defaultarea=True,
+        defaultd=True,
+        defaultrad=True,
+        defaultflat=True,
+        defaultdfocus=True,
+        defaultintfocus=True,
+        defaultcellparams=True,
+        defaultcameraparams=True,
+    ):
         """
         Initialises class.
-    
+
         Args:
             defaultarea (boolean): If True, uses area default for analysis later
             defaultd (boolean): If True, uses default pixel radius for analysis later
@@ -35,98 +45,111 @@ class RASP_Routines():
             defaultcameraparams (boolean): If True, uses camera parameters in folder for analysis later
         """
         self = self
-        if defaultfolder==None:
-            self.defaultfolder = os.path.join(os.path.split(module_dir)[0],
-                            'default_analysis_parameters')
+        if defaultfolder == None:
+            self.defaultfolder = os.path.join(
+                os.path.split(module_dir)[0], "default_analysis_parameters"
+            )
         else:
             self.defaultfolder = defaultfolder
         if defaultarea == True:
-            if os.path.isfile(os.path.join(self.defaultfolder, 'areathres.json')):
-                data = IO.load_json(os.path.join(self.defaultfolder, 'areathres.json'))
-                self.areathres = float(data['areathres'])
+            if os.path.isfile(os.path.join(self.defaultfolder, "areathres.json")):
+                data = IO.load_json(os.path.join(self.defaultfolder, "areathres.json"))
+                self.areathres = float(data["areathres"])
             else:
-                self.areathres = 30.
-            
+                self.areathres = 30.0
+
         if defaultd == True:
-            if os.path.isfile(os.path.join(self.defaultfolder, 'areathres.json')):
-                data = IO.load_json(os.path.join(self.defaultfolder, 'areathres.json'))
-                self.d = int(data['d'])
+            if os.path.isfile(os.path.join(self.defaultfolder, "areathres.json")):
+                data = IO.load_json(os.path.join(self.defaultfolder, "areathres.json"))
+                self.d = int(data["d"])
             else:
-                self.d = int(2.)
-        
+                self.d = int(2.0)
+
         if defaultrad == True:
-            if os.path.isfile(os.path.join(self.defaultfolder, 'rad_neg.json')):
-                data = IO.load_json(os.path.join(self.defaultfolder, 'rad_neg.json'))
-                self.integratedGrad = float(data['integratedGrad'])
+            if os.path.isfile(os.path.join(self.defaultfolder, "rad_neg.json")):
+                data = IO.load_json(os.path.join(self.defaultfolder, "rad_neg.json"))
+                self.integratedGrad = float(data["integratedGrad"])
             else:
-                self.integratedGrad = 0.
-                
+                self.integratedGrad = 0.0
+
         if defaultflat == True:
-            if os.path.isfile(os.path.join(self.defaultfolder, 'rad_neg.json')):
-                data = IO.load_json(os.path.join(self.defaultfolder, 'rad_neg.json'))
-                self.flatness = float(data['flatness'])
+            if os.path.isfile(os.path.join(self.defaultfolder, "rad_neg.json")):
+                data = IO.load_json(os.path.join(self.defaultfolder, "rad_neg.json"))
+                self.flatness = float(data["flatness"])
             else:
-                self.flatness = 1.
-                
+                self.flatness = 1.0
+
         if defaultdfocus == True:
-            if os.path.isfile(os.path.join(self.defaultfolder, 'infocus.json')):
-                data = IO.load_json(os.path.join(self.defaultfolder, 'infocus.json'))
-                self.focus_score_diff = float(data['focus_score_diff'])
+            if os.path.isfile(os.path.join(self.defaultfolder, "infocus.json")):
+                data = IO.load_json(os.path.join(self.defaultfolder, "infocus.json"))
+                self.focus_score_diff = float(data["focus_score_diff"])
             else:
                 self.focus_score_diff = 0.2
-                
+
         if defaultintfocus == True:
-            if os.path.isfile(os.path.join(self.defaultfolder, 'infocus.json')):
-                data = IO.load_json(os.path.join(self.defaultfolder, 'infocus.json'))
-                self.focus_score_int = float(data['focus_score_int'])
+            if os.path.isfile(os.path.join(self.defaultfolder, "infocus.json")):
+                data = IO.load_json(os.path.join(self.defaultfolder, "infocus.json"))
+                self.focus_score_int = float(data["focus_score_int"])
             else:
-                self.focus_score_int = 390.
-                
+                self.focus_score_int = 390.0
+
         if defaultcellparams == True:
-            if os.path.isfile(os.path.join(self.defaultfolder, 'default_cell_params.json')):
-                data = IO.load_json(os.path.join(self.defaultfolder, 'default_cell_params.json'))
-                self.cell_sigma1 = float(data['sigma1'])
-                self.cell_sigma2 = float(data['sigma2'])
-                self.cell_threshold1 = float(data['threshold1'])
-                self.cell_threshold2 = float(data['threshold1'])
+            if os.path.isfile(
+                os.path.join(self.defaultfolder, "default_cell_params.json")
+            ):
+                data = IO.load_json(
+                    os.path.join(self.defaultfolder, "default_cell_params.json")
+                )
+                self.cell_sigma1 = float(data["sigma1"])
+                self.cell_sigma2 = float(data["sigma2"])
+                self.cell_threshold1 = float(data["threshold1"])
+                self.cell_threshold2 = float(data["threshold1"])
             else:
-                self.cell_sigma1 = 2.
-                self.cell_sigma2 = 40.
-                self.cell_threshold1 = 200.
-                self.cell_threshold2 = 200.
-                
+                self.cell_sigma1 = 2.0
+                self.cell_sigma2 = 40.0
+                self.cell_threshold1 = 200.0
+                self.cell_threshold2 = 200.0
+
         if defaultcameraparams == True:
-            if os.path.isfile(os.path.join(self.defaultfolder, 'camera_params.json')):
-                data = IO.load_json(os.path.join(self.defaultfolder, 'camera_params.json'))
-                self.QE = float(data['QE'])
+            if os.path.isfile(os.path.join(self.defaultfolder, "camera_params.json")):
+                data = IO.load_json(
+                    os.path.join(self.defaultfolder, "camera_params.json")
+                )
+                self.QE = float(data["QE"])
             else:
                 self.QE = 0.95
-                
-            if os.path.isfile(os.path.join(self.defaultfolder, 'gain_map.tif')):
-                self.gain_map = IO.read_tiff(os.path.join(self.defaultfolder, 'gain_map.tif'))
+
+            if os.path.isfile(os.path.join(self.defaultfolder, "gain_map.tif")):
+                self.gain_map = IO.read_tiff(
+                    os.path.join(self.defaultfolder, "gain_map.tif")
+                )
             else:
-                self.gain_map = 1.
-                
-            if os.path.isfile(os.path.join(self.defaultfolder, 'offset_map.tif')):
-                self.offset_map = IO.read_tiff(os.path.join(self.defaultfolder, 'offset_map.tif'))
+                self.gain_map = 1.0
+
+            if os.path.isfile(os.path.join(self.defaultfolder, "offset_map.tif")):
+                self.offset_map = IO.read_tiff(
+                    os.path.join(self.defaultfolder, "offset_map.tif")
+                )
             else:
-                self.offset_map = 0.
-            
+                self.offset_map = 0.0
+
             if type(self.gain_map) is not float and type(self.offset_map) is not float:
                 if self.gain_map.shape != self.offset_map.shape:
-                    print("Gain and Offset maps are not the same shapes. Defaulting to default gain (1) and offset (0) parameters.")
-                    self.gain_map = 1.
-                    self.offset_map = 0.
+                    print(
+                        "Gain and Offset maps are not the same shapes. Defaulting to default gain (1) and offset (0) parameters."
+                    )
+                    self.gain_map = 1.0
+                    self.offset_map = 0.0
         return
-    
+
     def get_infocus_planes(self, image, kernel):
         """
         Gets z planes that area in focus from an image stack
-    
+
         Args:
             image (array): image as numpy array
-            kernel (array): gaussian blur kernel  
-            
+            kernel (array): gaussian blur kernel
+
         Returns:
             z_planes (np.1darray): z_plane range that is in focus
         """
@@ -134,13 +157,15 @@ class RASP_Routines():
         na, na, na, focus_score, na = A_F.calculate_gradient_field(image, kernel)
         z_planes = A_F.infocus_indices(focus_score, self.focus_score_diff)
         return z_planes
-                
-    def calibrate_radiality(self, folder, imtype='.tif', gsigma=1.4, rwave=2., accepted_ratio=1):
+
+    def calibrate_radiality(
+        self, folder, imtype=".tif", gsigma=1.4, rwave=2.0, accepted_ratio=1
+    ):
         """
         Calibrates radility parameters. Given a folder of negative controls,
         analyses them and saves the radiality parameter to the .json file, as
         well as writing it to the current class radiality and flatness values
-    
+
         Args:
             folder (string): Folder containing negative control tifs
             imtype (string): Type of images being analysed, default tif
@@ -150,39 +175,60 @@ class RASP_Routines():
         """
         files_list = os.listdir(folder)
         files = np.sort([e for e in files_list if imtype in e])
-        
-        k1, k2 = A_F.create_kernel(gsigma, rwave) # create image processing kernels
-        rdl = [0., 0., 0.]
+
+        k1, k2 = A_F.create_kernel(gsigma, rwave)  # create image processing kernels
+        rdl = [0.0, 0.0, 0.0]
         thres = 0.05
-        r1_neg_forplot = {} # generate dictionaries for plotting
+        r1_neg_forplot = {}  # generate dictionaries for plotting
         r2_neg_forplot = {}
-        
+
         for i in np.arange(len(files)):
             file_path = os.path.join(folder, files[i])
             image = IO.read_tiff_tophotons(file_path)
             if len(image.shape) < 3:
-                dl_mask, centroids, radiality, large_mask = A_F.compute_image_props(image, k1, k2, thres, 10000., self.areathres, rdl, self.d, calib=True)
-                r1_neg_forplot[i] = radiality[:,0]
-                r2_neg_forplot[i] = radiality[:,1]
+                dl_mask, centroids, radiality, large_mask = A_F.compute_image_props(
+                    image,
+                    k1,
+                    k2,
+                    thres,
+                    10000.0,
+                    self.areathres,
+                    rdl,
+                    self.d,
+                    calib=True,
+                )
+                r1_neg_forplot[i] = radiality[:, 0]
+                r2_neg_forplot[i] = radiality[:, 1]
             else:
                 z_planes = self.get_infocus_planes(image, k1)
                 z_planes = np.arange(z_planes[0], z_planes[-1])
-                if len(z_planes) != 0: # if there are images we want to analyse
-                    dl_mask, centroids, radiality, large_mask = A_F.compute_image_props(image, k1, k2, thres, 10000., self.areathres, rdl, self.d, z_planes=z_planes, calib=True)
+                if len(z_planes) != 0:  # if there are images we want to analyse
+                    dl_mask, centroids, radiality, large_mask = A_F.compute_image_props(
+                        image,
+                        k1,
+                        k2,
+                        thres,
+                        10000.0,
+                        self.areathres,
+                        rdl,
+                        self.d,
+                        z_planes=z_planes,
+                        calib=True,
+                    )
                     for z in enumerate(z_planes):
-                        r1_neg_forplot[i, z[0]] = radiality[z[1]][:,0]
-                        r2_neg_forplot[i, z[0]] = radiality[z[1]][:,1]
+                        r1_neg_forplot[i, z[0]] = radiality[z[1]][:, 0]
+                        r2_neg_forplot[i, z[0]] = radiality[z[1]][:, 1]
 
         ### IQR filtering
         means_rad1 = np.zeros(len(r1_neg_forplot.keys()))
         means_rad2 = np.zeros(len(r2_neg_forplot.keys()))
-        
+
         keys = list(r1_neg_forplot.keys())
-        
+
         for i, key in enumerate(keys):
             means_rad1[i] = np.mean(r1_neg_forplot[key])
             means_rad2[i] = np.mean(r2_neg_forplot[key])
-        
+
         r1_reject = A_F.rejectoutliers_ind(means_rad1)
         if len(r1_reject) > 0:
             for val in r1_reject:
@@ -193,71 +239,83 @@ class RASP_Routines():
             for val in r2_reject:
                 r2_neg_forplot.pop(keys[val])
         ### IQR filtering complete
-        
+
         for i, key in enumerate(r1_neg_forplot.keys()):
             if i == 0:
                 r1_neg = r1_neg_forplot[key]
             else:
                 r1_neg = np.hstack([r1_neg, r1_neg_forplot[key]])
-                
+
         for i, key in enumerate(r2_neg_forplot.keys()):
             if i == 0:
                 r2_neg = r2_neg_forplot[key]
             else:
                 r2_neg = np.hstack([r2_neg, r2_neg_forplot[key]])
-                
+
         rad_1 = np.percentile(r1_neg, accepted_ratio)
-        rad_2 = np.percentile(r2_neg, 100.-accepted_ratio)
-                
-        to_save = {'flatness' : rad_1, 'integratedGrad' : rad_2}
-        
+        rad_2 = np.percentile(r2_neg, 100.0 - accepted_ratio)
+
+        to_save = {"flatness": rad_1, "integratedGrad": rad_2}
+
         IO.make_directory(self.defaultfolder)
-        IO.save_as_json(to_save, os.path.join(self.defaultfolder, 'rad_neg.json'))
+        IO.save_as_json(to_save, os.path.join(self.defaultfolder, "rad_neg.json"))
         self.flatness = rad_1
         self.integratedGrad = rad_2
-        print("Radiality calibrated using negative control"+
-              " images in "+str(folder)+". New flatness is "+
-              str(np.around(rad_1, 2))+" and new integrated gradient is "
-              +str(np.around(rad_2, 2))+". Parameters saved in "
-              +str(self.defaultfolder)+".")
-        
+        print(
+            "Radiality calibrated using negative control"
+            + " images in "
+            + str(folder)
+            + ". New flatness is "
+            + str(np.around(rad_1, 2))
+            + " and new integrated gradient is "
+            + str(np.around(rad_2, 2))
+            + ". Parameters saved in "
+            + str(self.defaultfolder)
+            + "."
+        )
+
         import PlottingFunctions
+
         plots = PlottingFunctions.Plotter()
         import matplotlib.pyplot as plt
-        
-        fig, axs = plots.two_column_plot(nrows=1, ncolumns=2, heightratio=[1], widthratio=[1,1])
-        
+
+        fig, axs = plots.two_column_plot(
+            nrows=1, ncolumns=2, heightratio=[1], widthratio=[1, 1]
+        )
+
         bins_r1 = A_F.bincalculator(r1_neg)
         bins_r2 = A_F.bincalculator(r2_neg)
         axs[0] = plots.histogram_plot(axs[0], r1_neg, bins=bins_r1, alpha=0.5)
         axs[1] = plots.histogram_plot(axs[1], r2_neg, bins=bins_r2, alpha=0.5)
 
         ylim0, ylim1 = axs[0].get_ylim()[0], axs[0].get_ylim()[1]
-        axs[0].vlines(rad_1, ylim0, ylim1, color='k', label='threshold', ls='--')
+        axs[0].vlines(rad_1, ylim0, ylim1, color="k", label="threshold", ls="--")
 
         axs[0].set_ylim([ylim0, ylim1])
-        axs[0].set_xlabel('flatness metric')
-        axs[0].set_ylabel('probability density')
-                   
+        axs[0].set_xlabel("flatness metric")
+        axs[0].set_ylabel("probability density")
+
         ylim0, ylim1 = axs[1].get_ylim()[0], axs[1].get_ylim()[1]
-        axs[1].vlines(rad_2, ylim0, ylim1, color='k', label='threshold', ls='--')
-        axs[1].set_xlabel('integrated gradient metric')
-        axs[1].set_xlim([0, rad_2*2.])
+        axs[1].vlines(rad_2, ylim0, ylim1, color="k", label="threshold", ls="--")
+        axs[1].set_xlabel("integrated gradient metric")
+        axs[1].set_xlim([0, rad_2 * 2.0])
         axs[1].set_ylim([ylim0, ylim1])
-            
-        axs[0].legend(loc='best', frameon=False)
-        axs[1].legend(loc='best', frameon=False)
+
+        axs[0].legend(loc="best", frameon=False)
+        axs[1].legend(loc="best", frameon=False)
         plt.tight_layout()
         plt.show(block=False)
 
         return
-    
-    def calibrate_area(self, folder, imtype='.tif', gsigma=1.4, rwave=2., large_thres=10000.):
+
+    def calibrate_area(
+        self, folder, imtype=".tif", gsigma=1.4, rwave=2.0, large_thres=10000.0
+    ):
         """
         Calibrates area threshold. Given a folder of bead images,
         analyses them and saves the radiality parameter to the .json file, as
         well as writing it to the current class radiality and flatness values
-    
+
         Args:
             folder (string): Folder containing bead (bright) control tifs
             imtype (string): Type of images being analysed, default tif
@@ -266,19 +324,23 @@ class RASP_Routines():
         """
         files_list = os.listdir(folder)
         files = np.sort([e for e in files_list if imtype in e])
-        
-        k1, k2 = A_F.create_kernel(gsigma, rwave) # create image processing kernels
-        accepted_ratio = 95.; # perc. of CDF we'll use
-        areathres = 1000. # arbitrarily high area threshold for this calibration
-        thres = 0.05 # threshold is 0.05
-        rdl = [self.flatness, self.integratedGrad, 0.]
+
+        k1, k2 = A_F.create_kernel(gsigma, rwave)  # create image processing kernels
+        accepted_ratio = 95.0
+        # perc. of CDF we'll use
+        areathres = 1000.0  # arbitrarily high area threshold for this calibration
+        thres = 0.05  # threshold is 0.05
+        rdl = [self.flatness, self.integratedGrad, 0.0]
         for i in np.arange(len(files)):
             file_path = os.path.join(folder, files[i])
             image = IO.read_tiff(file_path)
             if len(image.shape) < 3:
-                dl_mask, centroids, radiality, large_mask = A_F.compute_image_props(image, 
-                            k1, k2, thres, large_thres, areathres, rdl, self.d)
-                pixel_index_list, areas, centroids = A_F.calculate_region_properties(dl_mask)
+                dl_mask, centroids, radiality, large_mask = A_F.compute_image_props(
+                    image, k1, k2, thres, large_thres, areathres, rdl, self.d
+                )
+                pixel_index_list, areas, centroids = A_F.calculate_region_properties(
+                    dl_mask
+                )
                 HWHMarray = A_F.Gauss2DFitting(image, pixel_index_list)
                 if i == 0:
                     a_neg = areas
@@ -287,11 +349,22 @@ class RASP_Routines():
                     a_neg = np.hstack([a_neg, areas])
                     HWHM = np.hstack([HWHM, HWHMarray])
             else:
-                dl_mask, centroids, radiality, large_mask = A_F.compute_image_props(image, 
-                    k1, k2, thres, large_thres, areathres, rdl, self.d, z_planes=np.arange(image.shape[2]))
+                dl_mask, centroids, radiality, large_mask = A_F.compute_image_props(
+                    image,
+                    k1,
+                    k2,
+                    thres,
+                    large_thres,
+                    areathres,
+                    rdl,
+                    self.d,
+                    z_planes=np.arange(image.shape[2]),
+                )
                 for j in np.arange(image.shape[2]):
-                    pixel_index_list, areas, centroids = A_F.calculate_region_properties(dl_mask[:,:,j])
-                    HWHMarray = A_F.Gauss2DFitting(image[:,:,j], pixel_index_list)
+                    pixel_index_list, areas, centroids = (
+                        A_F.calculate_region_properties(dl_mask[:, :, j])
+                    )
+                    HWHMarray = A_F.Gauss2DFitting(image[:, :, j], pixel_index_list)
                     if (i == 0) and (j == 0):
                         a_neg = areas
                         HWHM = HWHMarray
@@ -302,62 +375,85 @@ class RASP_Routines():
         HWHM = A_F.rejectoutliers(HWHM)
         area_thresh = int(np.ceil(np.percentile(a_neg, accepted_ratio)))
         pixel_d = int(np.round(np.mean(HWHM)))
-                
-        to_save = {'areathres' : area_thresh, 'd': pixel_d}
-        
+
+        to_save = {"areathres": area_thresh, "d": pixel_d}
+
         IO.make_directory(self.defaultfolder)
-        IO.save_as_json(to_save, os.path.join(self.defaultfolder,
-                                              'areathres.json'))
+        IO.save_as_json(to_save, os.path.join(self.defaultfolder, "areathres.json"))
         self.areathres = area_thresh
         self.d = pixel_d
-        
-        print("Area threshold using beads"+
-              " images in "+str(folder)+". New area threshold is "+
-              str(np.around(area_thresh, 2))+
-              " new radiality radius calibrated and is "+
-              str(int(self.d))+
-              ". Parameters saved in "
-              +str(self.defaultfolder)+".")
-                
+
+        print(
+            "Area threshold using beads"
+            + " images in "
+            + str(folder)
+            + ". New area threshold is "
+            + str(np.around(area_thresh, 2))
+            + " new radiality radius calibrated and is "
+            + str(int(self.d))
+            + ". Parameters saved in "
+            + str(self.defaultfolder)
+            + "."
+        )
+
         import PlottingFunctions
+
         plots = PlottingFunctions.Plotter()
         import matplotlib.pyplot as plt
-        
-        fig, axs = plots.two_column_plot(nrows=1, ncolumns=2, heightratio=[1], widthratio=[1,1])
 
-        axs[0].ecdf(a_neg, color='k');
+        fig, axs = plots.two_column_plot(
+            nrows=1, ncolumns=2, heightratio=[1], widthratio=[1, 1]
+        )
+
+        axs[0].ecdf(a_neg, color="k")
         xlim0, xlim1 = axs[0].get_xlim()[0], axs[0].get_xlim()[1]
-        axs[0].hlines(accepted_ratio/100., xlim0, xlim1, color='k', label='threshold', ls='--')
+        axs[0].hlines(
+            accepted_ratio / 100.0, xlim0, xlim1, color="k", label="threshold", ls="--"
+        )
         axs[0].set_ylim([0, 1])
         axs[0].set_xlim([xlim0, xlim1])
-        axs[0].set_xlabel('puncta area (pixel)')
-        axs[0].set_ylabel('probability ') 
-        axs[0].legend(loc='lower right', frameon=False)
-        
+        axs[0].set_xlabel("puncta area (pixel)")
+        axs[0].set_ylabel("probability ")
+        axs[0].legend(loc="lower right", frameon=False)
+
         axs[1] = plots.histogram_plot(axs[1], HWHM, bins=A_F.bincalculator(HWHM))
         ylim0, ylim1 = axs[1].get_ylim()[0], axs[1].get_ylim()[1]
-        axs[1].vlines(np.mean(HWHM), ylim0, ylim1, color='k', label='threshold', ls='--')
-        axs[1].set_xlabel('HWHM (pixel)')
-        axs[1].legend(loc='best', frameon=False)
-       
+        axs[1].vlines(
+            np.mean(HWHM), ylim0, ylim1, color="k", label="threshold", ls="--"
+        )
+        axs[1].set_xlabel("HWHM (pixel)")
+        axs[1].legend(loc="best", frameon=False)
+
         plt.tight_layout()
         plt.show(block=False)
 
         return
-    
-    def analyse_images_mchannel(self, folder, imtype='.tif', thres=0.05, 
-                       large_thres=100., gsigma=1.4, rwave=2.,
-                       protein_imagestrings=['C1'], cell_imagestrings=['C0'],
-                       if_filter=True, im_start=0, cell_analysis=True, 
-                       one_savefile=False, disp=True,
-                       rdl=False, protein_protein_coinc=True):
+
+    def analyse_images_mchannel(
+        self,
+        folder,
+        imtype=".tif",
+        thres=0.05,
+        large_thres=100.0,
+        gsigma=1.4,
+        rwave=2.0,
+        protein_imagestrings=["C1"],
+        cell_imagestrings=["C0"],
+        if_filter=True,
+        im_start=0,
+        cell_analysis=True,
+        one_savefile=False,
+        disp=True,
+        rdl=False,
+        protein_protein_coinc=True,
+    ):
         """
         analyses data from images in a specified folder,
         saves spots, locations, intensities and backgrounds in a folder created
         next to the folder analysed with _analysis string attached
         also writes a folder with _analysisparameters and saves analysis parameters
         used for particular experiment
-    
+
         Args:
             folder (string): Folder containing images
             imtype (string): Type of images being analysed, default tif
@@ -374,7 +470,7 @@ class RASP_Routines():
             one_savefile (boolean): Parameter that, if true, doesn't save a file
                 per image but amalgamates them into one file
             disp (boolean): If true, prints when analysed an image stack.
-            rdl (np.ndarray): If False, just uses the default flatness and 
+            rdl (np.ndarray): If False, just uses the default flatness and
                             integratedGrad parameters that RASP has loaded.
                             If running over multiple protein channels, should
                             be an N_protein by 3 matrix.
@@ -384,20 +480,31 @@ class RASP_Routines():
         """
 
         return
-    
-    def analyse_images(self, folder, imtype='.tif', thres=0.05, 
-                       large_thres=100., gsigma=1.4, rwave=2.,
-                       protein_string='C1', cell_string='C0',
-                       if_filter=True, im_start=0, cell_analysis=True, 
-                       one_savefile=False, disp=True,
-                       analyse_clr=True):
+
+    def analyse_images(
+        self,
+        folder,
+        imtype=".tif",
+        thres=0.05,
+        large_thres=100.0,
+        gsigma=1.4,
+        rwave=2.0,
+        protein_string="C1",
+        cell_string="C0",
+        if_filter=True,
+        im_start=0,
+        cell_analysis=True,
+        one_savefile=False,
+        disp=True,
+        analyse_clr=True,
+    ):
         """
         analyses data from images in a specified folder,
         saves spots, locations, intensities and backgrounds in a folder created
         next to the folder analysed with _analysis string attached
         also writes a folder with _analysisparameters and saves analysis parameters
         used for particular experiment
-    
+
         Args:
             folder (string): Folder containing images
             imtype (string): Type of images being analysed, default tif
@@ -416,103 +523,175 @@ class RASP_Routines():
             calccsr (boolean): Do CSR?
             disp (boolean): If true, prints when analysed an image stack.
             analyse_clr (boolean): If true, calculates the clr. If not, just coincidence
-            
+
         """
-        all_files = self.file_search(folder, protein_string, imtype) # first get all files in any subfolders
-        
-        folders = np.unique([os.path.split(i)[0] for i in all_files]) # get unique folders in this
-        
-        k1, k2 = A_F.create_kernel(gsigma, rwave) # create image processing kernels
-        rdl = [self.flatness, self.integratedGrad, 0.]
+        all_files = self.file_search(
+            folder, protein_string, imtype
+        )  # first get all files in any subfolders
 
-        to_save = {'flatness': self.flatness, 
-                   'integratedGrad': self.integratedGrad,
-                   'areathres': self.areathres, 'd': self.d,
-                       'gaussian_sigma': gsigma, 'ricker_sigma': rwave, 
-                       'thres': thres,
-                       'large_thres': large_thres, 
-                       'focus_score_diff': self.focus_score_diff,
-                       'cell_sigma1': self.cell_sigma1,
-                       'cell_sigma2': self.cell_sigma2,
-                       'cell_threshold1': self.cell_threshold1,
-                       'cell_threshold2': self.cell_threshold2,
-                       'QE': self.QE}
-        
+        folders = np.unique(
+            [os.path.split(i)[0] for i in all_files]
+        )  # get unique folders in this
+
+        k1, k2 = A_F.create_kernel(gsigma, rwave)  # create image processing kernels
+        rdl = [self.flatness, self.integratedGrad, 0.0]
+
+        to_save = {
+            "flatness": self.flatness,
+            "integratedGrad": self.integratedGrad,
+            "areathres": self.areathres,
+            "d": self.d,
+            "gaussian_sigma": gsigma,
+            "ricker_sigma": rwave,
+            "thres": thres,
+            "large_thres": large_thres,
+            "focus_score_diff": self.focus_score_diff,
+            "cell_sigma1": self.cell_sigma1,
+            "cell_sigma2": self.cell_sigma2,
+            "cell_threshold1": self.cell_threshold1,
+            "cell_threshold2": self.cell_threshold2,
+            "QE": self.QE,
+        }
+
         # save analysis parameters in overall directory
-        analysis_p_directory = os.path.abspath(folder)+'_analysisparameters'
+        analysis_p_directory = os.path.abspath(folder) + "_analysisparameters"
 
-        IO.save_analysis_params(analysis_p_directory, 
-                to_save, gain_map=self.gain_map, offset_map=self.offset_map)
+        IO.save_analysis_params(
+            analysis_p_directory,
+            to_save,
+            gain_map=self.gain_map,
+            offset_map=self.offset_map,
+        )
 
         for val in folders:
             subfolder = os.path.abspath(val)
-            files = self.file_search(subfolder, protein_string, imtype) # first get all files in any subfolders
+            files = self.file_search(
+                subfolder, protein_string, imtype
+            )  # first get all files in any subfolders
             if cell_analysis == True:
-                cell_files = self.file_search(subfolder, cell_string, imtype) # get all files in any subfolders
+                cell_files = self.file_search(
+                    subfolder, cell_string, imtype
+                )  # get all files in any subfolders
             # create analysis and analysis parameter directories
-            analysis_directory = os.path.abspath(subfolder)+'_analysis'
+            analysis_directory = os.path.abspath(subfolder) + "_analysis"
             IO.make_directory(analysis_directory)
-            
+
             for i in np.arange(len(files)):
-                img = IO.read_tiff_tophotons(os.path.join(folder, files[i]), 
-                                    QE=self.QE, gain_map=self.gain_map, offset_map=self.offset_map)[:, :, im_start:]
+                img = IO.read_tiff_tophotons(
+                    os.path.join(folder, files[i]),
+                    QE=self.QE,
+                    gain_map=self.gain_map,
+                    offset_map=self.offset_map,
+                )[:, :, im_start:]
                 if cell_analysis == True:
-                    img_cell = IO.read_tiff_tophotons(os.path.join(folder, cell_files[i]), 
-                                            QE=self.QE, gain_map=self.gain_map, offset_map=self.offset_map)[:, :, im_start:]
+                    img_cell = IO.read_tiff_tophotons(
+                        os.path.join(folder, cell_files[i]),
+                        QE=self.QE,
+                        gain_map=self.gain_map,
+                        offset_map=self.offset_map,
+                    )[:, :, im_start:]
                 z_test = len(img.shape) > 2
-                
-                if z_test: # if a z-stack
-                    z_planes = self.get_infocus_planes(img, k1)    
+
+                if z_test:  # if a z-stack
+                    z_planes = self.get_infocus_planes(img, k1)
                     if cell_analysis == False:
-                            to_save, to_save_largeobjects = A_F.compute_spot_props(img, 
-                            k1, k2, thres=thres, large_thres=large_thres, 
-                            areathres=self.areathres, rdl=rdl, z=z_planes, 
-                            d=self.d)
+                        to_save, to_save_largeobjects = A_F.compute_spot_props(
+                            img,
+                            k1,
+                            k2,
+                            thres=thres,
+                            large_thres=large_thres,
+                            areathres=self.areathres,
+                            rdl=rdl,
+                            z=z_planes,
+                            d=self.d,
+                        )
                     else:
-                        to_save, to_save_largeobjects, to_save_cell, cell_mask = A_F.compute_spot_and_cell_props(img, img_cell, k1, k2,
-                                            prot_thres=thres, large_prot_thres=large_thres, 
-                                            areathres=self.areathres, rdl=rdl, z=z_planes, 
-                                            cell_threshold1=self.cell_threshold1, 
-                                            cell_threshold2=self.cell_threshold1, 
-                                            cell_sigma1=self.cell_sigma1,
-                                            cell_sigma2=self.cell_sigma2,
-                                            d=self.d, analyse_clr=analyse_clr)
-                    
+                        to_save, to_save_largeobjects, to_save_cell, cell_mask = (
+                            A_F.compute_spot_and_cell_props(
+                                img,
+                                img_cell,
+                                k1,
+                                k2,
+                                prot_thres=thres,
+                                large_prot_thres=large_thres,
+                                areathres=self.areathres,
+                                rdl=rdl,
+                                z=z_planes,
+                                cell_threshold1=self.cell_threshold1,
+                                cell_threshold2=self.cell_threshold1,
+                                cell_sigma1=self.cell_sigma1,
+                                cell_sigma2=self.cell_sigma2,
+                                d=self.d,
+                                analyse_clr=analyse_clr,
+                            )
+                        )
+
                     if cell_analysis == True:
-                        IO.save_analysis(to_save, to_save_largeobjects, analysis_directory,
-                                          imtype, protein_string, cell_string,
-                                          files, i, z_planes,
-                                          cell_analysis=cell_analysis, cell_mask=cell_mask,
-                                          to_save_cell=to_save_cell,
-                                          one_savefile=one_savefile)
+                        IO.save_analysis(
+                            to_save,
+                            to_save_largeobjects,
+                            analysis_directory,
+                            imtype,
+                            protein_string,
+                            cell_string,
+                            files,
+                            i,
+                            z_planes,
+                            cell_analysis=cell_analysis,
+                            cell_mask=cell_mask,
+                            to_save_cell=to_save_cell,
+                            one_savefile=one_savefile,
+                        )
                     else:
-                        IO.save_analysis(to_save, to_save_largeobjects, analysis_directory,
-                                          imtype, protein_string, cell_string, 
-                                          files, i, z_planes,
-                                          cell_analysis=False, cell_mask=False,
-                                          to_save_cell=False,
-                                          one_savefile=one_savefile)
+                        IO.save_analysis(
+                            to_save,
+                            to_save_largeobjects,
+                            analysis_directory,
+                            imtype,
+                            protein_string,
+                            cell_string,
+                            files,
+                            i,
+                            z_planes,
+                            cell_analysis=False,
+                            cell_mask=False,
+                            to_save_cell=False,
+                            one_savefile=one_savefile,
+                        )
                 if disp == True:
-                    print("Analysed image", os.path.split(files[i])[-1], "data saved in", analysis_directory)
+                    print(
+                        "Analysed image",
+                        os.path.split(files[i])[-1],
+                        "data saved in",
+                        analysis_directory,
+                    )
         return
-    
-    def single_image_analysis(self, protein_file, thres=0.05, 
-                       large_thres=100., gsigma=1.4, rwave=2., image_size=200,
-                       save_figure=False,
-                              cell_analysis=False, cell_file=None):
-        
+
+    def single_image_analysis(
+        self,
+        protein_file,
+        thres=0.05,
+        large_thres=100.0,
+        gsigma=1.4,
+        rwave=2.0,
+        image_size=200,
+        save_figure=False,
+        cell_analysis=False,
+        cell_file=None,
+    ):
         """
         analyses data from specified image,
         presents spots, locations, intensities in a figure, with the option of
         saving this figure
-    
+
         Args:
             file (string): image location
             thres (float): fraction of bright pixels accepted
             large_thres (float): large object intensity threshold
             gisgma (float): gaussian blurring parameter (default 1.4)
             rwave (float): Ricker wavelent sigma (default 2.)
-            image_size (int): Amount of image to plot---by default plots 100x100 
+            image_size (int): Amount of image to plot---by default plots 100x100
                 chunk of an image to give you an idea, can scale up
             save_figure (boolean): save the figure as an svg, default no
             cell_analysis (boolean): Parameter where script also analyses cell
@@ -521,96 +700,161 @@ class RASP_Routines():
 
         """
         import PlottingFunctions
+
         plots = PlottingFunctions.Plotter()
         import matplotlib.pyplot as plt
-       
-        img = IO.read_tiff_tophotons(protein_file, 
-        QE=self.QE, gain_map=self.gain_map, offset_map=self.offset_map)
-        
-        
-        k1, k2 = A_F.create_kernel(gsigma, rwave) # create image processing kernels
-        rdl = [self.flatness, self.integratedGrad, 0.]
-        
-        
+
+        img = IO.read_tiff_tophotons(
+            protein_file, QE=self.QE, gain_map=self.gain_map, offset_map=self.offset_map
+        )
+
+        k1, k2 = A_F.create_kernel(gsigma, rwave)  # create image processing kernels
+        rdl = [self.flatness, self.integratedGrad, 0.0]
+
         if cell_analysis == True:
-            img_cell = IO.read_tiff_tophotons(cell_file, 
-            QE=self.QE, gain_map=self.gain_map, offset_map=self.offset_map)
-            
-        if len(img.shape) > 2: # if a z-stack
+            img_cell = IO.read_tiff_tophotons(
+                cell_file,
+                QE=self.QE,
+                gain_map=self.gain_map,
+                offset_map=self.offset_map,
+            )
+
+        if len(img.shape) > 2:  # if a z-stack
             z_planes = self.get_infocus_planes(img, k1)
 
             if cell_analysis == False:
-                to_save, to_save_largeobjects = A_F.compute_spot_props(img, 
-                k1, k2, thres=thres, large_thres=large_thres, 
-                areathres=self.areathres, rdl=rdl, z=z_planes, d=self.d)
+                to_save, to_save_largeobjects = A_F.compute_spot_props(
+                    img,
+                    k1,
+                    k2,
+                    thres=thres,
+                    large_thres=large_thres,
+                    areathres=self.areathres,
+                    rdl=rdl,
+                    z=z_planes,
+                    d=self.d,
+                )
             else:
-                to_save, to_save_largeobjects, to_save_cell, cell_mask = A_F.compute_spot_and_cell_props(img, img_cell, k1, k2,
-                                    prot_thres=thres, large_prot_thres=large_thres, 
-                                    areathres=self.areathres, rdl=rdl, z=z_planes, 
-                                    cell_threshold1=self.cell_threshold1, 
-                                    cell_threshold2=self.cell_threshold1, 
-                                    cell_sigma1=self.cell_sigma1,
-                                    cell_sigma2=self.cell_sigma2,
-                                    d=self.d) 
-        
-        z_to_plot = np.full_like(np.arange(z_planes[0]+1, z_planes[-1]+1), -1)
-        for i, val in enumerate(np.arange(z_planes[0]+1, z_planes[-1]+1)):
+                to_save, to_save_largeobjects, to_save_cell, cell_mask = (
+                    A_F.compute_spot_and_cell_props(
+                        img,
+                        img_cell,
+                        k1,
+                        k2,
+                        prot_thres=thres,
+                        large_prot_thres=large_thres,
+                        areathres=self.areathres,
+                        rdl=rdl,
+                        z=z_planes,
+                        cell_threshold1=self.cell_threshold1,
+                        cell_threshold2=self.cell_threshold1,
+                        cell_sigma1=self.cell_sigma1,
+                        cell_sigma2=self.cell_sigma2,
+                        d=self.d,
+                    )
+                )
+
+        z_to_plot = np.full_like(np.arange(z_planes[0] + 1, z_planes[-1] + 1), -1)
+        for i, val in enumerate(np.arange(z_planes[0] + 1, z_planes[-1] + 1)):
             if len(to_save[to_save.z == val].sum_intensity_in_photons.values) > 1:
                 z_to_plot[i] = val
         z_to_plot = z_to_plot[z_to_plot >= 0]
-        
+
         if cell_analysis == False:
-            
+
             for i in enumerate(z_to_plot):
-                fig, axs = plots.two_column_plot(nrows=1, ncolumns=2, widthratio=[1,1])
+                fig, axs = plots.two_column_plot(nrows=1, ncolumns=2, widthratio=[1, 1])
                 xpositions = to_save[to_save.z == i[1]].x.values
                 ypositions = to_save[to_save.z == i[1]].y.values
-                xpositions_large = to_save_largeobjects[to_save_largeobjects.z == i[1]].x.values
-                ypositions_large = to_save_largeobjects[to_save_largeobjects.z == i[1]].y.values
-                testvals = (xpositions < image_size)*(ypositions < image_size)
+                xpositions_large = to_save_largeobjects[
+                    to_save_largeobjects.z == i[1]
+                ].x.values
+                ypositions_large = to_save_largeobjects[
+                    to_save_largeobjects.z == i[1]
+                ].y.values
+                testvals = (xpositions < image_size) * (ypositions < image_size)
                 xpositions = xpositions[testvals]
                 ypositions = ypositions[testvals]
-                axs[0] = plots.image_scatter_plot(axs[0], 
-                            img[:image_size, :image_size, i[1]-1], 
-                            xdata=xpositions, ydata=ypositions, label='z plane = '+str(int(i[1])))
-    
-                axs[1] = plots.image_scatter_plot(axs[1], 
-                            img[:, :, i[1]-1], 
-                            xdata=xpositions_large, ydata=ypositions_large, label='z plane = '+str(int(i[1])))
+                axs[0] = plots.image_scatter_plot(
+                    axs[0],
+                    img[:image_size, :image_size, i[1] - 1],
+                    xdata=xpositions,
+                    ydata=ypositions,
+                    label="z plane = " + str(int(i[1])),
+                )
+
+                axs[1] = plots.image_scatter_plot(
+                    axs[1],
+                    img[:, :, i[1] - 1],
+                    xdata=xpositions_large,
+                    ydata=ypositions_large,
+                    label="z plane = " + str(int(i[1])),
+                )
                 plt.tight_layout()
                 if save_figure == True:
-                    plt.savefig(protein_file.split('.')[0]+'_ExampleFigure_zplane'+str(int(i[1]))+'.svg', format='svg', dpi=600)
+                    plt.savefig(
+                        protein_file.split(".")[0]
+                        + "_ExampleFigure_zplane"
+                        + str(int(i[1]))
+                        + ".svg",
+                        format="svg",
+                        dpi=600,
+                    )
                 plt.show()
         else:
             for i in enumerate(z_to_plot):
-                fig, axs = plots.two_column_plot(nrows=1, ncolumns=3, widthratio=[1,1,1])
+                fig, axs = plots.two_column_plot(
+                    nrows=1, ncolumns=3, widthratio=[1, 1, 1]
+                )
                 xpositions = to_save[to_save.z == i[1]].x.values
                 ypositions = to_save[to_save.z == i[1]].y.values
-                xpositions_large = to_save_largeobjects[to_save_largeobjects.z == i[1]].x.values
-                ypositions_large = to_save_largeobjects[to_save_largeobjects.z == i[1]].y.values
-                testvals = (xpositions < image_size)*(ypositions < image_size)
+                xpositions_large = to_save_largeobjects[
+                    to_save_largeobjects.z == i[1]
+                ].x.values
+                ypositions_large = to_save_largeobjects[
+                    to_save_largeobjects.z == i[1]
+                ].y.values
+                testvals = (xpositions < image_size) * (ypositions < image_size)
                 xpositions = xpositions[testvals]
                 ypositions = ypositions[testvals]
-                axs[0] = plots.image_scatter_plot(axs[0], 
-                            img[:image_size, :image_size, i[1]-1], 
-                            xdata=xpositions, ydata=ypositions, label='puncta, z plane = '+str(int(i[1])))
-                
-                axs[1] = plots.image_scatter_plot(axs[1], 
-                            img[:, :, i[1]-1], 
-                            xdata=xpositions_large, ydata=ypositions_large, label='z plane = '+str(int(i[1])))
+                axs[0] = plots.image_scatter_plot(
+                    axs[0],
+                    img[:image_size, :image_size, i[1] - 1],
+                    xdata=xpositions,
+                    ydata=ypositions,
+                    label="puncta, z plane = " + str(int(i[1])),
+                )
 
-                axs[2] = plots.image_plot(axs[2], 
-                            img_cell[:, :, i[1]-1], 
-                            label='cell, z plane = '+str(int(i[1])), plotmask=True, mask=cell_mask[:, :, i[1]-1])
-                
+                axs[1] = plots.image_scatter_plot(
+                    axs[1],
+                    img[:, :, i[1] - 1],
+                    xdata=xpositions_large,
+                    ydata=ypositions_large,
+                    label="z plane = " + str(int(i[1])),
+                )
+
+                axs[2] = plots.image_plot(
+                    axs[2],
+                    img_cell[:, :, i[1] - 1],
+                    label="cell, z plane = " + str(int(i[1])),
+                    plotmask=True,
+                    mask=cell_mask[:, :, i[1] - 1],
+                )
 
                 plt.tight_layout()
-        
+
                 if save_figure == True:
-                    plt.savefig(protein_file.split('.')[0]+'_ExampleFigure_zplane'+str(int(i[1]))+'.svg', format='svg', dpi=600)
+                    plt.savefig(
+                        protein_file.split(".")[0]
+                        + "_ExampleFigure_zplane"
+                        + str(int(i[1]))
+                        + ".svg",
+                        format="svg",
+                        dpi=600,
+                    )
                 plt.show()
         return
-    
+
     def file_search(self, folder, string1, string2):
         """
         Search for files containing 'string1' in their names within 'folder',
@@ -625,8 +869,10 @@ class RASP_Routines():
             file_list (list): A sorted list of file paths matching the search criteria.
         """
         # Get a list of all files containing 'string1' in their names within 'folder'
-        file_list = [os.path.join(dirpath, f) for dirpath, dirnames, files in os.walk(folder)
-            for f in fnmatch.filter(files, '*'+string1+'*')]
+        file_list = [
+            os.path.join(dirpath, f)
+            for dirpath, dirnames, files in os.walk(folder)
+            for f in fnmatch.filter(files, "*" + string1 + "*")
+        ]
         file_list = np.sort([e for e in file_list if string2 in e])
         return file_list
-    
