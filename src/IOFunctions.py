@@ -22,7 +22,8 @@ class IO_Functions():
         return
     
     def save_analysis(self, to_save, to_save_largeobjects, analysis_directory,
-                      imtype, files, i=0, z_planes=[0, 0],
+                      imtype, protein_string, cell_string,
+                      files, i=0, z_planes=[0, 0],
                       cell_analysis=False, cell_mask=False,
                       to_save_cell=False,
                       one_savefile=True):
@@ -35,6 +36,8 @@ class IO_Functions():
             to_save_largeobjects (pd.DataFrame): pandas dataframe of large objects.
             analysis_directory (string): analysis directory to save in
             imtype (string): string of image type
+            protein_string (np.1darray): strings for protein-stained data (default C1)
+            cell_string (np.1darray): strings for cell-containing data (default C0)
             i (int): location in files where we're analysing
             z_planes (np.1darray): array of z locations to count spots
             cell_analysis (boolean): if doing cell analysis saving
@@ -53,9 +56,9 @@ class IO_Functions():
             to_save_largeobjects.to_csv(savename_lo, index=False)
             if cell_analysis == True:
                 to_save_cell.to_csv(os.path.join(analysis_directory, 
-                os.path.split(files[i])[-1].split(imtype)[0]+'_cell_analysis.csv'), index=False)
+                os.path.split(files[i])[-1].split(imtype)[0].split(protein_string)[0]+str(cell_string)+'_cell_analysis.csv'), index=False)
                 self.write_tiff(cell_mask, os.path.join(analysis_directory, 
-                os.path.split(files[i])[-1].split(imtype)[0]+'_cellMask.tiff'), bit=np.uint8)
+                os.path.split(files[i])[-1].split(imtype)[0].split(protein_string)[0]+str(cell_string)+'_cellMask.tiff'), bit=np.uint8)
         else:
             to_save['image_filename'] = np.full_like(to_save.z.values, files[i], dtype='object')
             to_save_largeobjects['image_filename'] = np.full_like(to_save_largeobjects.z.values, files[i], dtype='object')
@@ -75,7 +78,7 @@ class IO_Functions():
                 to_save_cell['image_filename'] = np.full_like(to_save_cell.z.values, files[i], dtype='object')
                 savename_cell = os.path.join(analysis_directory, 'cell_colocalisation_analysis.csv')
                 self.write_tiff(cell_mask, os.path.join(analysis_directory, 
-                os.path.split(files[i])[-1].split(imtype)[0]+'_cellMask.tiff'), bit=np.uint8)
+                os.path.split(files[i])[-1].split(imtype)[0].split(protein_string)[0]+str(cell_string)+'_cellMask.tiff'), bit=np.uint8)
 
             if i != 0:
                 to_save.to_csv(savename, mode='a', header=False, index=False)

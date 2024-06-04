@@ -480,13 +480,15 @@ class RASP_Routines():
                     
                     if cell_analysis == True:
                         IO.save_analysis(to_save, to_save_largeobjects, analysis_directory,
-                                          imtype, files, i, z_planes,
+                                          imtype, protein_string, cell_string,
+                                          files, i, z_planes,
                                           cell_analysis=cell_analysis, cell_mask=cell_mask,
                                           to_save_cell=to_save_cell,
                                           one_savefile=one_savefile)
                     else:
                         IO.save_analysis(to_save, to_save_largeobjects, analysis_directory,
-                                          imtype, files, i, z_planes,
+                                          imtype, protein_string, cell_string, 
+                                          files, i, z_planes,
                                           cell_analysis=False, cell_mask=False,
                                           to_save_cell=False,
                                           one_savefile=one_savefile)
