@@ -1138,10 +1138,12 @@ class RASP_Routines:
                 + "_colocalisationwith_"
                 + spot_2_string
                 + "_"
-                + threshold1_str + '_'
+                + threshold1_str
+                + "_"
                 + spot_1_string
                 + "_photonthreshold_"
-                + threshold2_str + '_'
+                + threshold2_str
+                + "_"
                 + spot_2_string
                 + "_photonthreshold.csv"
             )
@@ -1150,10 +1152,12 @@ class RASP_Routines:
                 + "_colocalisationwith_"
                 + spot_1_string
                 + "_"
-                + threshold2_str + '_'
+                + threshold2_str
+                + "_"
                 + spot_2_string
                 + "_photonthreshold_"
-                + threshold1_str + '_'
+                + threshold1_str
+                + "_"
                 + spot_1_string
                 + "_photonthreshold.csv"
             )
@@ -1162,10 +1166,12 @@ class RASP_Routines:
                 + "_rawcolocalisationwith_"
                 + spot_2_string
                 + "_"
-                + threshold1_str + '_'
+                + threshold1_str
+                + "_"
                 + spot_1_string
                 + "_photonthreshold_"
-                + threshold2_str + '_'
+                + threshold2_str
+                + "_"
                 + spot_2_string
                 + "_photonthreshold.csv"
             )
@@ -1174,10 +1180,12 @@ class RASP_Routines:
                 + "_rawcolocalisationwith_"
                 + spot_1_string
                 + "_"
-                + threshold2_str + '_'
+                + threshold2_str
+                + "_"
                 + spot_2_string
                 + "_photonthreshold_"
-                + threshold1_str + '_'
+                + threshold1_str
+                + "_"
                 + spot_1_string
                 + "_photonthreshold.csv"
             )
