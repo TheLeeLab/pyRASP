@@ -859,8 +859,8 @@ class RASP_Routines:
         self,
         analysis_file,
         threshold,
-        cell_string,
         protein_string,
+        cell_string,
         imtype=".tif",
         blur_degree=1,
         calc_clr=False,
@@ -872,8 +872,8 @@ class RASP_Routines:
         Args:
             analysis_file (str): The analysis file to be re-done.
             threshold (float): The photon threshold
-            cell_string (str): string of cell to analyse
             protein_string (str): string of analysed protein
+            cell_string (str): string of cell to analyse
             imtype (str): image type
             blur_degree (int): blur degree for colocalisation analysis
             calc_clr (boolean): Calculate the clr, yes/no.
