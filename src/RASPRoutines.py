@@ -878,7 +878,7 @@ class RASP_Routines:
             calc_clr (boolean): Calculate the clr, yes/no.
         """
         if int(threshold) == threshold:
-            threshold_str = str(threshold)
+            threshold_str = str(int(threshold))
         else:
             threshold_str = str(threshold).replace(".", "p")
 
@@ -1013,12 +1013,12 @@ class RASP_Routines:
             blur_degree (int): blur degree for colocalisation analysis
         """
         if int(threshold_1) == threshold_1:
-            threshold1_str = str(threshold_1)
+            threshold1_str = str(int(threshold_1))
         else:
             threshold1_str = str(threshold_1).replace(".", "p")
 
         if int(threshold_2) == threshold_2:
-            threshold2_str = str(threshold_2)
+            threshold2_str = str(int(threshold_2))
         else:
             threshold2_str = str(threshold_2).replace(".", "p")
 
@@ -1086,6 +1086,7 @@ class RASP_Routines:
                     (
                         temp_1_pd.values[j, 0],
                         temp_1_pd.values[j, 1],
+                        raw_1_coincidence,
                     ) = A_F.calculate_spot_to_spot_coincidence(
                         spot_1_indices,
                         spot_2_indices,
@@ -1096,12 +1097,21 @@ class RASP_Routines:
                     (
                         temp_2_pd.values[j, 0],
                         temp_2_pd.values[j, 1],
+                        raw_2_coincidence,
                     ) = A_F.calculate_spot_to_spot_coincidence(
                         spot_2_indices,
                         spot_1_indices,
                         image_size,
                         blur_degree=blur_degree,
                     )
+                    if j == 0:
+                        rc1 = raw_1_coincidence
+                        rc2 = raw_2_coincidence
+                    else:
+                        rc1 = np.hstack([rc1, raw_1_coincidence])
+                        rc2 = np.hstack([rc2, raw_2_coincidence])
+                image_1_file["coincidence_with_channel_" + spot_2_string] = rc1
+                image_2_file["coincidence_with_channel_" + spot_1_string] = rc2
                 temp_1_pd["image_filename"] = np.full_like(
                     z_planes, image + spot_1_string + imtype, dtype="object"
                 )
@@ -1110,40 +1120,73 @@ class RASP_Routines:
                 )
 
                 if i == 0:
-                    spot_1_analysis = temp_1_pd
-                    spot_2_analysis = temp_2_pd
+                    plane_1_analysis = temp_1_pd
+                    plane_2_analysis = temp_2_pd
+                    spot_1_analysis = image_1_file
+                    spot_2_analysis = image_2_file
                 else:
-                    spot_1_analysis = pd.concat(
-                        [spot_1_analysis, temp_1_pd]
+                    plane_1_analysis = pd.concat(
+                        [plane_1_analysis, temp_1_pd]
                     ).reset_index(drop=True)
-                    spot_2_analysis = pd.concat(
-                        [spot_2_analysis, temp_2_pd]
+                    plane_2_analysis = pd.concat(
+                        [plane_2_analysis, temp_2_pd]
                     ).reset_index(drop=True)
-            spot_1_analysis.to_csv(
+                    spot_1_analysis = pd.concat([spot_1_analysis, image_1_file])
+                    spot_2_analysis = pd.concat([spot_2_analysis, image_2_file])
+            plane_1_analysis.to_csv(
                 analysis_file_1.split(".")[0]
                 + "_colocalisationwith_"
                 + spot_2_string
                 + "_"
-                + threshold1_str
+                + threshold1_str + '_'
                 + spot_1_string
                 + "_photonthreshold_"
-                + threshold2_str
+                + threshold2_str + '_'
+                + spot_2_string
+                + "_photonthreshold.csv"
+            )
+            plane_2_analysis.to_csv(
+                analysis_file_2.split(".")[0]
+                + "_colocalisationwith_"
+                + spot_1_string
+                + "_"
+                + threshold2_str + '_'
+                + spot_2_string
+                + "_photonthreshold_"
+                + threshold1_str + '_'
+                + spot_1_string
+                + "_photonthreshold.csv"
+            )
+            spot_1_analysis.to_csv(
+                analysis_file_1.split(".")[0]
+                + "_rawcolocalisationwith_"
+                + spot_2_string
+                + "_"
+                + threshold1_str + '_'
+                + spot_1_string
+                + "_photonthreshold_"
+                + threshold2_str + '_'
                 + spot_2_string
                 + "_photonthreshold.csv"
             )
             spot_2_analysis.to_csv(
                 analysis_file_2.split(".")[0]
-                + "_colocalisationwith_"
+                + "_rawcolocalisationwith_"
                 + spot_1_string
                 + "_"
-                + threshold2_str
+                + threshold2_str + '_'
                 + spot_2_string
                 + "_photonthreshold_"
-                + threshold1_str
+                + threshold1_str + '_'
                 + spot_1_string
                 + "_photonthreshold.csv"
             )
-        return spot_1_analysis, spot_2_analysis
+        return (
+            plane_1_analysis,
+            plane_2_analysis,
+            spot_1_analysis,
+            spot_2_analysis,
+        )
 
     def file_search(self, folder, string1, string2):
         """

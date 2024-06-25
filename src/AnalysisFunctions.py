@@ -380,12 +380,12 @@ class Analysis_Functions:
         possible_indices = np.arange(
             0, np.prod(image_size)
         )  # get list of where is possible to exist in an image
-        nspots_in_mask = self.test_spot_spot_overlap(
+        raw_coincidence = self.test_spot_spot_overlap(
             spot_1_indices, spot_2_indices, original_n_spots
         )  # get nspots in mask
 
         coincidence = np.divide(
-            np.sum(nspots_in_mask), original_n_spots
+            np.sum(raw_coincidence), original_n_spots
         )  # generate coincidence
 
         random_spot_locations = np.random.choice(
@@ -409,7 +409,7 @@ class Analysis_Functions:
                 original_n_spots,
             )
             chance_coincidence = np.nanmean(CC)
-        return coincidence, chance_coincidence
+        return coincidence, chance_coincidence, raw_coincidence
 
     def calculate_largeobj_coincidence(
         self, largeobj_indices, mask_indices, n_largeobjs, image_size
