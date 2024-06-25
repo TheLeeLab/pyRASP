@@ -177,7 +177,7 @@ class RASP_Routines:
         files = np.sort([e for e in files_list if imtype in e])
 
         k1, k2 = A_F.create_kernel(gsigma, rwave)  # create image processing kernels
-        rdl = [0.0, 0.0, 0.0]
+        rdl = [np.inf, 0.0, 0.0]
         thres = 0.05
         r1_neg_forplot = {}  # generate dictionaries for plotting
         r2_neg_forplot = {}
@@ -226,8 +226,8 @@ class RASP_Routines:
         keys = list(r1_neg_forplot.keys())
 
         for i, key in enumerate(keys):
-            means_rad1[i] = np.mean(r1_neg_forplot[key])
-            means_rad2[i] = np.mean(r2_neg_forplot[key])
+            means_rad1[i] = np.nanmean(r1_neg_forplot[key])
+            means_rad2[i] = np.nanmean(r2_neg_forplot[key])
 
         r1_reject = A_F.rejectoutliers_ind(means_rad1)
         if len(r1_reject) > 0:
@@ -854,6 +854,131 @@ class RASP_Routines:
                     )
                 plt.show()
         return
+
+    def colocalise_with_threshold(
+        self,
+        analysis_file,
+        threshold,
+        cell_string,
+        protein_string,
+        imtype=".tif",
+        blur_degree=1,
+        calc_clr=False,
+    ):
+        """
+        Redo colocalisation analayses of spots above a photon threshold in an
+        analysis file.
+
+        Args:
+            analysis_file (str): The analysis file to be re-done.
+            threshold (float): The photon threshold
+            cell_string (str): string of cell to analyse
+            protein_string (str): string of analysed protein
+            imtype (str): image type
+            blur_degree (int): blur degree for colocalisation analysis
+            calc_clr (boolean): Calculate the clr, yes/no.
+        """
+        spots_with_intensities = pd.read_csv(analysis_file)
+        spots_with_intensities = spots_with_intensities[
+            spots_with_intensities.sum_intensity_in_photons > threshold
+        ].reset_index(drop=True)
+        analysis_directory = os.path.split(analysis_file)[0]
+        image_filenames = np.unique(spots_with_intensities.image_filename.values)
+
+        if calc_clr == False:
+            columns = ["coincidence", "chance_coincidence", "n_iter"]
+        else:
+            columns = [
+                "clr",
+                "norm_std",
+                "norm_CSR",
+                "expected_spots",
+                "coincidence",
+                "chance_coincidence",
+                "n_iter",
+            ]
+
+        for i, image in enumerate(image_filenames):
+            cell_mask = IO.read_tiff(
+                os.path.join(
+                    analysis_directory,
+                    os.path.split(image.split(imtype)[0])[-1].split(protein_string)[0]
+                    + str(cell_string)
+                    + "_cellMask.tiff",
+                )
+            )
+            image_size = cell_mask.shape[:-1]
+            image_file = spots_with_intensities[
+                spots_with_intensities.image_filename == image
+            ].reset_index(drop=True)
+            z_planes = np.unique(image_file.z.values)
+
+            dataarray = np.zeros([len(z_planes), len(columns)])
+
+            temp_pd = pd.DataFrame(data=dataarray, columns=columns)
+
+            for j, z_plane in enumerate(z_planes):
+                xcoords = image_file[image_file.z == z_plane].x.values
+                ycoords = image_file[image_file.z == z_plane].y.values
+                mask = cell_mask[:, :, int(z_plane) - 1]
+                centroids = np.asarray(np.vstack([xcoords, ycoords]), dtype=int).T
+                mask_indices, spot_indices = A_F.generate_mask_and_spot_indices(
+                    mask, centroids, image_size
+                )
+                if calc_clr == False:
+                    (
+                        temp_pd.values[j, 0],
+                        temp_pd.values[j, 1],
+                        raw_colocalisation,
+                        temp_pd.values[j, 2],
+                    ) = A_F.calculate_spot_to_mask_coincidence(
+                        spot_indices,
+                        mask_indices,
+                        image_size,
+                        blur_degree=blur_degree,
+                    )
+                else:
+                    (
+                        temp_pd.values[j, 0],
+                        temp_pd.values[j, 1],
+                        temp_pd.values[j, 2],
+                        temp_pd.values[j, 3],
+                        temp_pd.values[j, 4],
+                        temp_pd.values[j, 5],
+                        raw_colocalisation,
+                        temp_pd.values[j, 6],
+                    ) = A_F.calculate_spot_colocalisation_likelihood_ratio(
+                        spot_indices, mask_indices, image_size, blur_degree=1
+                    )
+                if j == 0:
+                    rc = raw_colocalisation
+                else:
+                    rc = np.hstack([rc, raw_colocalisation])
+
+            image_file["incell"] = rc * 1
+            if i == 0:
+                cell_analysis = temp_pd
+                spot_analysis = image_file
+            else:
+                cell_analysis = pd.concat([cell_analysis, temp_pd]).reset_index(
+                    drop=True
+                )
+                spot_analysis = pd.concat([spot_analysis, image_file]).reset_index(
+                    drop=True
+                )
+
+        cell_analysis.to_csv(
+            os.path.join(
+                analysis_directory,
+                "cell_colocalisation_analysis_"
+                + str(threshold)
+                + "_photonthreshold.csv",
+            )
+        )
+        spot_analysis.to_csv(
+            analysis_file.split(".")[0] + "_" + str(threshold) + "_photonthreshold.csv"
+        )
+        return cell_analysis, spot_analysis
 
     def file_search(self, folder, string1, string2):
         """

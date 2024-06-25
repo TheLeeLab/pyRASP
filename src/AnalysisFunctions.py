@@ -509,7 +509,7 @@ class Analysis_Functions:
             norm_std = np.NAN
             coincidence = np.NAN
             chance_coincidence = np.NAN
-            raw_colocalisation = np.full_like(spot_indices, np.NAN)
+            raw_colocalisation = np.full(original_n_spots, np.NAN)
             return (
                 colocalisation_likelihood_ratio,
                 norm_std,
@@ -544,7 +544,7 @@ class Analysis_Functions:
             norm_std = np.NAN
             coincidence = np.NAN
             chance_coincidence = np.NAN
-            raw_colocalisation = np.full_like(spot_indices, np.NAN)
+            raw_colocalisation = np.full(original_n_spots, np.NAN)
             return (
                 colocalisation_likelihood_ratio,
                 norm_std,
@@ -2464,7 +2464,6 @@ class Analysis_Functions:
             pool.map(run_over_z, z_planes)
             pool.close()
             pool.terminate()
-
         return dl_mask, centroids, radiality, large_mask
 
     def gen_CSRmats(self, image_z_shape):

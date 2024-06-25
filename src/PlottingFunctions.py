@@ -46,6 +46,64 @@ class Plotter:
         )
         return bins
 
+    def one_column_plot(self, npanels=1, ratios=[1], height=None):
+        """one_column_plot function
+        takes data and makes a one-column width figure
+
+        Args:
+            nrows (int): number of rows
+            npanels (int): number of panels
+            ratios (list): list of heights of same length as nrows
+            height (float): overridden height of figure
+
+        Returns:
+            fig (figure): figure object
+            ax (axes): axes object"""
+
+        # first, check everything matches
+        try:
+            if len(ratios) != npanels:
+                raise Exception("Number of ratios incorrect")
+        except Exception as error:
+            print("Caught this error: " + repr(error))
+            return
+
+        if self.poster == True:
+            fontsz = 12
+            lw = 1
+        else:
+            fontsz = 7
+            lw = 0.5
+
+        xsize = 3.33  # 3.33 inches for one-column figure
+        if height is not None:
+            ysize = np.min([height, 8.25])  # maximum size in y can be 8.25
+        else:
+            ysize = np.min([3.5 * npanels, 8.25])  # maximum size in y can be 8.25
+
+        plt.rcParams["figure.figsize"] = [xsize, ysize]
+        plt.rcParams["font.size"] = fontsz
+        plt.rcParams["svg.fonttype"] = "none"
+        matplotlib.rcParams["pdf.fonttype"] = 42
+        matplotlib.rcParams["ps.fonttype"] = 42
+        plt.rcParams["axes.linewidth"] = lw  # set the value globally
+
+        fig, axs = plt.subplots(
+            npanels, 1, height_ratios=ratios
+        )  # create number of panels
+
+        # clean up axes, tick parameters
+        if npanels == 1:
+            axs.xaxis.set_tick_params(width=lw, length=lw * 4)
+            axs.yaxis.set_tick_params(width=lw, length=lw * 4)
+            axs.tick_params(axis="both", pad=1.2)
+        else:
+            for i in np.arange(npanels):
+                axs[i].xaxis.set_tick_params(width=lw, length=lw * 4)
+                axs[i].yaxis.set_tick_params(width=lw, length=lw * 4)
+                axs[i].tick_params(axis="both", pad=1.2)
+        return fig, axs
+
     def two_column_plot(
         self, nrows=1, ncolumns=1, heightratio=[1], widthratio=[1], height=0, big=False
     ):
