@@ -486,7 +486,7 @@ class RASP_Routines:
         folder,
         imtype=".tif",
         thres=0.05,
-        large_thres=100.0,
+        large_thres=200.0,
         gsigma=1.4,
         rwave=2.0,
         protein_string="C1",
@@ -494,7 +494,7 @@ class RASP_Routines:
         if_filter=True,
         im_start=0,
         cell_analysis=True,
-        one_savefile=False,
+        one_savefile=True,
         disp=True,
         analyse_clr=True,
     ):
@@ -507,22 +507,21 @@ class RASP_Routines:
 
         Args:
             folder (string): Folder containing images
-            imtype (string): Type of images being analysed, default tif
-            thres (float): fraction of bright pixels accepted
-            large_thres (float): large object intensity threshold
-            gisgma (float): gaussian blurring parameter (default 1.4)
-            rwave (float): Ricker wavelent sigma (default 2.)
-            protein_string (np.1darray): strings for protein-stained data (default C1)
-            cell_string (np.1darray): strings for cell-containing data (default C0)
-            if_filter (boolean): Filter images for focus (default True)
-            im_start (integer): Images to start from (default 0)
+            imtype (string): Type of images being analysed. Default '.tif'
+            thres (float): fraction of bright pixels accepted. Default 0.05.
+            large_thres (float): large object intensity threshold. Default 100.
+            gisgma (float): gaussian blurring parameter. Default 1.4.
+            rwave (float): Ricker wavelent sigma. Default 2.
+            protein_string (np.1darray): strings for protein-stained data. Default C1.
+            cell_string (np.1darray): strings for cell-containing data. Default C0.
+            if_filter (boolean): Filter images for focus. Default True.
+            im_start (integer): Images to start from. Default 0.
             cell_analysis (boolean): Parameter where script also analyses cell
-                images and computes colocalisation likelihood ratios.
-            one_savefile (boolean): Parameter that, if true, doesn't save a file
-                per image but amalgamates them into one file
-            calccsr (boolean): Do CSR?
-            disp (boolean): If true, prints when analysed an image stack.
-            analyse_clr (boolean): If true, calculates the clr. If not, just coincidence
+                images and computes colocalisation likelihood ratios. Default True.
+            one_savefile (boolean): Parameter that, if true, doesn't save a file. Default True.
+                per image but amalgamates them into one file. Default True.
+            disp (boolean): If true, prints when analysed an image stack. Default True.
+            analyse_clr (boolean): If true, calculates the clr. If not, just coincidence. Default True.
 
         """
         all_files = self.file_search(
@@ -878,6 +877,11 @@ class RASP_Routines:
             blur_degree (int): blur degree for colocalisation analysis
             calc_clr (boolean): Calculate the clr, yes/no.
         """
+        if int(threshold) == threshold:
+            threshold_str = str(threshold)
+        else:
+            threshold_str = str(threshold).replace(".", "p")
+
         spots_with_intensities = pd.read_csv(analysis_file)
         spots_with_intensities = spots_with_intensities[
             spots_with_intensities.sum_intensity_in_photons > threshold
@@ -886,7 +890,7 @@ class RASP_Routines:
         image_filenames = np.unique(spots_with_intensities.image_filename.values)
 
         if calc_clr == False:
-            columns = ["coincidence", "chance_coincidence", "n_iter"]
+            columns = ["coincidence", "chance_coincidence", "n_iter", "image_filename"]
         else:
             columns = [
                 "clr",
@@ -896,6 +900,7 @@ class RASP_Routines:
                 "coincidence",
                 "chance_coincidence",
                 "n_iter",
+                "image_filename",
             ]
 
         for i, image in enumerate(image_filenames):
@@ -913,7 +918,7 @@ class RASP_Routines:
             ].reset_index(drop=True)
             z_planes = np.unique(image_file.z.values)
 
-            dataarray = np.zeros([len(z_planes), len(columns)])
+            dataarray = np.zeros([len(z_planes), len(columns)], dtype="object")
 
             temp_pd = pd.DataFrame(data=dataarray, columns=columns)
 
@@ -954,7 +959,7 @@ class RASP_Routines:
                     rc = raw_colocalisation
                 else:
                     rc = np.hstack([rc, raw_colocalisation])
-
+            temp_pd["image_filename"] = np.full_like(z_planes, image, dtype="object")
             image_file["incell"] = rc * 1
             if i == 0:
                 cell_analysis = temp_pd
@@ -971,14 +976,174 @@ class RASP_Routines:
             os.path.join(
                 analysis_directory,
                 "cell_colocalisation_analysis_"
-                + str(threshold)
+                + threshold_str
                 + "_photonthreshold.csv",
             )
         )
         spot_analysis.to_csv(
-            analysis_file.split(".")[0] + "_" + str(threshold) + "_photonthreshold.csv"
+            analysis_file.split(".")[0] + "_" + threshold_str + "_photonthreshold.csv"
         )
         return cell_analysis, spot_analysis
+
+    def colocalise_spots_with_threshold(
+        self,
+        analysis_file_1,
+        analysis_file_2,
+        threshold_1,
+        threshold_2,
+        spot_1_string,
+        spot_2_string,
+        imtype=".tif",
+        image_size=(1200, 1200),
+        blur_degree=1,
+    ):
+        """
+        Redo colocalisation analayses of spots above a photon threshold in an
+        analysis file, to spots above a second threshold in a separate analysis file.
+
+        Args:
+            analysis_1_file (str): Analysis file (channel 1) to be re-done.
+            analysis_2_file (str): Analysis file (channel 2) to be re-done.
+            threshold_1 (float): The photon threshold for channel 1
+            threshold_2 (float): The photon threshold for channel 2
+            spot_1_string (str): string of spot 1
+            spot_2_string (str): string of spot 2
+            imtype (str): image type
+            image_size (list): original image size
+            blur_degree (int): blur degree for colocalisation analysis
+        """
+        if int(threshold_1) == threshold_1:
+            threshold1_str = str(threshold_1)
+        else:
+            threshold1_str = str(threshold_1).replace(".", "p")
+
+        if int(threshold_2) == threshold_2:
+            threshold2_str = str(threshold_2)
+        else:
+            threshold2_str = str(threshold_2).replace(".", "p")
+
+        spots_1_with_intensities = pd.read_csv(analysis_file_1)
+        spots_1_with_intensities = spots_1_with_intensities[
+            spots_1_with_intensities.sum_intensity_in_photons > threshold_1
+        ].reset_index(drop=True)
+
+        spots_2_with_intensities = pd.read_csv(analysis_file_2)
+        spots_2_with_intensities = spots_2_with_intensities[
+            spots_2_with_intensities.sum_intensity_in_photons > threshold_2
+        ].reset_index(drop=True)
+
+        image_1_filenames = np.unique(spots_1_with_intensities.image_filename.values)
+        image_2_filenames = np.unique(spots_2_with_intensities.image_filename.values)
+
+        overall_1_filenames = [
+            i.split(imtype)[0].split(spot_1_string)[0] for i in image_1_filenames
+        ]
+        overall_2_filenames = [
+            i.split(imtype)[0].split(spot_2_string)[0] for i in image_2_filenames
+        ]
+        overall_filenames = np.unique(
+            np.hstack([overall_1_filenames, overall_2_filenames])
+        )
+
+        columns = ["coincidence", "chance_coincidence", "image_filename"]
+
+        for i, image in enumerate(overall_filenames):
+            image_1_file = spots_1_with_intensities[
+                spots_1_with_intensities.image_filename
+                == image + spot_1_string + imtype
+            ].reset_index(drop=True)
+
+            image_2_file = spots_2_with_intensities[
+                spots_2_with_intensities.image_filename
+                == image + spot_2_string + imtype
+            ].reset_index(drop=True)
+            if (len(image_1_file) > 0) & (len(image_2_file) > 0):
+                z_planes = np.intersect1d(image_1_file.z.values, image_2_file.z.values)
+
+                dataarray_1 = np.zeros([len(z_planes), len(columns)], dtype="object")
+                dataarray_2 = np.zeros([len(z_planes), len(columns)], dtype="object")
+
+                temp_1_pd = pd.DataFrame(data=dataarray_1, columns=columns)
+                temp_2_pd = pd.DataFrame(data=dataarray_2, columns=columns)
+
+                for j, z_plane in enumerate(z_planes):
+                    x_1_coords = image_1_file[image_1_file.z == z_plane].x.values
+                    y_1_coords = image_1_file[image_1_file.z == z_plane].y.values
+
+                    x_2_coords = image_2_file[image_2_file.z == z_plane].x.values
+                    y_2_coords = image_2_file[image_2_file.z == z_plane].y.values
+
+                    centroids1 = np.asarray(
+                        np.vstack([x_1_coords, y_1_coords]), dtype=int
+                    ).T
+                    centroids2 = np.asarray(
+                        np.vstack([x_2_coords, y_2_coords]), dtype=int
+                    ).T
+
+                    spot_1_indices, spot_2_indices = A_F.generate_spot_and_spot_indices(
+                        centroids1, centroids2, image_size
+                    )
+                    (
+                        temp_1_pd.values[j, 0],
+                        temp_1_pd.values[j, 1],
+                    ) = A_F.calculate_spot_to_spot_coincidence(
+                        spot_1_indices,
+                        spot_2_indices,
+                        image_size,
+                        blur_degree=blur_degree,
+                    )
+
+                    (
+                        temp_2_pd.values[j, 0],
+                        temp_2_pd.values[j, 1],
+                    ) = A_F.calculate_spot_to_spot_coincidence(
+                        spot_2_indices,
+                        spot_1_indices,
+                        image_size,
+                        blur_degree=blur_degree,
+                    )
+                temp_1_pd["image_filename"] = np.full_like(
+                    z_planes, image + spot_1_string + imtype, dtype="object"
+                )
+                temp_2_pd["image_filename"] = np.full_like(
+                    z_planes, image + spot_2_string + imtype, dtype="object"
+                )
+
+                if i == 0:
+                    spot_1_analysis = temp_1_pd
+                    spot_2_analysis = temp_2_pd
+                else:
+                    spot_1_analysis = pd.concat(
+                        [spot_1_analysis, temp_1_pd]
+                    ).reset_index(drop=True)
+                    spot_2_analysis = pd.concat(
+                        [spot_2_analysis, temp_2_pd]
+                    ).reset_index(drop=True)
+            spot_1_analysis.to_csv(
+                analysis_file_1.split(".")[0]
+                + "_colocalisationwith_"
+                + spot_2_string
+                + "_"
+                + threshold1_str
+                + spot_1_string
+                + "_photonthreshold_"
+                + threshold2_str
+                + spot_2_string
+                + "_photonthreshold.csv"
+            )
+            spot_2_analysis.to_csv(
+                analysis_file_2.split(".")[0]
+                + "_colocalisationwith_"
+                + spot_1_string
+                + "_"
+                + threshold2_str
+                + spot_2_string
+                + "_photonthreshold_"
+                + threshold1_str
+                + spot_1_string
+                + "_photonthreshold.csv"
+            )
+        return spot_1_analysis, spot_2_analysis
 
     def file_search(self, folder, string1, string2):
         """
