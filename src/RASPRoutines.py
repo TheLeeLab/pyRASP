@@ -853,8 +853,16 @@ class RASP_Routines:
                     )
                 plt.show()
         return
-    
-    def calculate_spot_mask_rdf(self, analysis_file, threshold, out_cell=True, pixel_size=0.11, dr=1.0, cell_string='C1'):
+
+    def calculate_spot_mask_rdf_with_threshold(
+        self,
+        analysis_file,
+        threshold,
+        out_cell=True,
+        pixel_size=0.11,
+        dr=1.0,
+        cell_string="C1",
+    ):
         """
         Does rdf analysis of spots wrt mask from an analysis file.
 
@@ -901,17 +909,17 @@ class RASP_Routines:
                 thesholdsavestr = str(threshold)
             else:
                 thesholdsavestr = str(threshold).replace(".", "p")
-    
+
             files = np.unique(analysis_data.image_filename.values)
             z_planes = {}  # make dict where z planes will be stored
             for i, file in enumerate(files):
                 z_planes[file] = np.unique(
                     analysis_data[analysis_data.image_filename == file].z.values
                 )
-    
+
             g_r = {}
             radii = {}
-    
+
             for file in files:
                 zs = z_planes[file]
                 subset = analysis_data[analysis_data.image_filename == file]
@@ -923,18 +931,18 @@ class RASP_Routines:
                     g_r[uid], radii[uid] = A_F.spot_to_spot_rdf(
                         coordinates, pixel_size=pixel_size, dr=dr
                     )
-    
+
             radii_key, radii_overall = max(radii.items(), key=lambda x: len(set(x[1])))
-    
+
             g_r_overall = np.zeros([len(radii_overall), len(g_r.keys())])
-    
+
             for i, uid in enumerate(g_r.keys()):
                 g_r_overall[:, i] = np.interp(
                     fp=g_r[uid], xp=radii[uid], x=radii_overall, left=0.0, right=0.0
                 )
             g_r_mean = np.mean(g_r_overall, axis=1)
             g_r_std = np.std(g_r_overall, axis=1)
-    
+
             rdf = pd.DataFrame(
                 data=np.vstack([g_r_mean, g_r_std]).T,
                 index=radii_overall,
