@@ -896,55 +896,56 @@ class RASP_Routines:
         analysis_data = analysis_data[
             analysis_data.sum_intensity_in_photons > threshold
         ]
-        if int(threshold) == threshold:
-            thesholdsavestr = str(threshold)
-        else:
-            thesholdsavestr = str(threshold).replace(".", "p")
-
-        files = np.unique(analysis_data.image_filename.values)
-        z_planes = {}  # make dict where z planes will be stored
-        for i, file in enumerate(files):
-            z_planes[file] = np.unique(
-                analysis_data[analysis_data.image_filename == file].z.values
-            )
-
-        g_r = {}
-        radii = {}
-
-        for file in files:
-            zs = z_planes[file]
-            subset = analysis_data[analysis_data.image_filename == file]
-            for z in zs:
-                uid = str(file) + "___" + str(z)
-                x = subset[subset.z == z].x.values
-                y = subset[subset.z == z].y.values
-                coordinates = np.vstack([x, y]).T
-                g_r[uid], radii[uid] = A_F.spot_to_spot_rdf(
-                    coordinates, pixel_size=pixel_size, dr=dr
+        if len(analysis_data) > 0:
+            if int(threshold) == threshold:
+                thesholdsavestr = str(threshold)
+            else:
+                thesholdsavestr = str(threshold).replace(".", "p")
+    
+            files = np.unique(analysis_data.image_filename.values)
+            z_planes = {}  # make dict where z planes will be stored
+            for i, file in enumerate(files):
+                z_planes[file] = np.unique(
+                    analysis_data[analysis_data.image_filename == file].z.values
                 )
-
-        radii_key, radii_overall = max(radii.items(), key=lambda x: len(set(x[1])))
-
-        g_r_overall = np.zeros([len(radii_overall), len(g_r.keys())])
-
-        for i, uid in enumerate(g_r.keys()):
-            g_r_overall[:, i] = np.interp(
-                fp=g_r[uid], xp=radii[uid], x=radii_overall, left=0.0, right=0.0
+    
+            g_r = {}
+            radii = {}
+    
+            for file in files:
+                zs = z_planes[file]
+                subset = analysis_data[analysis_data.image_filename == file]
+                for z in zs:
+                    uid = str(file) + "___" + str(z)
+                    x = subset[subset.z == z].x.values
+                    y = subset[subset.z == z].y.values
+                    coordinates = np.vstack([x, y]).T
+                    g_r[uid], radii[uid] = A_F.spot_to_spot_rdf(
+                        coordinates, pixel_size=pixel_size, dr=dr
+                    )
+    
+            radii_key, radii_overall = max(radii.items(), key=lambda x: len(set(x[1])))
+    
+            g_r_overall = np.zeros([len(radii_overall), len(g_r.keys())])
+    
+            for i, uid in enumerate(g_r.keys()):
+                g_r_overall[:, i] = np.interp(
+                    fp=g_r[uid], xp=radii[uid], x=radii_overall, left=0.0, right=0.0
+                )
+            g_r_mean = np.mean(g_r_overall, axis=1)
+            g_r_std = np.std(g_r_overall, axis=1)
+    
+            rdf = pd.DataFrame(
+                data=np.vstack([g_r_mean, g_r_std]).T,
+                index=radii_overall,
+                columns=["g_r_mean", "g_r_std"],
             )
-        g_r_mean = np.mean(g_r_overall, axis=1)
-        g_r_std = np.std(g_r_overall, axis=1)
-
-        rdf = pd.DataFrame(
-            data=np.vstack([g_r_mean, g_r_std]).T,
-            index=radii_overall,
-            columns=["g_r_mean", "g_r_std"],
-        )
-        to_save_name = os.path.join(
-            os.path.split(analysis_file)[0],
-            "spot_to_spot_threshold_" + thesholdsavestr + "_rdf.csv",
-        )
-        rdf.to_csv(to_save_name)
-        return rdf
+            to_save_name = os.path.join(
+                os.path.split(analysis_file)[0],
+                "spot_to_spot_threshold_" + thesholdsavestr + "_rdf.csv",
+            )
+            rdf.to_csv(to_save_name)
+            return rdf
 
     def colocalise_with_threshold(
         self,
