@@ -853,6 +853,98 @@ class RASP_Routines:
                     )
                 plt.show()
         return
+    
+    def calculate_spot_mask_rdf(self, analysis_file, threshold, out_cell=True, pixel_size=0.11, dr=1.0, cell_string='C1'):
+        """
+        Does rdf analysis of spots wrt mask from an analysis file.
+
+        Args:
+            analysis_file (str): The analysis file to be re-done.
+            threshold (float): The photon threshold
+            out_cell (boolean): If True will only consider oligomers deemed to be outside of cells
+            pixel_size (float): size of pixels
+            dr (float): dr of rdf
+            cell_string (string): will use this to find corresponding mask files
+
+        Returns:
+            rdf (pd.DataArray): pandas datarray of the rdf
+        """
+
+        return
+
+    def calculate_spot_rdf_with_threshold(
+        self,
+        analysis_file,
+        threshold,
+        pixel_size=0.11,
+        dr=1.0,
+    ):
+        """
+        Does rdf analysis of spots above a photon threshold in an
+        analysis file.
+
+        Args:
+            analysis_file (str): The analysis file to be re-done.
+            threshold (float): The photon threshold
+            pixel_size (float): size of pixels
+            dr (float): dr of rdf
+
+        Returns:
+            rdf (pd.DataArray): pandas datarray of the rdf
+        """
+        analysis_data = pd.read_csv(analysis_file)
+        analysis_data = analysis_data[
+            analysis_data.sum_intensity_in_photons > threshold
+        ]
+        if int(threshold) == threshold:
+            thesholdsavestr = str(threshold)
+        else:
+            thesholdsavestr = str(threshold).replace(".", "p")
+
+        files = np.unique(analysis_data.image_filename.values)
+        z_planes = {}  # make dict where z planes will be stored
+        for i, file in enumerate(files):
+            z_planes[file] = np.unique(
+                analysis_data[analysis_data.image_filename == file].z.values
+            )
+
+        g_r = {}
+        radii = {}
+
+        for file in files:
+            zs = z_planes[file]
+            subset = analysis_data[analysis_data.image_filename == file]
+            for z in zs:
+                uid = str(file) + "___" + str(z)
+                x = subset[subset.z == z].x.values
+                y = subset[subset.z == z].y.values
+                coordinates = np.vstack([x, y]).T
+                g_r[uid], radii[uid] = A_F.spot_to_spot_rdf(
+                    coordinates, pixel_size=pixel_size, dr=dr
+                )
+
+        radii_key, radii_overall = max(radii.items(), key=lambda x: len(set(x[1])))
+
+        g_r_overall = np.zeros([len(radii_overall), len(g_r.keys())])
+
+        for i, uid in enumerate(g_r.keys()):
+            g_r_overall[:, i] = np.interp(
+                fp=g_r[uid], xp=radii[uid], x=radii_overall, left=0.0, right=0.0
+            )
+        g_r_mean = np.mean(g_r_overall, axis=1)
+        g_r_std = np.std(g_r_overall, axis=1)
+
+        rdf = pd.DataFrame(
+            data=np.vstack([g_r_mean, g_r_std]).T,
+            index=radii_overall,
+            columns=["g_r_mean", "g_r_std"],
+        )
+        to_save_name = os.path.join(
+            os.path.split(analysis_file)[0],
+            "spot_to_spot_threshold_" + thesholdsavestr + "_rdf.csv",
+        )
+        rdf.to_csv(to_save_name)
+        return rdf
 
     def colocalise_with_threshold(
         self,

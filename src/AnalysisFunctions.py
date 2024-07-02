@@ -16,6 +16,8 @@ from numba import jit
 import pandas as pd
 import pathos
 from pathos.pools import ThreadPool as Pool
+from rdfpy import rdf
+from scipy.spatial.distance import cdist
 
 cpu_number = int(pathos.helpers.cpu_count() * 0.8)
 
@@ -1583,521 +1585,6 @@ class Analysis_Functions:
             )
         return to_save, to_save_largeobjects, to_save_cell, cell_mask
 
-    def compute_spot_props_dict(
-        self,
-        image,
-        image_cell,
-        k1,
-        k2,
-        thres=0.05,
-        large_thres=100.0,
-        areathres=30.0,
-        rdl=[50.0, 0.0, 0.0],
-        z=0,
-        cell_threshold1=200.0,
-        cell_threshold2=200,
-        cell_sigma1=2.0,
-        cell_sigma2=40.0,
-        d=2,
-        cell_analysis=True,
-        protein_protein_coinc=True,
-    ):
-        """
-        Gets basic image properties (centroids, radiality)
-        from a single image
-
-        Args:
-            image (dict): image as numpy array, or dict of arrays
-            image_cell (dict): image of cell stain as numpy array, or dict
-            k1 (array): gaussian blur kernel
-            k2 (array): ricker wavelet kernel
-            thres (float): percentage threshold
-            areathres (float): area threshold
-            rdl (dict): radiality thresholds; has to be same shaped dict
-            z (array): z planes to image, default 0
-            cell_threshold1 (float): 1st cell intensity threshold
-            cell_threshold2 (float): 2nd cell intensity threshold
-            cell_sigma1 (float): cell blur value 1
-            cell_sigma2 (float): cell blur value 2
-            d (integer): pixel radius value
-            cell_analysis (boolean): if True, computes cell-protein coincidence
-            protein_protein_coinc (boolean): if True, computes protein-protein
-                                            coincidence if image is a dict
-
-        Returns:
-            to_save (dict): data array to save as pandas object,
-                                            or dict of pandas objects
-            to_save_largeobjects (dict): data array of large objects
-                                                        or dict of large objects
-        """
-        columns = [
-            "x",
-            "y",
-            "z",
-            "sum_intensity_in_photons",
-            "bg_per_punctum",
-            "bg_per_pixel",
-        ]
-        columns_end = ["zi", "zf"]
-        columns_large = [
-            "x",
-            "y",
-            "z",
-            "area",
-            "sum_intensity_in_photons",
-            "mean_intensity_in_photons",
-        ]
-        columns_cell = [
-            "colocalisation_likelihood_ratio",
-            "std",
-            "CSR",
-            "expected_spots",
-            "coincidence",
-            "chance_coincidence",
-            "n_iterations",
-            "z",
-        ]
-
-        def saving_wrapper(
-            columns,
-            columns_large,
-            columns_end,
-            centroids,
-            estimated_intensity,
-            estimated_background,
-            estimated_background_perpixel,
-            raw_colocalisation,
-            ppc,
-            ppcc,
-            z_planes,
-            cell_analysis=True,
-        ):
-
-            column_coincidence = ["protein_protein_coincidence"]
-            column_chance_coincidence = ["protein_protein_chance_coincidence"]
-            coincidence_strings = [
-                column_coincidence + str(k) for k in list(ppc.keys())
-            ]
-            chance_coincidence_strings = [
-                column_chance_coincidence + str(k) for k in list(ppcc.keys())
-            ]
-            to_append = [
-                val
-                for pair in zip(coincidence_strings, chance_coincidence_strings)
-                for val in pair
-            ]
-
-            if cell_analysis == True:
-                column_incellmask = ["in_cellmask"]
-                raw_colocalisation_strings = [
-                    column_incellmask + str(k) for k in list(raw_colocalisation.keys())
-                ]
-                savecolumns = (
-                    columns.extend(raw_colocalisation_strings)
-                    .extend(to_append)
-                    .extend(columns_end)
-                )
-                to_save = self.make_datarray_spot_ppc(
-                    centroids,
-                    estimated_intensity,
-                    estimated_background,
-                    estimated_background_perpixel,
-                    raw_colocalisation,
-                    ppc,
-                    ppcc,
-                    savecolumns,
-                    z_planes,
-                    cell_analysis,
-                )
-            else:
-                savecolumns = columns.extend(to_append).extend(columns_end)
-                to_save = self.make_datarray_spot_ppc(
-                    centroids,
-                    estimated_intensity,
-                    estimated_background,
-                    estimated_background_perpixel,
-                    np.zeros_like(estimated_background_perpixel),
-                    ppc,
-                    ppcc,
-                    savecolumns,
-                    z_planes,
-                    cell_analysis,
-                )
-
-            to_save = to_save.reset_index(drop=True)
-
-            coincidence_strings = [
-                column_coincidence + str(k) for k in list(ppc_large.keys())
-            ]
-            chance_coincidence_strings = [
-                column_chance_coincidence + str(k) for k in list(ppcc_large.keys())
-            ]
-            to_append = [
-                val
-                for pair in zip(coincidence_strings, chance_coincidence_strings)
-                for val in pair
-            ]
-
-            savecolumns_large = columns_large.extend(to_append).extend(columns_end)
-
-            to_save_largeobjects = self.make_datarray_largeobjects_ppc(
-                areas_large,
-                centroids_large,
-                sumintensities_large,
-                meanintensities_large,
-                ppc_large,
-                ppcc_large,
-                savecolumns_large,
-                z_planes,
-            )
-            to_save_largeobjects = to_save_largeobjects.reset_index(drop=True)
-
-            return to_save, to_save_largeobjects
-
-        to_save = {}
-        to_save_largeobjects = {}
-        if cell_analysis == True:
-            cell_mask = {}
-            clr = {}
-            norm_std = {}
-            norm_CSR = {}
-            expected_spots = {}
-            coincidence = {}
-            chance_coincidence = {}
-            raw_colocalisation = {}
-            n_iter = {}
-            to_save_cell = {}
-            for j in np.arange(image_cell):
-                cell_mask[j] = np.zeros_like(image_cell[j], dtype=bool)
-
-        if not isinstance(z, int):
-            z_planes = np.arange(z[0], z[1])
-            centroids = {}
-            estimated_intensity = {}
-            estimated_background = {}
-            estimated_background_perpixel = {}
-            areas_large = {}
-            centroids_large = {}
-            meanintensities_large = {}
-            sumintensities_large = {}
-            pil_large = {}
-            for i in np.arange(image):
-                centroids[i] = {}
-                estimated_intensity[i] = {}
-                estimated_background[i] = {}
-                estimated_background_perpixel[i] = {}
-                areas_large[i] = {}
-                centroids_large[i] = {}
-                meanintensities_large[i] = {}
-                sumintensities_large[i] = {}
-                pil_large[i] = {}
-                if cell_analysis == True:
-                    clr[i] = {}
-                    norm_std[i] = {}
-                    norm_CSR[i] = {}
-                    expected_spots[i] = {}
-                    coincidence[i] = {}
-                    chance_coincidence[i] = {}
-                    raw_colocalisation[i] = {}
-                    n_iter[i] = {}
-                    for j in np.arange(image_cell):
-                        clr[i][j], norm_std[i][j], norm_CSR[i][j], expected_spots[i][j],
-                        coincidence[i][j], chance_coincidence[i][j], raw_colocalisation[
-                            i
-                        ][j],
-                        n_iter[i][j] = self.gen_CSRmats(image_cell[j].shape[2])
-
-                def analyse_zplanes(zp):
-                    centroids[i][zp], estimated_intensity[i][zp],
-                    estimated_background[i][zp], estimated_background_perpixel[i][zp],
-                    areas_large[i][zp], centroids_large[i][zp], meanintensities_large[
-                        i
-                    ][zp],
-                    sumintensities_large[i][zp],
-                    pil_large[i][zp] = self.default_spotanalysis_routine(
-                        image[i][:, :, zp],
-                        k1,
-                        k2,
-                        thres,
-                        large_thres,
-                        areathres,
-                        rdl[i],
-                        d,
-                    )
-                    if cell_analysis == True:
-                        for j in np.arange(image_cell):
-                            cell_mask[j][:, :, zp] = self.detect_large_features(
-                                image_cell[j][zp],
-                                cell_threshold1,
-                                cell_threshold2,
-                                cell_sigma1,
-                                cell_sigma2,
-                            )
-
-                            image_size = image[i][:, :, zp].shape
-                            mask_indices, spot_indices = (
-                                self.generate_mask_and_spot_indices(
-                                    cell_mask[j][:, :, zp],
-                                    np.asarray(centroids[i][zp], dtype=int),
-                                    image_size,
-                                )
-                            )
-
-                            clr[i][j][zp], norm_std[i][j][zp], norm_CSR[i][j][zp],
-                            expected_spots[i][j][zp],
-                            coincidence[i][j][zp], chance_coincidence[i][j][zp],
-                            raw_colocalisation[i][j][zp],
-                            n_iter[i][j][zp] = (
-                                self.calculate_spot_colocalisation_likelihood_ratio(
-                                    spot_indices, mask_indices, image_size
-                                )
-                            )
-
-                pool = Pool(nodes=cpu_number)
-                pool.restart()
-                pool.map(analyse_zplanes, z_planes)
-                pool.close()
-                pool.terminate()
-
-            if protein_protein_coinc == False:
-                for i in np.arange(image):
-                    to_save[i] = self.make_datarray_spot(
-                        centroids[i],
-                        estimated_intensity[i],
-                        estimated_background[i],
-                        estimated_background_perpixel[i],
-                        raw_colocalisation[i],
-                        columns.extend(columns_end),
-                        z_planes,
-                    )
-
-                    to_save[i] = to_save[i].reset_index(drop=True)
-
-                    to_save_largeobjects[i] = self.make_datarray_largeobjects(
-                        areas_large[i],
-                        centroids_large[i],
-                        sumintensities_large[i],
-                        meanintensities_large[i],
-                        columns_large.extend(columns_end),
-                        z_planes,
-                    )
-                    to_save_largeobjects[i] = to_save_largeobjects[i].reset_index(
-                        drop=True
-                    )
-
-                    if cell_analysis == True:
-                        to_save_cell[i] = self.make_datarray_cell_dict(
-                            clr[i],
-                            norm_std[i],
-                            norm_CSR[i],
-                            expected_spots[i],
-                            coincidence[i],
-                            chance_coincidence[i],
-                            n_iter[i],
-                            columns_cell,
-                            z_planes,
-                        )
-
-            else:
-                ppc = {}  # make a protein-to-protein coincidence dictionary
-                ppcc = {}  # make a protein-to-protein chance coincidence dictionary
-                ppc_large = {}
-                ppcc_large = {}
-
-                for i in np.arange(image):
-                    ppc[i] = {}
-                    ppcc[i] = {}
-                    ppc_large[i] = {}
-                    ppcc_large[i] = {}
-                    for j in np.arange(image):
-                        if i != j:
-
-                            def analyse_spottospot(zp):
-                                image_size = image[i][:, :, zp].shape
-                                spot_1_indices, spot_2_indices = (
-                                    self.generate_spot_and_spot_indices(
-                                        centroids[i][zp], centroids[j][zp], image_size
-                                    )
-                                )
-                                ppc[i][j], ppcc[i][j] = (
-                                    self.calculate_spot_to_spot_coincidence(
-                                        spot_1_indices, spot_2_indices, image_size
-                                    )
-                                )
-                                lo_1_indices, lo_2_indices = (
-                                    self.generate_spot_and_spot_indices(
-                                        np.concatenate(pil_large[i][zp]).ravel(),
-                                        np.concatenate(pil_large[j][zp]).ravel(),
-                                        image_size,
-                                    )
-                                )
-                                ppc_large[i][j], ppcc_large[i][j] = (
-                                    self.calculate_spot_to_spot_coincidence(
-                                        lo_1_indices,
-                                        lo_2_indices,
-                                        image_size,
-                                        blur_degree=0,
-                                    )
-                                )
-
-                            pool = Pool(nodes=cpu_number)
-                            pool.restart()
-                            pool.map(analyse_spottospot, z_planes)
-                            pool.close()
-                            pool.terminate()
-
-                    to_save[i], to_save_largeobjects[i] = saving_wrapper(
-                        columns,
-                        columns_large,
-                        columns_end,
-                        centroids[i],
-                        estimated_intensity[i],
-                        estimated_background[i],
-                        estimated_background_perpixel[i],
-                        ppc[i],
-                        ppcc[i],
-                        z_planes,
-                    )
-
-        else:
-            for i in np.arange(image):
-                centroids, estimated_intensity, estimated_background,
-                estimated_background_perpixel, areas_large, centroids_large,
-                meanintensities_large, sumintensities_large,
-                pil_large = self.default_spotanalysis_routine(
-                    image[i], k1, k2, thres, large_thres, areathres, rdl, d
-                )
-
-                if cell_analysis == True:
-                    cell_mask = {}
-                    clr[i] = {}
-                    norm_std[i] = {}
-                    norm_CSR[i] = {}
-                    expected_spots[i] = {}
-                    coincidence[i] = {}
-                    chance_coincidence[i] = {}
-                    raw_colocalisation[i] = {}
-                    n_iter[i] = {}
-                    for j in np.arange(image_cell):
-                        cell_mask[j] = self.detect_large_features(
-                            image_cell[j],
-                            cell_threshold1,
-                            cell_threshold2,
-                            cell_sigma1,
-                            cell_sigma2,
-                        )
-
-                        image_size = image[i].shape
-                        mask_indices, spot_indices = (
-                            self.generate_mask_and_spot_indices(
-                                cell_mask[j],
-                                np.asarray(centroids, dtype=int),
-                                image_size,
-                            )
-                        )
-
-                        clr[i][j], norm_std[i][j], norm_CSR[i][j],
-                        expected_spots[i][j],
-                        coincidence[i][j], chance_coincidence[i][j],
-                        raw_colocalisation[i][j],
-                        n_iter[i][j] = (
-                            self.calculate_spot_colocalisation_likelihood_ratio(
-                                spot_indices, mask_indices, image_size
-                            )
-                        )
-
-                if protein_protein_coinc == False:
-                    for i in np.arange(image):
-                        to_save[i] = self.make_datarray_spot(
-                            centroids[i],
-                            estimated_intensity[i],
-                            estimated_background[i],
-                            estimated_background_perpixel[i],
-                            raw_colocalisation[i],
-                            columns,
-                        )
-
-                        to_save[i] = to_save[i].reset_index(drop=True)
-
-                        to_save_largeobjects[i] = self.make_datarray_largeobjects(
-                            areas_large[i],
-                            centroids_large[i],
-                            sumintensities_large[i],
-                            meanintensities_large[i],
-                            columns,
-                        )
-
-                        to_save_largeobjects[i] = to_save_largeobjects[i].reset_index(
-                            drop=True
-                        )
-
-                        if cell_analysis == True:
-                            to_save_cell[i] = self.make_datarray_cell_dict(
-                                clr[i],
-                                norm_std[i],
-                                norm_CSR[i],
-                                expected_spots[i],
-                                coincidence[i],
-                                chance_coincidence[i],
-                                n_iter[i],
-                                columns_cell[:-1],
-                            )
-                else:
-                    ppc = {}  # make a protein-to-protein coincidence dictionary
-                    ppcc = {}  # make a protein-to-protein chance coincidence dictionary
-                    ppc_large = {}
-                    ppcc_large = {}
-                    for i in np.arange(image):
-                        ppc[i] = {}
-                        ppcc[i] = {}
-                        ppc_large[i] = {}
-                        ppcc_large[i] = {}
-                        for j in np.arange(image):
-                            if i != j:
-                                image_size = image[i].shape
-                                spot_1_indices, spot_2_indices = (
-                                    self.generate_spot_and_spot_indices(
-                                        centroids[i], centroids[j], image_size
-                                    )
-                                )
-                                ppc[i][j], ppcc[i][j] = (
-                                    self.calculate_spot_to_spot_coincidence(
-                                        spot_1_indices, spot_2_indices, image_size
-                                    )
-                                )
-                                lo_1_indices, lo_2_indices = (
-                                    self.generate_spot_and_spot_indices(
-                                        np.concatenate(pil_large[i]).ravel(),
-                                        np.concatenate(pil_large[j]).ravel(),
-                                        image_size,
-                                    )
-                                )
-                                ppc_large[i][j], ppcc_large[i][j] = (
-                                    self.calculate_spot_to_spot_coincidence(
-                                        lo_1_indices,
-                                        lo_2_indices,
-                                        image_size,
-                                        blur_degree=0,
-                                    )
-                                )
-
-                        to_save[i], to_save_largeobjects[i] = saving_wrapper(
-                            columns,
-                            columns_large,
-                            columns_end,
-                            centroids[i],
-                            estimated_intensity[i],
-                            estimated_background[i],
-                            estimated_background_perpixel[i],
-                            raw_colocalisation[i],
-                            ppc[i],
-                            ppcc[i],
-                            [0, 0],
-                            cell_analysis,
-                        )
-
-        return to_save, to_save_largeobjects
-
     def compute_spot_props(
         self,
         image,
@@ -2466,6 +1953,86 @@ class Analysis_Functions:
             pool.terminate()
         return dl_mask, centroids, radiality, large_mask
 
+    def spot_to_spot_rdf(self, coordinates, pixel_size=0.11, dr=1.0):
+        """
+        Generates spot_to_spot_rdf
+
+        Args:
+            coordinates (np.2darray): array of 2d (or 3D) coordinates
+            pixel_size (np.float): pixel size in same units as dr (default: 0.11)
+            dr (np.float): step for radial distribution function
+
+        Returns:
+            g_r (np.1darray): radial distribution function
+            radii (np.1darray): radius vector
+
+        """
+        g_r, radii = rdf(np.multiply(coordinates, pixel_size), dr=dr)
+        return g_r, radii
+
+    def spot_to_mask_rdf(
+        self,
+        coordinates_spot,
+        coordinates_mask,
+        pixel_size=0.11,
+        dr=1.0,
+        image_size=(1200, 1200),
+        n_iter=1000,
+    ):
+        """
+        Generates spot_to_mask_rdf
+
+        Args:
+            coordinates_spot (np.2darray): array of 2D spot coordinates
+            coordinates_mask (np.2darray): array of 2D mask coordinates
+            pixel_size (np.float): pixel size in same units as dr (default: 0.11)
+            dr (np.float): step for radial distribution function
+            image_size (array): maximum image size
+            n_iter (int): number of iterations for error calculation
+
+        Returns:
+            g_r (np.1darray): radial distribution function
+            radii (np.1darray): radius vector
+            g_r_std (np.1darray): std of rdf
+        """
+        min_distances = np.multiply(
+            pixel_size, np.min(cdist(coordinates_spot, coordinates_mask), axis=1)
+        )
+
+        possible_X = np.arange(image_size[0])
+        possible_Y = np.arange(image_size[1])
+        random_X_coordinates = np.random.choice(
+            possible_X, size=(n_iter, len(coordinates_spot))
+        )
+        random_Y_coordinates = np.random.choice(
+            possible_Y, size=(n_iter, len(coordinates_spot))
+        )
+
+        random_coordinates = np.dstack([random_X_coordinates, random_Y_coordinates])
+
+        min_distances_random = np.zeros([len(coordinates_spot), n_iter])
+        for i in np.arange(n_iter):
+            min_distances_random[:, i] = np.multiply(
+                pixel_size,
+                np.min(cdist(random_coordinates[i, :, :], coordinates_mask), axis=1),
+            )
+        min_radius = np.min([dr, np.min(min_distances), np.min(min_distances_random)])
+        max_radius = np.max([np.max(min_distances), np.max(min_distances_random)])
+        radii = np.arange(min_radius, max_radius, dr)
+
+        g_r = np.zeros_like(radii)
+        g_r_csr = np.zeros([len(radii), n_iter])
+
+        for i, r in enumerate(radii):
+            g_r[i] = np.sum(min_distances < r)
+            g_r_csr[i, :] = np.sum(min_distances_random < r, axis=0)
+
+        g_r_csr_mean = np.mean(g_r_csr, axis=1)
+        g_r_std = np.std(g_r_csr, axis=1)
+
+        g_r = np.nan_to_num(np.divide(g_r, g_r_csr_mean))
+        return g_r, radii, g_r_std
+
     def gen_CSRmats(self, image_z_shape):
         """
         Generates empty matrices for the CSR
@@ -2509,96 +2076,6 @@ class Analysis_Functions:
             chance_coincidence_large,
             raw_colocalisation_large,
         )
-
-    def make_datarray_largeobjects_ppc(
-        self,
-        areas_large,
-        centroids_large,
-        sumintensities_large,
-        meanintensities_large,
-        ppc_large,
-        ppcc_large,
-        columns,
-        z_planes=0,
-    ):
-        """
-        makes a datarray in pandas for large object information
-
-        Args:
-            areas_large (np.1darray): areas in pixels
-            centroids_large (np.1darray): centroids of large objects
-            meanintensities_large (np.1darray): mean intensities of large objects
-            ppc_large (dict): protein-protein coincidence with other (n) channels
-            ppcc_large (dict): protein-protein chance coincidence with other (n) channels
-            columns (list of strings): column labels
-            z_planes: z_planes to put in array (if needed); if int, assumes only
-                one z-plane
-
-        Returns:
-            to_save_largeobjects (pandas DataArray) pandas array to save
-            columns_large = ['x', 'y', 'z', 'area', 'mean_intensity_in_photons', 'zi', 'zf']
-
-        """
-        if isinstance(z_planes, int):
-            dataarray = np.vstack(
-                [
-                    centroids_large[:, 0],
-                    centroids_large[:, 1],
-                    np.full_like(centroids_large[:, 0], 1),
-                    areas_large,
-                    sumintensities_large,
-                    meanintensities_large,
-                ]
-            )
-
-            for key in ppc_large.keys():
-                dataarray = np.vstack([dataarray, ppc_large[key], ppcc_large[key]])
-        else:
-            for z in z_planes:
-                if z == z_planes[0]:
-                    dataarray = np.vstack(
-                        [
-                            centroids_large[z][:, 0],
-                            centroids_large[z][:, 1],
-                            np.full_like(centroids_large[z][:, 0], z + 1),
-                            areas_large[z],
-                            sumintensities_large[z],
-                            meanintensities_large[z],
-                        ]
-                    )
-                    for key in ppc_large.keys():
-                        dataarray = np.vstack(
-                            [dataarray, ppc_large[key], ppcc_large[key]]
-                        )
-                    dataarray = np.vstack(
-                        [
-                            dataarray,
-                            np.full_like(centroids_large[z][:, 0], 1 + z_planes[0]),
-                            np.full_like(centroids_large[z][:, 0], 1 + z_planes[-1]),
-                        ]
-                    )
-                else:
-                    da = np.vstack(
-                        [
-                            centroids_large[z][:, 0],
-                            centroids_large[z][:, 1],
-                            np.full_like(centroids_large[z][:, 0], z + 1),
-                            areas_large[z],
-                            sumintensities_large[z],
-                            meanintensities_large[z],
-                        ]
-                    )
-                    for key in ppc_large.keys():
-                        da = np.vstack([da, ppc_large[key], ppcc_large[key]])
-                    da = np.vstack(
-                        [
-                            da,
-                            np.full_like(centroids_large[z][:, 0], 1 + z_planes[0]),
-                            np.full_like(centroids_large[z][:, 0], 1 + z_planes[-1]),
-                        ]
-                    )
-                    dataarray = np.hstack([dataarray, da])
-        return pd.DataFrame(data=dataarray.T, columns=columns)
 
     def make_datarray_largeobjects(
         self,
@@ -2685,106 +2162,6 @@ class Analysis_Functions:
                     dataarray = stack
                 else:
                     da = stack
-                    dataarray = np.hstack([dataarray, da])
-        return pd.DataFrame(data=dataarray.T, columns=columns)
-
-    def make_datarray_spot_ppc(
-        centroids,
-        estimated_intensity,
-        estimated_background,
-        estimated_background_perpixel,
-        raw_colocalisation,
-        ppc,
-        ppcc,
-        columns,
-        z_planes=0,
-        cell_analysis=True,
-    ):
-        """
-        makes a datarray in pandas for spot, as well as
-        protein-protein coincidence and chance coincidence information
-
-        Args:
-            centroids (ndarray): centroid positions
-            estimated_intensity (ndarray): estimated intensities
-            estimated_background (ndarray): estimated backgrounds per punctum
-            estimated_background_perpixel (np.ndarray): estimated background per pixel
-            raw_colocalisation (np.ndarray): incell or out of cell per cell channel
-            ppc (dict): protein-protein coincidence with other (n) channels
-            ppcc (dict): protein-protein chance coincidence with other (n) channels
-            columns (list of strings): column labels
-            z_planes: z_planes to put in array (if needed); if int, assumes only
-                one z-plane
-            cell_analysis (boolean): if True, adds cell analysis channels
-
-        Returns:
-            to_save (pd.DataFrame) pandas array to save
-
-        """
-        if isinstance(z_planes, int):
-            dataarray = np.vstack(
-                [
-                    centroids[:, 0],
-                    centroids[:, 1],
-                    np.full_like(centroids[:, 0], 1),
-                    estimated_intensity,
-                    estimated_background,
-                    estimated_background_perpixel,
-                ]
-            )
-            if cell_analysis == True:
-                for key in raw_colocalisation.keys():
-                    dataarray = np.vstack([dataarray, raw_colocalisation[key]])
-            for key in ppc.keys():
-                dataarray = np.vstack([dataarray, ppc[key], ppcc[key]])
-        else:
-            for z in z_planes:
-                if z == z_planes[0]:
-                    dataarray = np.vstack(
-                        [
-                            centroids[z][:, 0],
-                            centroids[z][:, 1],
-                            np.full_like(centroids[z][:, 0], z + 1),
-                            estimated_intensity[z],
-                            estimated_background[z],
-                            estimated_background_perpixel[z],
-                        ]
-                    )
-                    if cell_analysis == True:
-                        for key in raw_colocalisation.keys():
-                            dataarray = np.vstack([dataarray, raw_colocalisation[key]])
-                    for key in ppc.keys():
-                        dataarray = np.vstack([dataarray, ppc[key], ppcc[key]])
-                    dataarray = np.vstack(
-                        [
-                            dataarray,
-                            np.full_like(centroids[z][:, 0], 1 + z_planes[0]),
-                            np.full_like(centroids[z][:, 0], 1 + z_planes[-1]),
-                        ]
-                    )
-                else:
-                    da = np.vstack(
-                        [
-                            centroids[z][:, 0],
-                            centroids[z][:, 1],
-                            np.full_like(centroids[z][:, 0], z + 1),
-                            estimated_intensity[z],
-                            estimated_background[z],
-                            estimated_background_perpixel[z],
-                        ]
-                    )
-                    if cell_analysis == True:
-                        for key in raw_colocalisation.keys():
-                            da = np.vstack([da, raw_colocalisation[key]])
-                    for key in ppc.keys():
-                        da = np.vstack([da, ppc[key], ppcc[key]])
-                    da = np.vstack(
-                        [
-                            da,
-                            np.full_like(centroids[z][:, 0], 1 + z_planes[0]),
-                            np.full_like(centroids[z][:, 0], 1 + z_planes[-1]),
-                        ]
-                    )
                     dataarray = np.hstack([dataarray, da])
         return pd.DataFrame(data=dataarray.T, columns=columns)
 
@@ -2875,105 +2252,6 @@ class Analysis_Functions:
                     da = stack
                     dataarray = np.hstack([dataarray, da])
         return pd.DataFrame(data=dataarray.T, columns=columns)
-
-    def make_datarray_cell_dict(
-        self,
-        clr,
-        norm_std,
-        norm_CSR,
-        expected_spots,
-        coincidence,
-        chance_coincidence,
-        n_iter,
-        columns,
-        z_planes="none",
-    ):
-        """
-        makes a datarray in pandas for cell information
-
-        Args:
-            clr (dict): dict of colocalisation likelihood ratios
-            norm_std (dict): array of standard deviations
-            norm_CSR (dict): array of CSRs
-            expected_spots (dict): array of expected spots
-            coincidence (dict): array of coincidence values
-            chance_coincidence (dict): array of chance coincidence values
-            n_iter (dict): array of iteration muber
-            columns (list of strings): column labels
-            z_planes: z_planes to put in array (if needed)
-
-        Returns:
-            to_save (pandas DataArray): pandas array to save
-
-        """
-        overall_columns = []
-        if isinstance(z_planes, str):
-            for i, key in enumerate(clr.keys()):
-                for j in np.arange(len(columns)):
-                    overall_columns.extend([columns[j] + "_" + str(key)])
-                if i == 0:
-                    dataarray_cell = np.vstack(
-                        [
-                            clr[key],
-                            norm_std[key],
-                            norm_CSR[key],
-                            expected_spots[key],
-                            coincidence[key],
-                            chance_coincidence[key],
-                            n_iter[key],
-                        ]
-                    )
-                else:
-                    dataarray_cell = np.hstack(
-                        [
-                            dataarray_cell,
-                            clr[key],
-                            norm_std[key],
-                            norm_CSR[key],
-                            expected_spots[key],
-                            coincidence[key],
-                            chance_coincidence[key],
-                            n_iter[key],
-                        ]
-                    )
-        else:
-            zps = np.zeros_like(clr)
-            zps[z_planes] = z_planes + 1
-            for i, key in enumerate(clr.keys()):
-                for j in np.arange(len(columns)):
-                    overall_columns.extend([columns[j] + "_" + str(key)])
-                if i == 0:
-                    dataarray_cell = np.vstack(
-                        [
-                            clr[key],
-                            norm_std[key],
-                            norm_CSR[key],
-                            expected_spots[key],
-                            coincidence[key],
-                            chance_coincidence[key],
-                            n_iter[key],
-                            zps,
-                        ]
-                    )
-                    dataarray_cell = dataarray_cell[
-                        :, np.sum(dataarray_cell, axis=0) > 0
-                    ]
-                else:
-                    temp = np.vstack(
-                        [
-                            clr[key],
-                            norm_std[key],
-                            norm_CSR[key],
-                            expected_spots[key],
-                            coincidence[key],
-                            chance_coincidence[key],
-                            n_iter[key],
-                            zps,
-                        ]
-                    )
-                    temp = temp[:, np.sum(temp, axis=0) > 0]
-                    dataarray_cell = np.hstack([dataarray_cell, temp])
-        return pd.DataFrame(data=dataarray_cell.T, columns=overall_columns)
 
     def make_datarray_cell(
         self,
