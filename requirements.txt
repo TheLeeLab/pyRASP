@@ -11,7 +11,7 @@ Babel==2.14.0
 backcall==0.2.0
 beautifulsoup4==4.12.3
 bleach==6.1.0
-certifi==2024.2.2
+certifi==2024.7.4
 cffi==1.16.0
 charset-normalizer==3.3.2
 comm==0.2.1
@@ -134,4 +134,3 @@ webcolors==1.13
 webencodings==0.5.1
 websocket-client==1.7.0
 yarg==0.1.9
-
