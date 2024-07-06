@@ -2010,8 +2010,15 @@ class Analysis_Functions:
         g_r = np.zeros_like(radii)
         g_r_csr = np.zeros([len(radii), n_iter])
 
-        for i, r in enumerate(radii):
-            g_r[i] = np.sum(distances < r)
+        def run_over_r(ir):
+            g_r[ir[0]] = np.sum(distances < ir[1])
+            
+        values = [(k, radii[k]) for k in range(len(radii))]
+        pool = Pool(nodes=cpu_number)
+        pool.restart()
+        pool.map(run_over_r, values)
+        pool.close()
+        pool.terminate()
 
         for i in np.arange(n_iter):
             random_coordinates = np.asarray(
@@ -2039,9 +2046,15 @@ class Analysis_Functions:
             )
             distances_random = distances_random[distances_random > 0]
             distances_random = distances_random[distances_random < max_radius]
-            for j, r in enumerate(radii):
-                g_r_csr[j, i] = np.sum((0 < distances_random) & (distances_random < r))
+            def run_over_r_random(jr):
+                g_r_csr[jr[0], i] = np.sum(distances_random < jr[1])
 
+            pool = Pool(nodes=cpu_number)
+            pool.restart()
+            pool.map(run_over_r_random, values)
+            pool.close()
+            pool.terminate()
+            
         g_r_csr_mean = np.mean(g_r_csr, axis=1)
 
         g_r_norm = np.nan_to_num(np.divide(g_r, g_r_csr_mean))
