@@ -1976,8 +1976,10 @@ class Analysis_Functions:
         coordinates_mask,
         pixel_size=0.11,
         dr=1.0,
+        min_radius=1.0,
+        max_radius=60.0,
         image_size=(1200, 1200),
-        n_iter=1000,
+        n_iter=5,
     ):
         """
         Generates spot_to_mask_rdf
@@ -1987,6 +1989,8 @@ class Analysis_Functions:
             coordinates_mask (np.2darray): array of 2D mask coordinates
             pixel_size (np.float): pixel size in same units as dr (default: 0.11)
             dr (np.float): step for radial distribution function
+            min_radius (np.float): minimum radius
+            max_radius (np.float): maximum radius value
             image_size (array): maximum image size
             n_iter (int): number of iterations for error calculation
 
@@ -1995,43 +1999,53 @@ class Analysis_Functions:
             radii (np.1darray): radius vector
             g_r_std (np.1darray): std of rdf
         """
-        min_distances = np.multiply(
-            pixel_size, np.min(cdist(coordinates_spot, coordinates_mask), axis=1)
+        distances = np.tril(
+            np.multiply(pixel_size, cdist(coordinates_spot, coordinates_mask))
         )
+        distances = distances[distances > 0]
+        distances = distances[distances < max_radius]
 
-        possible_X = np.arange(image_size[0])
-        possible_Y = np.arange(image_size[1])
-        random_X_coordinates = np.random.choice(
-            possible_X, size=(n_iter, len(coordinates_spot))
-        )
-        random_Y_coordinates = np.random.choice(
-            possible_Y, size=(n_iter, len(coordinates_spot))
-        )
-
-        random_coordinates = np.dstack([random_X_coordinates, random_Y_coordinates])
-
-        min_distances_random = np.zeros([len(coordinates_spot), n_iter])
-        for i in np.arange(n_iter):
-            min_distances_random[:, i] = np.multiply(
-                pixel_size,
-                np.min(cdist(random_coordinates[i, :, :], coordinates_mask), axis=1),
-            )
-        min_radius = np.min([dr, np.min(min_distances), np.min(min_distances_random)])
-        max_radius = np.max([np.max(min_distances), np.max(min_distances_random)])
         radii = np.arange(min_radius, max_radius, dr)
 
         g_r = np.zeros_like(radii)
         g_r_csr = np.zeros([len(radii), n_iter])
 
         for i, r in enumerate(radii):
-            g_r[i] = np.sum(min_distances < r)
-            g_r_csr[i, :] = np.sum(min_distances_random < r, axis=0)
+            g_r[i] = np.sum(distances < r)
+
+        for i in np.arange(n_iter):
+            random_coordinates = np.asarray(
+                np.vstack(
+                    [
+                        np.random.randint(
+                            low=0, high=image_size[0], size=len(coordinates_spot)
+                        ),
+                        np.random.randint(
+                            low=0, high=image_size[1], size=len(coordinates_spot)
+                        ),
+                    ],
+                    dtype=int,
+                ),
+                dtype=int,
+            ).T
+            distances_random = np.multiply(
+                pixel_size,
+                np.tril(
+                    cdist(
+                        random_coordinates,
+                        coordinates_mask,
+                    )
+                ),
+            )
+            distances_random = distances_random[distances_random > 0]
+            distances_random = distances_random[distances_random < max_radius]
+            for j, r in enumerate(radii):
+                g_r_csr[j, i] = np.sum((0 < distances_random) & (distances_random < r))
 
         g_r_csr_mean = np.mean(g_r_csr, axis=1)
-        g_r_std = np.std(g_r_csr, axis=1)
 
-        g_r = np.nan_to_num(np.divide(g_r, g_r_csr_mean))
-        return g_r, radii, g_r_std
+        g_r_norm = np.nan_to_num(np.divide(g_r, g_r_csr_mean))
+        return g_r_norm, radii
 
     def gen_CSRmats(self, image_z_shape):
         """

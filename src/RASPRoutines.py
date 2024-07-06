@@ -8,6 +8,8 @@ import fnmatch
 import numpy as np
 import pandas as pd
 import sys
+import time
+
 
 module_dir = os.path.dirname(__file__)
 sys.path.append(module_dir)
@@ -861,7 +863,10 @@ class RASP_Routines:
         out_cell=True,
         pixel_size=0.11,
         dr=1.0,
-        cell_string="C1",
+        n_iter=5,
+        cell_string="C0",
+        protein_string="C1",
+        imtype=".tif",
     ):
         """
         Does rdf analysis of spots wrt mask from an analysis file.
@@ -872,13 +877,103 @@ class RASP_Routines:
             out_cell (boolean): If True will only consider oligomers deemed to be outside of cells
             pixel_size (float): size of pixels
             dr (float): dr of rdf
+            n_iter (int): number of CSR iterations
             cell_string (string): will use this to find corresponding mask files
+            protein_string (string): protein string
+            imtype (string): image type previously analysed
 
         Returns:
             rdf (pd.DataArray): pandas datarray of the rdf
         """
+        analysis_data = pd.read_csv(analysis_file)
+        analysis_data = analysis_data[
+            analysis_data.sum_intensity_in_photons > threshold
+        ]
+        analysis_directory = os.path.split(analysis_file)[0]
+        if out_cell == True:
+            analysis_data = analysis_data[analysis_data.incell == 0]
 
-        return
+        start = time.time()
+
+        if len(analysis_data) > 0:
+            if int(threshold) == threshold:
+                thesholdsavestr = str(threshold)
+            else:
+                thesholdsavestr = str(threshold).replace(".", "p")
+
+            files = np.unique(analysis_data.image_filename.values)
+            z_planes = {}  # make dict where z planes will be stored
+            for i, file in enumerate(files):
+                z_planes[file] = np.unique(
+                    analysis_data[analysis_data.image_filename == file].z.values
+                )
+
+            g_r = {}
+
+            for i, file in enumerate(files):
+                cell_mask = IO.read_tiff(
+                    os.path.join(
+                        analysis_directory,
+                        os.path.split(file.split(imtype)[0])[-1].split(protein_string)[
+                            0
+                        ]
+                        + str(cell_string)
+                        + "_cellMask.tiff",
+                    )
+                )
+                zs = z_planes[file]
+                subset = analysis_data[analysis_data.image_filename == file]
+                image_size = cell_mask[:, :, 0].shape
+                for z in zs:
+                    uid = str(file) + "___" + str(z)
+                    x = subset[subset.z == z].x.values
+                    y = subset[subset.z == z].y.values
+                    coordinates_spot = np.vstack([x, y]).T
+                    xm, ym = np.where(cell_mask[:, :, int(z) - 1])
+                    coordinates_mask = np.vstack([xm, ym]).T
+
+                    g_r[uid], radii = A_F.spot_to_mask_rdf(
+                        coordinates_spot,
+                        coordinates_mask,
+                        pixel_size=pixel_size,
+                        dr=dr,
+                        min_radius=dr,
+                        max_radius=np.divide(
+                            np.multiply(np.max(image_size), pixel_size), 2
+                        ),
+                        image_size=image_size,
+                    )
+                print(
+                    "Computing RDF     File {}/{}    Time elapsed: {:.3f} s".format(
+                        i + 1, len(files), time.time() - start
+                    ),
+                    end="\r",
+                    flush=True,
+                )
+
+            g_r_overall = np.zeros([len(radii), len(g_r.keys())])
+
+            for i, uid in enumerate(g_r.keys()):
+                g_r_overall[:, i] = g_r[uid]
+
+            g_r_mean = np.mean(g_r_overall, axis=1)
+            g_r_std = np.std(g_r_overall, axis=1)
+
+            rdf = pd.DataFrame(
+                data=np.vstack([g_r_mean, g_r_std]).T,
+                index=radii,
+                columns=["g_r_mean", "g_r_std"],
+            )
+            to_save_name = os.path.join(
+                os.path.split(analysis_file)[0],
+                "spot_to_mask_"
+                + cell_string
+                + "_threshold_"
+                + thesholdsavestr
+                + "_rdf.csv",
+            )
+            rdf.to_csv(to_save_name)
+            return rdf
 
     def calculate_spot_rdf_with_threshold(
         self,
