@@ -1979,7 +1979,7 @@ class Analysis_Functions:
         min_radius=1.0,
         max_radius=60.0,
         image_size=(1200, 1200),
-        n_iter=5,
+        n_iter=3,
     ):
         """
         Generates spot_to_mask_rdf
@@ -2012,7 +2012,7 @@ class Analysis_Functions:
 
         def run_over_r(ir):
             g_r[ir[0]] = np.sum(distances < ir[1])
-            
+
         values = [(k, radii[k]) for k in range(len(radii))]
         pool = Pool(nodes=cpu_number)
         pool.restart()
@@ -2020,32 +2020,30 @@ class Analysis_Functions:
         pool.close()
         pool.terminate()
 
+        random_coordinates = np.dstack(
+            [
+                np.random.randint(
+                    low=0, high=image_size[0], size=(len(coordinates_spot), n_iter)
+                ).T,
+                np.random.randint(
+                    low=0, high=image_size[1], size=(len(coordinates_spot), n_iter)
+                ).T,
+            ]
+        )
+
         for i in np.arange(n_iter):
-            random_coordinates = np.asarray(
-                np.vstack(
-                    [
-                        np.random.randint(
-                            low=0, high=image_size[0], size=len(coordinates_spot)
-                        ),
-                        np.random.randint(
-                            low=0, high=image_size[1], size=len(coordinates_spot)
-                        ),
-                    ],
-                    dtype=int,
-                ),
-                dtype=int,
-            ).T
             distances_random = np.multiply(
                 pixel_size,
                 np.tril(
                     cdist(
-                        random_coordinates,
+                        random_coordinates[i, :, :],
                         coordinates_mask,
                     )
                 ),
             )
             distances_random = distances_random[distances_random > 0]
             distances_random = distances_random[distances_random < max_radius]
+
             def run_over_r_random(jr):
                 g_r_csr[jr[0], i] = np.sum(distances_random < jr[1])
 
@@ -2054,7 +2052,7 @@ class Analysis_Functions:
             pool.map(run_over_r_random, values)
             pool.close()
             pool.terminate()
-            
+
         g_r_csr_mean = np.mean(g_r_csr, axis=1)
 
         g_r_norm = np.nan_to_num(np.divide(g_r, g_r_csr_mean))
