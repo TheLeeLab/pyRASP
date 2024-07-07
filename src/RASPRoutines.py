@@ -986,6 +986,8 @@ class RASP_Routines:
         """
         Does rdf analysis of spots above a photon threshold in an
         analysis file.
+        
+        Uses code from 10.5281/zenodo.4625675, please cite this software if used in a paper.
 
         Args:
             analysis_file (str): The analysis file to be re-done.

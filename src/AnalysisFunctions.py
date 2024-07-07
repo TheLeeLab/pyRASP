@@ -1956,6 +1956,8 @@ class Analysis_Functions:
     def spot_to_spot_rdf(self, coordinates, pixel_size=0.11, dr=1.0):
         """
         Generates spot_to_spot_rdf
+        
+        Uses code from 10.5281/zenodo.4625675, please cite this software if used in a paper.
 
         Args:
             coordinates (np.2darray): array of 2d (or 3D) coordinates
