@@ -1974,6 +1974,7 @@ class Analysis_Functions:
         self,
         coordinates_spot,
         coordinates_mask,
+        out_cell=True,
         pixel_size=0.11,
         dr=1.0,
         min_radius=1.0,
@@ -2020,16 +2021,21 @@ class Analysis_Functions:
         pool.close()
         pool.terminate()
 
-        random_coordinates = np.dstack(
-            [
-                np.random.randint(
-                    low=0, high=image_size[0], size=(len(coordinates_spot), n_iter)
-                ).T,
-                np.random.randint(
-                    low=0, high=image_size[1], size=(len(coordinates_spot), n_iter)
-                ).T,
+        possible_locations = np.arange(np.prod(image_size))
+
+        mask_indices = np.ravel_multi_index(coordinates_mask.T, image_size, order="F")
+        if out_cell == True:
+            possible_locations = possible_locations[
+                ~np.isin(possible_locations, mask_indices)
             ]
+
+        random_indices = np.random.choice(
+            possible_locations, size=(len(coordinates_spot), n_iter)
         )
+
+        random_coordinates = np.asarray(
+            np.unravel_index(random_indices, image_size, order="F")
+        ).reshape(n_iter, len(coordinates_spot), 2)
 
         for i in np.arange(n_iter):
             distances_random = np.multiply(

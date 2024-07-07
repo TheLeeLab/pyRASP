@@ -935,6 +935,7 @@ class RASP_Routines:
                     g_r[uid], radii = A_F.spot_to_mask_rdf(
                         coordinates_spot,
                         coordinates_mask,
+                        out_cell=out_cell,
                         pixel_size=pixel_size,
                         dr=dr,
                         min_radius=dr,
