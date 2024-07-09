@@ -183,6 +183,8 @@ class RASP_Routines:
         thres = 0.05
         r1_neg_forplot = {}  # generate dictionaries for plotting
         r2_neg_forplot = {}
+        
+        start = time.time()
 
         for i in np.arange(len(files)):
             file_path = os.path.join(folder, files[i])
@@ -220,6 +222,14 @@ class RASP_Routines:
                     for z in enumerate(z_planes):
                         r1_neg_forplot[i, z[0]] = radiality[z[1]][:, 0]
                         r2_neg_forplot[i, z[0]] = radiality[z[1]][:, 1]
+            print(
+                "Analysed image file {}/{}    Time elapsed: {:.3f} s".format(
+                    i + 1, len(files), time.time() - start
+                ),
+                end="\r",
+                flush=True,
+            )
+
 
         ### IQR filtering
         means_rad1 = np.zeros(len(r1_neg_forplot.keys()))
@@ -333,6 +343,9 @@ class RASP_Routines:
         areathres = 1000.0  # arbitrarily high area threshold for this calibration
         thres = 0.05  # threshold is 0.05
         rdl = [self.flatness, self.integratedGrad, 0.0]
+        
+        start = time.time()
+        
         for i in np.arange(len(files)):
             file_path = os.path.join(folder, files[i])
             image = IO.read_tiff(file_path)
@@ -373,6 +386,14 @@ class RASP_Routines:
                     else:
                         a_neg = np.hstack([a_neg, areas])
                         HWHM = np.hstack([HWHM, HWHMarray])
+            print(
+                "Analysed image file {}/{}    Time elapsed: {:.3f} s".format(
+                    i + 1, len(files), time.time() - start
+                ),
+                end="\r",
+                flush=True,
+            )
+
 
         HWHM = A_F.rejectoutliers(HWHM)
         area_thresh = int(np.ceil(np.percentile(a_neg, accepted_ratio)))
@@ -431,57 +452,6 @@ class RASP_Routines:
 
         return
 
-    def analyse_images_mchannel(
-        self,
-        folder,
-        imtype=".tif",
-        thres=0.05,
-        large_thres=100.0,
-        gsigma=1.4,
-        rwave=2.0,
-        protein_imagestrings=["C1"],
-        cell_imagestrings=["C0"],
-        if_filter=True,
-        im_start=0,
-        cell_analysis=True,
-        one_savefile=False,
-        disp=True,
-        rdl=False,
-        protein_protein_coinc=True,
-    ):
-        """
-        analyses data from images in a specified folder,
-        saves spots, locations, intensities and backgrounds in a folder created
-        next to the folder analysed with _analysis string attached
-        also writes a folder with _analysisparameters and saves analysis parameters
-        used for particular experiment
-
-        Args:
-            folder (string): Folder containing images
-            imtype (string): Type of images being analysed, default tif
-            thres (float): fraction of bright pixels accepted
-            large_thres (float): large object intensity threshold
-            gisgma (float): gaussian blurring parameter (default 1.4)
-            rwave (float): Ricker wavelent sigma (default 2.)
-            protein_imagestrings (np.1darray): strings for protein-containing data (default ['C1'])
-            cell cell_imagestrings (np.1darray): strings for cell-containing data (default ['C0'])
-            if_filter (boolean): Filter images for focus (default True)
-            im_start (integer): Images to start from (default 0)
-            cell_analysis (boolean): Parameter where script also analyses cell
-                images and computes colocalisation likelihood ratios.
-            one_savefile (boolean): Parameter that, if true, doesn't save a file
-                per image but amalgamates them into one file
-            disp (boolean): If true, prints when analysed an image stack.
-            rdl (np.ndarray): If False, just uses the default flatness and
-                            integratedGrad parameters that RASP has loaded.
-                            If running over multiple protein channels, should
-                            be an N_protein by 3 matrix.
-            protein_protein_coinc (boolean): if True, does coincidence analysis
-                                            across multiple protein channels
-
-        """
-
-        return
 
     def analyse_images(
         self,
@@ -563,6 +533,8 @@ class RASP_Routines:
             gain_map=self.gain_map,
             offset_map=self.offset_map,
         )
+        
+        start = time.time()
 
         for val in folders:
             subfolder = os.path.abspath(val)
@@ -662,10 +634,11 @@ class RASP_Routines:
                         )
                 if disp == True:
                     print(
-                        "Analysed image",
-                        os.path.split(files[i])[-1],
-                        "data saved in",
-                        analysis_directory,
+                        "Analysed image file {}/{}    Time elapsed: {:.3f} s".format(
+                            i + 1, len(files), time.time() - start
+                        ),
+                        end="\r",
+                        flush=True,
                     )
         return
 
