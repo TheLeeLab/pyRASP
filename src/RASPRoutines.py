@@ -183,7 +183,7 @@ class RASP_Routines:
         thres = 0.05
         r1_neg_forplot = {}  # generate dictionaries for plotting
         r2_neg_forplot = {}
-        
+
         start = time.time()
 
         for i in np.arange(len(files)):
@@ -229,7 +229,6 @@ class RASP_Routines:
                 end="\r",
                 flush=True,
             )
-
 
         ### IQR filtering
         means_rad1 = np.zeros(len(r1_neg_forplot.keys()))
@@ -343,9 +342,9 @@ class RASP_Routines:
         areathres = 1000.0  # arbitrarily high area threshold for this calibration
         thres = 0.05  # threshold is 0.05
         rdl = [self.flatness, self.integratedGrad, 0.0]
-        
+
         start = time.time()
-        
+
         for i in np.arange(len(files)):
             file_path = os.path.join(folder, files[i])
             image = IO.read_tiff(file_path)
@@ -393,7 +392,6 @@ class RASP_Routines:
                 end="\r",
                 flush=True,
             )
-
 
         HWHM = A_F.rejectoutliers(HWHM)
         area_thresh = int(np.ceil(np.percentile(a_neg, accepted_ratio)))
@@ -451,7 +449,6 @@ class RASP_Routines:
         plt.show(block=False)
 
         return
-
 
     def analyse_images(
         self,
@@ -533,7 +530,7 @@ class RASP_Routines:
             gain_map=self.gain_map,
             offset_map=self.offset_map,
         )
-        
+
         start = time.time()
 
         for val in folders:
