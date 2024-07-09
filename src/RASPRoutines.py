@@ -465,7 +465,7 @@ class RASP_Routines:
         cell_analysis=True,
         one_savefile=True,
         disp=True,
-        analyse_clr=True,
+        analyse_clr=False,
     ):
         """
         analyses data from images in a specified folder,
