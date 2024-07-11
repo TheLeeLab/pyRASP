@@ -990,7 +990,7 @@ class RASP_Routines:
 
             start = time.time()
 
-            for file in files:
+            for i, file in enumerate(files):
                 zs = z_planes[file]
                 subset = analysis_data[analysis_data.image_filename == file]
                 for z in zs:
