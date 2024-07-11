@@ -53,13 +53,18 @@
 <li class="toctree-l4"><a class="reference internal" href="#AnalysisFunctions.Analysis_Functions.Gauss2DFitting"><code class="docutils literal notranslate"><span class="pre">Analysis_Functions.Gauss2DFitting()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#AnalysisFunctions.Analysis_Functions.bincalculator"><code class="docutils literal notranslate"><span class="pre">Analysis_Functions.bincalculator()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#AnalysisFunctions.Analysis_Functions.calculate_gradient_field"><code class="docutils literal notranslate"><span class="pre">Analysis_Functions.calculate_gradient_field()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#AnalysisFunctions.Analysis_Functions.calculate_largeobj_coincidence"><code class="docutils literal notranslate"><span class="pre">Analysis_Functions.calculate_largeobj_coincidence()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#AnalysisFunctions.Analysis_Functions.calculate_mask_fill"><code class="docutils literal notranslate"><span class="pre">Analysis_Functions.calculate_mask_fill()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#AnalysisFunctions.Analysis_Functions.calculate_radiality"><code class="docutils literal notranslate"><span class="pre">Analysis_Functions.calculate_radiality()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#AnalysisFunctions.Analysis_Functions.calculate_region_properties"><code class="docutils literal notranslate"><span class="pre">Analysis_Functions.calculate_region_properties()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#AnalysisFunctions.Analysis_Functions.calculate_spot_colocalisation_likelihood_ratio"><code class="docutils literal notranslate"><span class="pre">Analysis_Functions.calculate_spot_colocalisation_likelihood_ratio()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#AnalysisFunctions.Analysis_Functions.calculate_spot_to_mask_coincidence"><code class="docutils literal notranslate"><span class="pre">Analysis_Functions.calculate_spot_to_mask_coincidence()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#AnalysisFunctions.Analysis_Functions.calculate_spot_to_spot_coincidence"><code class="docutils literal notranslate"><span class="pre">Analysis_Functions.calculate_spot_to_spot_coincidence()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#AnalysisFunctions.Analysis_Functions.compute_image_props"><code class="docutils literal notranslate"><span class="pre">Analysis_Functions.compute_image_props()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#AnalysisFunctions.Analysis_Functions.compute_spot_and_cell_props"><code class="docutils literal notranslate"><span class="pre">Analysis_Functions.compute_spot_and_cell_props()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#AnalysisFunctions.Analysis_Functions.compute_spot_props"><code class="docutils literal notranslate"><span class="pre">Analysis_Functions.compute_spot_props()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#AnalysisFunctions.Analysis_Functions.count_spots"><code class="docutils literal notranslate"><span class="pre">Analysis_Functions.count_spots()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#AnalysisFunctions.Analysis_Functions.count_spots_withthreshold"><code class="docutils literal notranslate"><span class="pre">Analysis_Functions.count_spots_withthreshold()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#AnalysisFunctions.Analysis_Functions.create_filled_region"><code class="docutils literal notranslate"><span class="pre">Analysis_Functions.create_filled_region()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#AnalysisFunctions.Analysis_Functions.create_gaussian_kernel"><code class="docutils literal notranslate"><span class="pre">Analysis_Functions.create_gaussian_kernel()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#AnalysisFunctions.Analysis_Functions.create_kernel"><code class="docutils literal notranslate"><span class="pre">Analysis_Functions.create_kernel()</span></code></a></li>
@@ -69,17 +74,24 @@
 <li class="toctree-l4"><a class="reference internal" href="#AnalysisFunctions.Analysis_Functions.dilate_pixels"><code class="docutils literal notranslate"><span class="pre">Analysis_Functions.dilate_pixels()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#AnalysisFunctions.Analysis_Functions.estimate_intensity"><code class="docutils literal notranslate"><span class="pre">Analysis_Functions.estimate_intensity()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#AnalysisFunctions.Analysis_Functions.gen_CSRmats"><code class="docutils literal notranslate"><span class="pre">Analysis_Functions.gen_CSRmats()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#AnalysisFunctions.Analysis_Functions.generate_largeaggregate_indices"><code class="docutils literal notranslate"><span class="pre">Analysis_Functions.generate_largeaggregate_indices()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#AnalysisFunctions.Analysis_Functions.generate_mask_and_spot_indices"><code class="docutils literal notranslate"><span class="pre">Analysis_Functions.generate_mask_and_spot_indices()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#AnalysisFunctions.Analysis_Functions.generate_spot_and_spot_indices"><code class="docutils literal notranslate"><span class="pre">Analysis_Functions.generate_spot_and_spot_indices()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#AnalysisFunctions.Analysis_Functions.infocus_indices"><code class="docutils literal notranslate"><span class="pre">Analysis_Functions.infocus_indices()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#AnalysisFunctions.Analysis_Functions.intensity_pixel_indices"><code class="docutils literal notranslate"><span class="pre">Analysis_Functions.intensity_pixel_indices()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#AnalysisFunctions.Analysis_Functions.make_datarray_cell"><code class="docutils literal notranslate"><span class="pre">Analysis_Functions.make_datarray_cell()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#AnalysisFunctions.Analysis_Functions.make_datarray_largeobjects"><code class="docutils literal notranslate"><span class="pre">Analysis_Functions.make_datarray_largeobjects()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#AnalysisFunctions.Analysis_Functions.make_datarray_spot"><code class="docutils literal notranslate"><span class="pre">Analysis_Functions.make_datarray_spot()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#AnalysisFunctions.Analysis_Functions.random_largeobj_locations"><code class="docutils literal notranslate"><span class="pre">Analysis_Functions.random_largeobj_locations()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#AnalysisFunctions.Analysis_Functions.rejectoutliers"><code class="docutils literal notranslate"><span class="pre">Analysis_Functions.rejectoutliers()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#AnalysisFunctions.Analysis_Functions.rejectoutliers_ind"><code class="docutils literal notranslate"><span class="pre">Analysis_Functions.rejectoutliers_ind()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#AnalysisFunctions.Analysis_Functions.ricker_wavelet"><code class="docutils literal notranslate"><span class="pre">Analysis_Functions.ricker_wavelet()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#AnalysisFunctions.Analysis_Functions.small_feature_kernel"><code class="docutils literal notranslate"><span class="pre">Analysis_Functions.small_feature_kernel()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#AnalysisFunctions.Analysis_Functions.spot_to_mask_rdf"><code class="docutils literal notranslate"><span class="pre">Analysis_Functions.spot_to_mask_rdf()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#AnalysisFunctions.Analysis_Functions.spot_to_spot_rdf"><code class="docutils literal notranslate"><span class="pre">Analysis_Functions.spot_to_spot_rdf()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#AnalysisFunctions.Analysis_Functions.test_largeobj_mask_overlap"><code class="docutils literal notranslate"><span class="pre">Analysis_Functions.test_largeobj_mask_overlap()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#AnalysisFunctions.Analysis_Functions.test_spot_mask_overlap"><code class="docutils literal notranslate"><span class="pre">Analysis_Functions.test_spot_mask_overlap()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#AnalysisFunctions.Analysis_Functions.test_spot_spot_overlap"><code class="docutils literal notranslate"><span class="pre">Analysis_Functions.test_spot_spot_overlap()</span></code></a></li>
 </ul>
 </li>
 </ul>
@@ -183,6 +195,29 @@ reads in data and generates bins according to Freedman-Diaconis rule</p>
 </dd></dl>
 
 <dl class="py method">
+<dt class="sig sig-object py" id="AnalysisFunctions.Analysis_Functions.calculate_largeobj_coincidence">
+<span class="sig-name descname"><span class="pre">calculate_largeobj_coincidence</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">largeobj_indices</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mask_indices</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_largeobjs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">image_size</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#AnalysisFunctions.Analysis_Functions.calculate_largeobj_coincidence" title="Link to this definition"></a></dt>
+<dd><p>gets spot colocalisation likelihood ratio, as well as reporting error
+bounds on the likelihood ratio for one image</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>largeobj_indices</strong> (<em>1D array</em>) – indices of large objects</p></li>
+<li><p><strong>mask_indices</strong> (<em>1D array</em>) – indices of pixels in mask</p></li>
+<li><p><strong>image_size</strong> (<em>tuple</em>) – Image dimensions (height, width).</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>coincidence</strong> (<em>float</em>) – coincidence FoV</p></li>
+<li><p><strong>chance_coincidence</strong> (<em>float</em>) – chance coincidence</p></li>
+<li><p><strong>raw_colocalisation</strong> (<em>np.1darray</em>) – binary yes/no of coincidence per spot</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
 <dt class="sig sig-object py" id="AnalysisFunctions.Analysis_Functions.calculate_mask_fill">
 <em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">calculate_mask_fill</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mask_indices</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">image_size</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#AnalysisFunctions.Analysis_Functions.calculate_mask_fill" title="Link to this definition"></a></dt>
 <dd><p>calculate amount of image filled by mask.</p>
@@ -239,7 +274,7 @@ reads in data and generates bins according to Freedman-Diaconis rule</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="AnalysisFunctions.Analysis_Functions.calculate_spot_colocalisation_likelihood_ratio">
-<span class="sig-name descname"><span class="pre">calculate_spot_colocalisation_likelihood_ratio</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">spot_indices</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mask_indices</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">image_size</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tol</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.01</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_iter</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">100</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">blur_degree</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_iter</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">10000</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#AnalysisFunctions.Analysis_Functions.calculate_spot_colocalisation_likelihood_ratio" title="Link to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">calculate_spot_colocalisation_likelihood_ratio</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">spot_indices</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mask_indices</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">image_size</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tol</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.01</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_iter</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">100</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">blur_degree</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_iter</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1000</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#AnalysisFunctions.Analysis_Functions.calculate_spot_colocalisation_likelihood_ratio" title="Link to this definition"></a></dt>
 <dd><p>gets spot colocalisation likelihood ratio, as well as reporting error
 bounds on the likelihood ratio for one image</p>
 <dl class="field-list simple">
@@ -263,7 +298,61 @@ consider part of spot). Default 1</p></li>
 <li><p><strong>expected_spots</strong> (<em>float</em>) – number of spots we expect based on mask % of image</p></li>
 <li><p><strong>coincidence</strong> (<em>float</em>) – coincidence FoV</p></li>
 <li><p><strong>chance_coincidence</strong> (<em>float</em>) – chance coincidence</p></li>
+<li><p><strong>raw_colocalisation</strong> (<em>np.1darray</em>) – binary yes/no of coincidence per spot</p></li>
 <li><p><strong>n_iter</strong> (<em>int</em>) – how many iterations it took to converge</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="AnalysisFunctions.Analysis_Functions.calculate_spot_to_mask_coincidence">
+<span class="sig-name descname"><span class="pre">calculate_spot_to_mask_coincidence</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">spot_indices</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mask_indices</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">image_size</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_iter</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">100</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">blur_degree</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#AnalysisFunctions.Analysis_Functions.calculate_spot_to_mask_coincidence" title="Link to this definition"></a></dt>
+<dd><p>gets spot colocalisation likelihood ratio, as well as reporting error
+bounds on the likelihood ratio for one image</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>spot_indices</strong> (<em>1D array</em>) – indices of spots</p></li>
+<li><p><strong>mask_indices</strong> (<em>1D array</em>) – indices of pixels in mask</p></li>
+<li><p><strong>image_size</strong> (<em>tuple</em>) – Image dimensions (height, width).</p></li>
+<li><p><strong>n_iter</strong> (<em>int</em>) – default 100; number of iterations to start with</p></li>
+<li><p><strong>blur_degree</strong> (<em>int</em>) – number of pixels to blur spot indices with
+(i.e. number of pixels surrounding centroid to
+consider part of spot). Default 1</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>coincidence</strong> (<em>float</em>) – coincidence FoV</p></li>
+<li><p><strong>chance_coincidence</strong> (<em>float</em>) – chance coincidence</p></li>
+<li><p><strong>raw_colocalisation</strong> (<em>np.1darray</em>) – binary yes/no of coincidence per spot</p></li>
+<li><p><strong>n_iter</strong> (<em>int</em>) – how many iterations it took to converge</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="AnalysisFunctions.Analysis_Functions.calculate_spot_to_spot_coincidence">
+<span class="sig-name descname"><span class="pre">calculate_spot_to_spot_coincidence</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">spot_1_indices</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">spot_2_indices</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">image_size</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_iter</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1000</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">blur_degree</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#AnalysisFunctions.Analysis_Functions.calculate_spot_to_spot_coincidence" title="Link to this definition"></a></dt>
+<dd><p>gets spot to spot coincidence between two channels</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>spot_1_indices</strong> (<em>1D array</em>) – indices of spots 1</p></li>
+<li><p><strong>spot_2_indices</strong> (<em>1D array</em>) – indices of spots 2</p></li>
+<li><p><strong>image_size</strong> (<em>tuple</em>) – Image dimensions (height, width).</p></li>
+<li><p><strong>n_iter</strong> (<em>int</em>) – default 1000; number of iterations to get chance coincidence</p></li>
+<li><p><strong>blur_degree</strong> (<em>int</em>) – number of pixels to blur spot indices with
+(i.e. number of pixels surrounding centroid to
+consider part of spot). Default 1</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>coincidence</strong> (<em>float</em>) – coincidence FoV</p></li>
+<li><p><strong>chance_coincidence</strong> (<em>float</em>) – chance coincidence</p></li>
 </ul>
 </dd>
 </dl>
@@ -301,14 +390,14 @@ from a single image</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="AnalysisFunctions.Analysis_Functions.compute_spot_and_cell_props">
-<span class="sig-name descname"><span class="pre">compute_spot_and_cell_props</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">image</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">image_cell</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">k1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">k2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prot_thres</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.05</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">large_prot_thres</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">100.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">areathres</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">30.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rdl</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[50.0,</span> <span class="pre">0.0,</span> <span class="pre">0.0]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">z</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cell_threshold1</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">200.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cell_threshold2</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">200</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cell_sigma1</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cell_sigma2</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">40.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">d</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#AnalysisFunctions.Analysis_Functions.compute_spot_and_cell_props" title="Link to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">compute_spot_and_cell_props</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">image</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">image_cell</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">k1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">k2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prot_thres</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.05</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">large_prot_thres</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">100.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">areathres</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">30.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rdl</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[50.0,</span> <span class="pre">0.0,</span> <span class="pre">0.0]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">z</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cell_threshold1</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">200.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cell_threshold2</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">200</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cell_sigma1</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cell_sigma2</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">40.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">d</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">analyse_clr</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#AnalysisFunctions.Analysis_Functions.compute_spot_and_cell_props" title="Link to this definition"></a></dt>
 <dd><p>Gets basic image properties (centroids, radiality)
 from a single image and compare to a cell mask from another image channel</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>image</strong> (<em>array</em>) – image of protein stain as numpy array</p></li>
-<li><p><strong>image</strong> – image of cell stain as numpy array</p></li>
+<li><p><strong>image_cell</strong> (<em>array</em>) – image of cell stain as numpy array</p></li>
 <li><p><strong>k1</strong> (<em>array</em>) – gaussian blur kernel</p></li>
 <li><p><strong>k2</strong> (<em>array</em>) – ricker wavelet kernel</p></li>
 <li><p><strong>prot_thres</strong> (<em>float</em>) – percentage threshold for protein</p></li>
@@ -321,6 +410,7 @@ from a single image and compare to a cell mask from another image channel</p>
 <li><p><strong>cell_sigma1</strong> (<em>float</em>) – cell blur value 1</p></li>
 <li><p><strong>cell_sigma2</strong> (<em>float</em>) – cell blur value 2</p></li>
 <li><p><strong>d</strong> (<em>integer</em>) – pixel radius value</p></li>
+<li><p><strong>analyse_clr</strong> (<em>boolean</em>) – analyse clr yes/no</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
@@ -342,7 +432,7 @@ from a single image</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>image</strong> (<em>array</em>) – image as numpy array</p></li>
+<li><p><strong>image</strong> (<em>np.ndarray</em>) – image as numpy array, or dict of arrays</p></li>
 <li><p><strong>k1</strong> (<em>array</em>) – gaussian blur kernel</p></li>
 <li><p><strong>k2</strong> (<em>array</em>) – ricker wavelet kernel</p></li>
 <li><p><strong>thres</strong> (<em>float</em>) – percentage threshold</p></li>
@@ -354,9 +444,45 @@ from a single image</p>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><ul class="simple">
-<li><p><strong>to_save</strong> (<em>pd.DataFrame</em>) – data array to save as pandas object</p></li>
-<li><p><strong>to_save_largeobjects</strong> (<em>pd.DataFrame</em>) – data array of large objects</p></li>
+<li><p><strong>to_save</strong> (<em>pd.DataFrame</em>) – data array to save as pandas object,
+or dict of pandas objects</p></li>
+<li><p><strong>to_save_largeobjects</strong> (<em>pd.DataFrame</em>) – data array of large objects
+or dict of large objects</p></li>
 </ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="AnalysisFunctions.Analysis_Functions.count_spots">
+<span class="sig-name descname"><span class="pre">count_spots</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">database</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">z_planes</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#AnalysisFunctions.Analysis_Functions.count_spots" title="Link to this definition"></a></dt>
+<dd><p>Counts spots per z plane</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>database</strong> (<em>pandas array</em>) – pandas array of spots</p></li>
+<li><p><strong>z_planes</strong> (<em>np.1darray</em>) – is range of zplanes</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>n_spots</strong></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="AnalysisFunctions.Analysis_Functions.count_spots_withthreshold">
+<span class="sig-name descname"><span class="pre">count_spots_withthreshold</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">database</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">threshold</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#AnalysisFunctions.Analysis_Functions.count_spots_withthreshold" title="Link to this definition"></a></dt>
+<dd><p>Counts spots per z plane</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>database</strong> (<em>pandas array</em>) – pandas array of spots</p></li>
+<li><p><strong>threshold</strong> (<em>float</em>) – intensity threshold</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>n_spots</strong> (<em>pandas array</em>)</p>
 </dd>
 </dl>
 </dd></dl>
@@ -442,6 +568,7 @@ from a single image</p>
 <li><p><strong>centroids_large</strong> (<em>np.2darray</em>) – centroids of large objects</p></li>
 <li><p><strong>meanintensities_large</strong> (<em>np.1darray</em>) – mean intensities of large objects</p></li>
 <li><p><strong>sumintensities_large</strong> (<em>np.1darray</em>) – sum intensities of large objects</p></li>
+<li><p><strong>pil_large</strong> (<em>list of np.2darray</em>) – pixels where large objects found</p></li>
 </ul>
 </dd>
 </dl>
@@ -545,8 +672,26 @@ used for the determination of large protein aggregates.</p></li>
 <li><p><strong>expected_spots</strong> (<em>ndarray</em>) – empty array</p></li>
 <li><p><strong>coincidence</strong> (<em>ndarray</em>) – empty array</p></li>
 <li><p><strong>chance_coincidence</strong> (<em>ndarray</em>) – empty array</p></li>
+<li><p><strong>raw_localisation</strong> (<em>dict</em>) – empty dict</p></li>
 <li><p><strong>n_iter</strong> (<em>ndarray</em>) – empty array</p></li>
 </ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="AnalysisFunctions.Analysis_Functions.generate_largeaggregate_indices">
+<span class="sig-name descname"><span class="pre">generate_largeaggregate_indices</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pil</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">image_size</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#AnalysisFunctions.Analysis_Functions.generate_largeaggregate_indices" title="Link to this definition"></a></dt>
+<dd><p>makes large aggregate indices from list of xy coordinates</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>pil</strong> (<em>list</em>) – list of 2d arrays</p></li>
+<li><p><strong>image_size</strong> (<em>tuple</em>) – Image dimensions (height, width).</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>la_indices</strong> (<em>list</em>) – list of indices of large aggregates</p>
 </dd>
 </dl>
 </dd></dl>
@@ -567,6 +712,27 @@ used for the determination of large protein aggregates.</p></li>
 <dd class="field-even"><ul class="simple">
 <li><p><strong>mask_indices</strong> (<em>1D array</em>) – indices of mask</p></li>
 <li><p><strong>spot_indices</strong> (<em>1D array</em>) – indices of spots</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="AnalysisFunctions.Analysis_Functions.generate_spot_and_spot_indices">
+<span class="sig-name descname"><span class="pre">generate_spot_and_spot_indices</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">centroids1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">centroids2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">image_size</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#AnalysisFunctions.Analysis_Functions.generate_spot_and_spot_indices" title="Link to this definition"></a></dt>
+<dd><p>makes mask and spot indices from xy coordinates</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>centroids1</strong> (<em>2D array</em>) – xy centroid coordinates</p></li>
+<li><p><strong>centroids2</strong> (<em>2D array</em>) – xy centroid coordinates</p></li>
+<li><p><strong>image_size</strong> (<em>tuple</em>) – Image dimensions (height, width).</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>spot1_indices</strong> (<em>1D array</em>) – indices of spots1</p></li>
+<li><p><strong>spot2_indices</strong> (<em>1D array</em>) – indices of spots2</p></li>
 </ul>
 </dd>
 </dl>
@@ -611,7 +777,7 @@ used for the determination of large protein aggregates.</p></li>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="AnalysisFunctions.Analysis_Functions.make_datarray_cell">
-<span class="sig-name descname"><span class="pre">make_datarray_cell</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">clr</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">norm_std</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">norm_CSR</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">expected_spots</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">coincidence</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">chance_coincidence</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_iter</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">columns</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">z_planes</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'none'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#AnalysisFunctions.Analysis_Functions.make_datarray_cell" title="Link to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">make_datarray_cell</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">clr</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">norm_std</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">norm_CSR</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">expected_spots</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">coincidence</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">chance_coincidence</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">coincidence_large</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">chance_coincidence_large</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_iter</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">columns</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">z_planes</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'none'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">analyse_clr</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#AnalysisFunctions.Analysis_Functions.make_datarray_cell" title="Link to this definition"></a></dt>
 <dd><p>makes a datarray in pandas for cell information</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -622,9 +788,12 @@ used for the determination of large protein aggregates.</p></li>
 <li><p><strong>expected_spots</strong> (<em>np.1darray</em>) – array of expected spots</p></li>
 <li><p><strong>coincidence</strong> (<em>np.1darray</em>) – array of coincidence values</p></li>
 <li><p><strong>chance_coincidence</strong> (<em>np.1darray</em>) – array of chance coincidence values</p></li>
+<li><p><strong>coincidence_large</strong> (<em>np.1darray</em>) – array of coincidence values (large objects)</p></li>
+<li><p><strong>chance_coincidence_large</strong> (<em>np.1darray</em>) – array of chance coincidence values (large objects)</p></li>
 <li><p><strong>n_iter</strong> (<em>np.1darray</em>) – array of iteration muber</p></li>
 <li><p><strong>columns</strong> (<em>list</em><em> of </em><em>strings</em>) – column labels</p></li>
 <li><p><strong>z_planes</strong> – z_planes to put in array (if needed)</p></li>
+<li><p><strong>analyse_clr</strong> (<em>boolean</em>) – If true, save clr</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
@@ -635,7 +804,7 @@ used for the determination of large protein aggregates.</p></li>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="AnalysisFunctions.Analysis_Functions.make_datarray_largeobjects">
-<span class="sig-name descname"><span class="pre">make_datarray_largeobjects</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">areas_large</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">centroids_large</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sumintensities_large</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">meanintensities_large</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">columns</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">z_planes</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#AnalysisFunctions.Analysis_Functions.make_datarray_largeobjects" title="Link to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">make_datarray_largeobjects</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">areas_large</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">centroids_large</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sumintensities_large</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">meanintensities_large</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">raw_coloc</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">columns</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">z_planes</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cell_analysis</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#AnalysisFunctions.Analysis_Functions.make_datarray_largeobjects" title="Link to this definition"></a></dt>
 <dd><p>makes a datarray in pandas for large object information</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -643,6 +812,7 @@ used for the determination of large protein aggregates.</p></li>
 <li><p><strong>areas_large</strong> (<em>np.1darray</em>) – areas in pixels</p></li>
 <li><p><strong>centroids_large</strong> (<em>np.1darray</em>) – centroids of large objects</p></li>
 <li><p><strong>meanintensities_large</strong> (<em>np.1darray</em>) – mean intensities of large objects</p></li>
+<li><p><strong>raw_coloc</strong> (<em>np.1darray</em>) – if large spot is in cell or not</p></li>
 <li><p><strong>columns</strong> (<em>list</em><em> of </em><em>strings</em>) – column labels</p></li>
 <li><p><strong>z_planes</strong> – z_planes to put in array (if needed); if int, assumes only
 one z-plane</p></li>
@@ -659,7 +829,7 @@ one z-plane</p></li>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="AnalysisFunctions.Analysis_Functions.make_datarray_spot">
-<span class="sig-name descname"><span class="pre">make_datarray_spot</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">centroids</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">estimated_intensity</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">estimated_background</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">estimated_background_perpixel</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">columns</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">z_planes</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#AnalysisFunctions.Analysis_Functions.make_datarray_spot" title="Link to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">make_datarray_spot</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">centroids</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">estimated_intensity</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">estimated_background</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">estimated_background_perpixel</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">raw_colocalisation</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">columns</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">z_planes</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cell_analysis</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#AnalysisFunctions.Analysis_Functions.make_datarray_spot" title="Link to this definition"></a></dt>
 <dd><p>makes a datarray in pandas for spot information</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -668,6 +838,7 @@ one z-plane</p></li>
 <li><p><strong>estimated_intensity</strong> (<em>ndarray</em>) – estimated intensities</p></li>
 <li><p><strong>estimated_background</strong> (<em>ndarray</em>) – estimated backgrounds per punctum</p></li>
 <li><p><strong>estimated_background_perpixel</strong> (<em>np.ndarray</em>) – estimated background per pixel</p></li>
+<li><p><strong>raw_colocalisation</strong> (<em>np.ndarray</em>) – if spot is in cell mask or not</p></li>
 <li><p><strong>columns</strong> (<em>list</em><em> of </em><em>strings</em>) – column labels</p></li>
 <li><p><strong>z_planes</strong> – z_planes to put in array (if needed); if int, assumes only
 one z-plane</p></li>
@@ -675,6 +846,24 @@ one z-plane</p></li>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p><strong>to_save</strong> (<em>pd.DataFrame</em>)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="AnalysisFunctions.Analysis_Functions.random_largeobj_locations">
+<span class="sig-name descname"><span class="pre">random_largeobj_locations</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">largeobj_indices</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">possible_index_high</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_iter</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#AnalysisFunctions.Analysis_Functions.random_largeobj_locations" title="Link to this definition"></a></dt>
+<dd><p>Randomises large object locations.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>largeobj_indices</strong> (<em>list</em>) – indices of large objects</p></li>
+<li><p><strong>possible_index_high</strong> (<em>int</em>) – highest possible index</p></li>
+<li><p><strong>n_iter</strong> (<em>int</em>) – number of random permutations to make</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>largeobj_locations</strong> (<em>dict</em>) – dict of n_iter in size of randomised large object locations.</p>
 </dd>
 </dl>
 </dd></dl>
@@ -758,6 +947,74 @@ is rejected)</p>
 </dd></dl>
 
 <dl class="py method">
+<dt class="sig sig-object py" id="AnalysisFunctions.Analysis_Functions.spot_to_mask_rdf">
+<span class="sig-name descname"><span class="pre">spot_to_mask_rdf</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">coordinates_spot</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">coordinates_mask</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">out_cell</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pixel_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.11</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dr</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_radius</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_radius</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">60.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">image_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">(1200,</span> <span class="pre">1200)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_iter</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">3</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#AnalysisFunctions.Analysis_Functions.spot_to_mask_rdf" title="Link to this definition"></a></dt>
+<dd><p>Generates spot_to_mask_rdf</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>coordinates_spot</strong> (<em>np.2darray</em>) – array of 2D spot coordinates</p></li>
+<li><p><strong>coordinates_mask</strong> (<em>np.2darray</em>) – array of 2D mask coordinates</p></li>
+<li><p><strong>pixel_size</strong> (<em>np.float</em>) – pixel size in same units as dr (default: 0.11)</p></li>
+<li><p><strong>dr</strong> (<em>np.float</em>) – step for radial distribution function</p></li>
+<li><p><strong>min_radius</strong> (<em>np.float</em>) – minimum radius</p></li>
+<li><p><strong>max_radius</strong> (<em>np.float</em>) – maximum radius value</p></li>
+<li><p><strong>image_size</strong> (<em>array</em>) – maximum image size</p></li>
+<li><p><strong>n_iter</strong> (<em>int</em>) – number of iterations for error calculation</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>g_r</strong> (<em>np.1darray</em>) – radial distribution function</p></li>
+<li><p><strong>radii</strong> (<em>np.1darray</em>) – radius vector</p></li>
+<li><p><strong>g_r_std</strong> (<em>np.1darray</em>) – std of rdf</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="AnalysisFunctions.Analysis_Functions.spot_to_spot_rdf">
+<span class="sig-name descname"><span class="pre">spot_to_spot_rdf</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">coordinates</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pixel_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.11</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dr</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#AnalysisFunctions.Analysis_Functions.spot_to_spot_rdf" title="Link to this definition"></a></dt>
+<dd><p>Generates spot_to_spot_rdf</p>
+<p>Uses code from 10.5281/zenodo.4625675, please cite this software if used in a paper.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>coordinates</strong> (<em>np.2darray</em>) – array of 2d (or 3D) coordinates</p></li>
+<li><p><strong>pixel_size</strong> (<em>np.float</em>) – pixel size in same units as dr (default: 0.11)</p></li>
+<li><p><strong>dr</strong> (<em>np.float</em>) – step for radial distribution function</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>g_r</strong> (<em>np.1darray</em>) – radial distribution function</p></li>
+<li><p><strong>radii</strong> (<em>np.1darray</em>) – radius vector</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="AnalysisFunctions.Analysis_Functions.test_largeobj_mask_overlap">
+<span class="sig-name descname"><span class="pre">test_largeobj_mask_overlap</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">largeobj_indices</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mask_indices</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_largeobjects</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">raw</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#AnalysisFunctions.Analysis_Functions.test_largeobj_mask_overlap" title="Link to this definition"></a></dt>
+<dd><p>Tests which spots overlap with a given mask.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>largeobj_indices</strong> (<em>list</em>) – indices of large objects</p></li>
+<li><p><strong>mask_indices</strong> (<em>1D array</em>) – indices of mask</p></li>
+<li><p><strong>n_largeobjects</strong> (<em>int</em>) – n large objects</p></li>
+<li><p><strong>raw</strong> (<em>boolean</em>) – if raw is true, will report “per object” overlap</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>n_large_objects_in_mask</strong> (<em>float</em>) – number of spots that overlap with the other spots.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
 <dt class="sig sig-object py" id="AnalysisFunctions.Analysis_Functions.test_spot_mask_overlap">
 <span class="sig-name descname"><span class="pre">test_spot_mask_overlap</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">spot_indices</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mask_indices</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#AnalysisFunctions.Analysis_Functions.test_spot_mask_overlap" title="Link to this definition"></a></dt>
 <dd><p>Tests which spots overlap with a given mask.</p>
@@ -770,6 +1027,25 @@ is rejected)</p>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p><strong>n_spots_in_mask</strong> (<em>float</em>) – number of spots that overlap with the mask.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="AnalysisFunctions.Analysis_Functions.test_spot_spot_overlap">
+<span class="sig-name descname"><span class="pre">test_spot_spot_overlap</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">spot_1_indices</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">spot_2_indices</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_spot1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">raw</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#AnalysisFunctions.Analysis_Functions.test_spot_spot_overlap" title="Link to this definition"></a></dt>
+<dd><p>Tests which spots overlap with a given mask.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>spot_1_indices</strong> (<em>1D array</em>) – indices of spots 1</p></li>
+<li><p><strong>spot_2_indices</strong> (<em>1D array</em>) – indices of spots 2</p></li>
+<li><p><strong>n_spots1_in_spots2</strong> (<em>int</em>) – n spots in spot 1 array</p></li>
+<li><p><strong>raw</strong> (<em>boolean</em>) – if raw is true, will report “per spot” overlap</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>n_spots1_in_spots2</strong> (<em>float</em>) – number of spots that overlap with the other spots.</p>
 </dd>
 </dl>
 </dd></dl>

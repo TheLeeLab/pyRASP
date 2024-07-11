@@ -55,6 +55,7 @@
 <li class="toctree-l4"><a class="reference internal" href="#IOFunctions.IO_Functions.make_directory"><code class="docutils literal notranslate"><span class="pre">IO_Functions.make_directory()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#IOFunctions.IO_Functions.read_tiff"><code class="docutils literal notranslate"><span class="pre">IO_Functions.read_tiff()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#IOFunctions.IO_Functions.read_tiff_tophotons"><code class="docutils literal notranslate"><span class="pre">IO_Functions.read_tiff_tophotons()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#IOFunctions.IO_Functions.save_analysis"><code class="docutils literal notranslate"><span class="pre">IO_Functions.save_analysis()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#IOFunctions.IO_Functions.save_analysis_params"><code class="docutils literal notranslate"><span class="pre">IO_Functions.save_analysis_params()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#IOFunctions.IO_Functions.save_as_json"><code class="docutils literal notranslate"><span class="pre">IO_Functions.save_as_json()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#IOFunctions.IO_Functions.write_tiff"><code class="docutils literal notranslate"><span class="pre">IO_Functions.write_tiff()</span></code></a></li>
@@ -156,6 +157,30 @@ Use camera parameters to convert output to photons</p>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p><strong>image</strong> (<em>numpy.ndarray</em>) – The image data from the TIFF file.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="IOFunctions.IO_Functions.save_analysis">
+<span class="sig-name descname"><span class="pre">save_analysis</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">to_save</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">to_save_largeobjects</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">analysis_directory</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">imtype</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">protein_string</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cell_string</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">files</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">i</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">z_planes</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[0,</span> <span class="pre">0]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cell_analysis</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cell_mask</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">to_save_cell</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">one_savefile</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#IOFunctions.IO_Functions.save_analysis" title="Link to this definition"></a></dt>
+<dd><p>saves analysis.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>to_save</strong> (<em>pd.DataFrame</em>) – pandas dataframe.</p></li>
+<li><p><strong>to_save_largeobjects</strong> (<em>pd.DataFrame</em>) – pandas dataframe of large objects.</p></li>
+<li><p><strong>analysis_directory</strong> (<em>string</em>) – analysis directory to save in</p></li>
+<li><p><strong>imtype</strong> (<em>string</em>) – string of image type</p></li>
+<li><p><strong>protein_string</strong> (<em>np.1darray</em>) – strings for protein-stained data (default C1)</p></li>
+<li><p><strong>cell_string</strong> (<em>np.1darray</em>) – strings for cell-containing data (default C0)</p></li>
+<li><p><strong>i</strong> (<em>int</em>) – location in files where we’re analysing</p></li>
+<li><p><strong>z_planes</strong> (<em>np.1darray</em>) – array of z locations to count spots</p></li>
+<li><p><strong>cell_analysis</strong> (<em>boolean</em>) – if doing cell analysis saving</p></li>
+<li><p><strong>cell_mask</strong> (<em>np.ndarray</em>) – cell mask if cell analysis saving</p></li>
+<li><p><strong>to_save_cell</strong> (<em>pd.DataFrame</em>) – pandas dataframe</p></li>
+<li><p><strong>one_savefile</strong> (<em>boolean</em>) – if True, saving all analysis in one csv</p></li>
+</ul>
 </dd>
 </dl>
 </dd></dl>
