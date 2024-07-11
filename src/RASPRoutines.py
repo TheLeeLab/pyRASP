@@ -987,7 +987,7 @@ class RASP_Routines:
 
             g_r = {}
             radii = {}
-            
+
             start = time.time()
 
             for file in files:
