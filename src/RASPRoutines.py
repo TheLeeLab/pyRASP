@@ -1048,8 +1048,12 @@ class RASP_Routines:
                     y_p1 = subset_p1[subset_p1.z == z].y.values
                     x_p2 = subset_p2[subset_p2.z == z].x.values
                     y_p2 = subset_p2[subset_p2.z == z].y.values
-                    coordinates_p1_spot = np.asarray(np.vstack([x_p1, y_p1]).T, dtype=int)
-                    coordinates_p2_spot = np.asarray(np.vstack([x_p2, y_p2]).T, dtype=int)
+                    coordinates_p1_spot = np.asarray(
+                        np.vstack([x_p1, y_p1]).T, dtype=int
+                    )
+                    coordinates_p2_spot = np.asarray(
+                        np.vstack([x_p2, y_p2]).T, dtype=int
+                    )
 
                     g_r[uid], radii = A_F.spot_to_mask_rdf(
                         coordinates_p1_spot,
