@@ -987,6 +987,8 @@ class RASP_Routines:
 
             g_r = {}
             radii = {}
+            
+            start = time.time()
 
             for file in files:
                 zs = z_planes[file]
@@ -999,6 +1001,13 @@ class RASP_Routines:
                     g_r[uid], radii[uid] = A_F.spot_to_spot_rdf(
                         coordinates, pixel_size=pixel_size, dr=dr
                     )
+                print(
+                    "Computing RDF     File {}/{}    Time elapsed: {:.3f} s".format(
+                        i + 1, len(files), time.time() - start
+                    ),
+                    end="\r",
+                    flush=True,
+                )
 
             radii_key, radii_overall = max(radii.items(), key=lambda x: len(set(x[1])))
 
