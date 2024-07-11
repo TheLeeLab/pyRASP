@@ -946,6 +946,156 @@ class RASP_Routines:
             rdf.to_csv(to_save_name)
             return rdf
 
+    def calculate_two_puncta_channels_rdf_with_thresholds(
+        self,
+        analysis_file_p1,
+        analysis_file_p2,
+        threshold_p1,
+        threshold_p2,
+        pixel_size=0.11,
+        dr=1.0,
+        n_iter=10,
+        protein_string_1="C0",
+        protein_string_2="C1",
+        imtype=".tif",
+    ):
+        """
+        Does rdf analysis of spots wrt mask from an analysis file.
+
+        Args:
+            analysis_file_p1 (str): The analysis file of puncta set 1.
+            analysis_file_p2 (str): The analysis file of puncta set 2.
+            threshold_p1 (float): The photon threshold for puncta set 1.
+            threshold_p2 (float): The photon threshold for puncta set 2.
+            pixel_size (float): size of pixels
+            dr (float): dr of rdf
+            n_iter (int): number of CSR iterations
+            protein_string_1 (string): will use this to find corresponding other punctum files
+            protein_string_2 (string): will use this to find corresponding other punctum files
+            imtype (string): image type previously analysed
+
+        Returns:
+            rdf (pd.DataArray): pandas datarray of the rdf
+        """
+        analysis_data_p1 = pd.read_csv(analysis_file_p1)
+        analysis_data_p1 = analysis_data_p1[
+            analysis_data_p1.sum_intensity_in_photons > threshold_p1
+        ]
+
+        analysis_data_p2 = pd.read_csv(analysis_file_p2)
+        analysis_data_p2 = analysis_data_p2[
+            analysis_data_p2.sum_intensity_in_photons > threshold_p2
+        ]
+
+        start = time.time()
+
+        if (len(analysis_data_p1) > 0) and (len(analysis_data_p2) > 0):
+            if int(threshold_p1) == threshold_p1:
+                theshold_p1_savestr = str(threshold_p1)
+            else:
+                theshold_p1_savestr = str(threshold_p1).replace(".", "p")
+
+            if int(threshold_p2) == threshold_p2:
+                theshold_p2_savestr = str(threshold_p2)
+            else:
+                theshold_p2_savestr = str(threshold_p2).replace(".", "p")
+
+            files_p1 = np.unique(
+                [
+                    file.split(imtype)[0].split(protein_string_1)[0]
+                    for file in analysis_data_p1.image_filename.values
+                ]
+            )
+            files_p2 = np.unique(
+                [
+                    file.split(imtype)[0].split(protein_string_2)[0]
+                    for file in analysis_data_p2.image_filename.values
+                ]
+            )
+            files = np.unique(np.hstack([files_p1, files_p2]))
+
+            z_planes = {}  # make dict where z planes will be stored
+            for i, file in enumerate(files):
+                zp_f1 = np.unique(
+                    analysis_data_p1[
+                        analysis_data_p1.image_filename
+                        == file + str(protein_string_1) + imtype
+                    ].z.values
+                )
+                zp_f2 = np.unique(
+                    analysis_data_p2[
+                        analysis_data_p2.image_filename
+                        == file + str(protein_string_2) + imtype
+                    ].z.values
+                )
+                z_planes[file] = np.unique(np.hstack([zp_f1, zp_f2]))
+
+            g_r = {}
+
+            for i, file in enumerate(files):
+                zs = z_planes[file]
+                subset_p1 = analysis_data_p1[
+                    analysis_data_p1.image_filename
+                    == file + str(protein_string_1) + imtype
+                ]
+                subset_p2 = analysis_data_p1[
+                    analysis_data_p2.image_filename
+                    == file + str(protein_string_2) + imtype
+                ]
+                for z in zs:
+                    uid = str(file) + "___" + str(z)
+                    x_p1 = subset_p1[subset_p1.z == z].x.values
+                    y_p1 = subset_p1[subset_p1.z == z].y.values
+                    x_p2 = subset_p2[subset_p2.z == z].x.values
+                    y_p2 = subset_p2[subset_p2.z == z].y.values
+                    coordinates_p1_spot = np.asarray(np.vstack([x_p1, y_p1]).T, dtype=int)
+                    coordinates_p2_spot = np.asarray(np.vstack([x_p2, y_p2]).T, dtype=int)
+
+                    g_r[uid], radii = A_F.spot_to_mask_rdf(
+                        coordinates_p1_spot,
+                        coordinates_p2_spot,
+                        out_cell=False,
+                        pixel_size=pixel_size,
+                        dr=dr,
+                        min_radius=dr,
+                        max_radius=np.divide(np.multiply(1200, pixel_size), 2),
+                    )
+                print(
+                    "Computing RDF     File {}/{}    Time elapsed: {:.3f} s".format(
+                        i + 1, len(files), time.time() - start
+                    ),
+                    end="\r",
+                    flush=True,
+                )
+
+            g_r_overall = np.zeros([len(radii), len(g_r.keys())])
+
+            for i, uid in enumerate(g_r.keys()):
+                g_r_overall[:, i] = g_r[uid]
+
+            g_r_mean = np.mean(g_r_overall, axis=1)
+            g_r_std = np.std(g_r_overall, axis=1)
+
+            rdf = pd.DataFrame(
+                data=np.vstack([g_r_mean, g_r_std]).T,
+                index=radii,
+                columns=["g_r_mean", "g_r_std"],
+            )
+            to_save_name = os.path.join(
+                os.path.split(analysis_file_p1)[0],
+                "puncta1_"
+                + protein_string_1
+                + "_to_puncta2_"
+                + protein_string_2
+                + "_threshold_puncta1_"
+                + theshold_p1_savestr
+                + "_threshold_puncta2_"
+                + theshold_p2_savestr
+                + "_rdf.csv",
+            )
+            rdf.to_csv(to_save_name)
+            return rdf
+
     def calculate_spot_rdf_with_threshold(
         self,
         analysis_file,

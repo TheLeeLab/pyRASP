@@ -2000,7 +2000,6 @@ class Analysis_Functions:
         Returns:
             g_r (np.1darray): radial distribution function
             radii (np.1darray): radius vector
-            g_r_std (np.1darray): std of rdf
         """
         distances = np.tril(
             np.multiply(pixel_size, cdist(coordinates_spot, coordinates_mask))
