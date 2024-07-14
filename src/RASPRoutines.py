@@ -833,7 +833,6 @@ class RASP_Routines:
         out_cell=True,
         pixel_size=0.11,
         dr=1.0,
-        n_iter=5,
         cell_string="C0",
         protein_string="C1",
         imtype=".tif",
@@ -902,18 +901,17 @@ class RASP_Routines:
                     xm, ym = np.where(cell_mask[:, :, int(z) - 1])
                     coordinates_mask = np.vstack([xm, ym]).T
 
-                    g_r[uid], radii = A_F.spot_to_mask_rdf(
-                        coordinates_spot,
-                        coordinates_mask,
-                        out_cell=out_cell,
-                        pixel_size=pixel_size,
-                        dr=dr,
-                        min_radius=dr,
-                        max_radius=np.divide(
-                            np.multiply(np.max(image_size), pixel_size), 2
-                        ),
-                        image_size=image_size,
-                    )
+                    if len(coordinates_mask) > 0:
+                        g_r[uid], radii = A_F.spot_to_mask_rdf(
+                            coordinates_spot,
+                            coordinates_mask,
+                            pixel_size=pixel_size,
+                            dr=dr,
+                            r_max=np.divide(
+                                np.multiply(np.max(image_size), pixel_size), 4.0
+                            ),
+                            image_size=image_size,
+                        )
                 print(
                     "Computing RDF     File {}/{}    Time elapsed: {:.3f} s".format(
                         i + 1, len(files), time.time() - start
@@ -1054,16 +1052,17 @@ class RASP_Routines:
                     coordinates_p2_spot = np.asarray(
                         np.vstack([x_p2, y_p2]).T, dtype=int
                     )
-
-                    g_r[uid], radii = A_F.spot_to_mask_rdf(
-                        coordinates_p1_spot,
-                        coordinates_p2_spot,
-                        out_cell=False,
-                        pixel_size=pixel_size,
-                        dr=dr,
-                        min_radius=dr,
-                        max_radius=np.divide(np.multiply(1200, pixel_size), 2),
-                    )
+                    if (len(coordinates_p1_spot) > 0) and (
+                        len(coordinates_p2_spot) > 0
+                    ):
+                        g_r[uid], radii = A_F.spot_to_mask_rdf(
+                            coordinates_p1_spot,
+                            coordinates_p2_spot,
+                            pixel_size=pixel_size,
+                            dr=dr,
+                            r_max=np.divide(np.multiply(1200.0, pixel_size), 4.0),
+                            image_size=(1200.0, 1200.0),
+                        )
                 print(
                     "Computing RDF     File {}/{}    Time elapsed: {:.3f} s".format(
                         i + 1, len(files), time.time() - start

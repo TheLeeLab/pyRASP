@@ -18,6 +18,7 @@ import pathos
 from pathos.pools import ThreadPool as Pool
 from rdfpy import rdf
 from scipy.spatial.distance import cdist
+from src import MultiD_RD_functions
 
 cpu_number = int(pathos.helpers.cpu_count() * 0.8)
 
@@ -1976,13 +1977,10 @@ class Analysis_Functions:
         self,
         coordinates_spot,
         coordinates_mask,
-        out_cell=True,
         pixel_size=0.11,
-        dr=1.0,
-        min_radius=1.0,
-        max_radius=60.0,
+        dr=0.1,
+        r_max=30.0,
         image_size=(1200, 1200),
-        n_iter=3,
     ):
         """
         Generates spot_to_mask_rdf
@@ -1992,78 +1990,24 @@ class Analysis_Functions:
             coordinates_mask (np.2darray): array of 2D mask coordinates
             pixel_size (np.float): pixel size in same units as dr (default: 0.11)
             dr (np.float): step for radial distribution function
-            min_radius (np.float): minimum radius
             max_radius (np.float): maximum radius value
             image_size (array): maximum image size
-            n_iter (int): number of iterations for error calculation
 
         Returns:
             g_r (np.1darray): radial distribution function
             radii (np.1darray): radius vector
         """
-        distances = np.tril(
-            np.multiply(pixel_size, cdist(coordinates_spot, coordinates_mask))
+        g_r, radii = MultiD_RD_functions.multid_rdf(
+            coordinates_spot * pixel_size,
+            coordinates_mask * pixel_size,
+            r_max,
+            dr,
+            boxdims=(
+                [[0.0, 0.0], [image_size[0] * pixel_size, image_size[1] * pixel_size]]
+            ),
+            parallel=True,
         )
-        distances = distances[distances > 0]
-        distances = distances[distances < max_radius]
-
-        radii = np.arange(min_radius, max_radius, dr)
-
-        g_r = np.zeros_like(radii)
-        g_r_csr = np.zeros([len(radii), n_iter])
-
-        def run_over_r(ir):
-            g_r[ir[0]] = np.sum(distances < ir[1])
-
-        values = [(k, radii[k]) for k in range(len(radii))]
-        pool = Pool(nodes=cpu_number)
-        pool.restart()
-        pool.map(run_over_r, values)
-        pool.close()
-        pool.terminate()
-
-        possible_locations = np.arange(np.prod(image_size))
-
-        mask_indices = np.ravel_multi_index(coordinates_mask.T, image_size, order="F")
-        if out_cell == True:
-            possible_locations = possible_locations[
-                ~np.isin(possible_locations, mask_indices)
-            ]
-
-        random_indices = np.random.choice(
-            possible_locations, size=(len(coordinates_spot), n_iter)
-        )
-
-        random_coordinates = np.asarray(
-            np.unravel_index(random_indices, image_size, order="F")
-        ).reshape(n_iter, len(coordinates_spot), 2)
-
-        for i in np.arange(n_iter):
-            distances_random = np.multiply(
-                pixel_size,
-                np.tril(
-                    cdist(
-                        random_coordinates[i, :, :],
-                        coordinates_mask,
-                    )
-                ),
-            )
-            distances_random = distances_random[distances_random > 0]
-            distances_random = distances_random[distances_random < max_radius]
-
-            def run_over_r_random(jr):
-                g_r_csr[jr[0], i] = np.sum(distances_random < jr[1])
-
-            pool = Pool(nodes=cpu_number)
-            pool.restart()
-            pool.map(run_over_r_random, values)
-            pool.close()
-            pool.terminate()
-
-        g_r_csr_mean = np.mean(g_r_csr, axis=1)
-
-        g_r_norm = np.nan_to_num(np.divide(g_r, g_r_csr_mean))
-        return g_r_norm, radii
+        return g_r, radii
 
     def gen_CSRmats(self, image_z_shape):
         """
