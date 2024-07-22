@@ -13,11 +13,10 @@ from skimage.measure import label, regionprops_table
 import skimage.draw as draw
 from scipy.ndimage import binary_opening, binary_closing, binary_fill_holes
 from numba import jit
-import pandas as pd
+import polars as pl
 import pathos
 from pathos.pools import ThreadPool as Pool
 from rdfpy import rdf
-from scipy.spatial.distance import cdist
 from src import MultiD_RD_functions
 
 cpu_number = int(pathos.helpers.cpu_count() * 0.8)
@@ -33,20 +32,19 @@ class Analysis_Functions:
         Counts spots per z plane
 
         Args:
-            database (pandas array): pandas array of spots
+            database (polars DataFrame): pandas array of spots
             z_planes (np.1darray): is range of zplanes
 
         Returns:
-            n_spots
+            n_spots (polars DataFrame)
         """
-        columns = ["z", "n_spots"]
 
         spots_per_plane = np.zeros_like(z_planes)
         for z in enumerate(z_planes):
-            spots_per_plane[z[0]] = len(database.z[database.z == z[1] + 1])
-        n_spots = pd.DataFrame(
-            data=np.vstack([z_planes + 1, spots_per_plane]).T, columns=columns
-        )
+            spots_per_plane[z[0]] = len(database["z"].to_numpy() == (z[1] + 1))
+
+        data = {"z": z_planes + 1, "n_spots": spots_per_plane}
+        n_spots = pl.DataFrame(data)
         return n_spots
 
     def count_spots_withthreshold(self, database, threshold):
@@ -69,16 +67,20 @@ class Analysis_Functions:
         ]
 
         for i, filename in enumerate(np.unique(database.image_filename)):
-            dataslice = database[database.image_filename == filename]
-            z_planes = np.unique(dataslice.z.values)
+            dataslice = database.filter(pl.col("image_filename") == filename)
+            z_planes = np.unique(dataslice["z"].to_numpy())
             spots_per_plane = np.zeros([2, len(z_planes)])
             for z in enumerate(z_planes):
                 spots_per_plane[0, z[0]] = sum(
-                    dataslice.sum_intensity_in_photons[dataslice.z == z[1]].values
+                    dataslice.filter(pl.col("z") == z[1])[
+                        "sum_intensity_in_photons"
+                    ].to_numpy()
                     > threshold
                 )
                 spots_per_plane[1, z[0]] = sum(
-                    dataslice.sum_intensity_in_photons[dataslice.z == z[1]].values
+                    dataslice.filter(pl.col("z") == z[1])[
+                        "sum_intensity_in_photons"
+                    ].to_numpy()
                     <= threshold
                 )
 
@@ -95,7 +97,7 @@ class Analysis_Functions:
                 data = stack
             else:
                 data = np.vstack([data, stack])
-        n_spots = pd.DataFrame(data=data, columns=columns)
+        n_spots = pl.DataFrame(data=data, schema=columns)
         return n_spots
 
     def calculate_gradient_field(self, image, kernel):
@@ -1307,9 +1309,9 @@ class Analysis_Functions:
             analyse_clr (boolean): analyse clr yes/no
 
         Returns:
-            to_save (pd.DataFrame): spot properties ready to save
-            to_save_largeobjects (pd.DataFrame): large object properties ready to save
-            to_save_cell (pd.DataFrame): cell properties ready to save
+            to_save (pl.DataFrame): spot properties ready to save
+            to_save_largeobjects (pl.DataFrame): large object properties ready to save
+            to_save_cell (pl.DataFrame): cell properties ready to save
             cell_mask (np.ndarray): cell mask
         """
 
@@ -1471,8 +1473,6 @@ class Analysis_Functions:
                 z_planes,
             )
 
-            to_save = to_save.reset_index(drop=True)
-
             to_save_largeobjects = self.make_datarray_largeobjects(
                 areas_large,
                 centroids_large,
@@ -1482,7 +1482,6 @@ class Analysis_Functions:
                 columns_large,
                 z_planes,
             )
-            to_save_largeobjects = to_save_largeobjects.reset_index(drop=True)
 
             to_save_cell = self.make_datarray_cell(
                 clr,
@@ -1498,7 +1497,6 @@ class Analysis_Functions:
                 z_planes,
                 analyse_clr,
             )
-            to_save_cell = to_save_cell.reset_index(drop=True)
 
         else:
             (
@@ -1613,9 +1611,9 @@ class Analysis_Functions:
             d (int): Pixel radius value
 
         Returns:
-            to_save (pd.DataFrame): data array to save as pandas object,
+            to_save (pl.DataFrame): data array to save as pandas object,
                                             or dict of pandas objects
-            to_save_largeobjects (pd.DataFrame): data array of large objects
+            to_save_largeobjects (pl.DataFrame): data array of large objects
                                                         or dict of large objects
         """
         columns = [
@@ -1682,8 +1680,6 @@ class Analysis_Functions:
                 cell_analysis=False,
             )
 
-            to_save = to_save.reset_index(drop=True)
-
             to_save_largeobjects = self.make_datarray_largeobjects(
                 areas_large,
                 centroids_large,
@@ -1694,7 +1690,6 @@ class Analysis_Functions:
                 z_planes,
                 cell_analysis=False,
             )
-            to_save_largeobjects = to_save_largeobjects.reset_index(drop=True)
 
         else:
             centroids, estimated_intensity, estimated_background,
@@ -2139,7 +2134,7 @@ class Analysis_Functions:
                 else:
                     da = stack
                     dataarray = np.hstack([dataarray, da])
-        return pd.DataFrame(data=dataarray.T, columns=columns)
+        return pl.DataFrame(data=dataarray.T, schema=columns)
 
     def make_datarray_spot(
         self,
@@ -2166,7 +2161,7 @@ class Analysis_Functions:
                 one z-plane
 
         Returns:
-            to_save (pd.DataFrame) pandas array to save
+            to_save (pl.DataFrame) pandas array to save
 
         """
         if isinstance(z_planes, int):
@@ -2227,7 +2222,7 @@ class Analysis_Functions:
                 else:
                     da = stack
                     dataarray = np.hstack([dataarray, da])
-        return pd.DataFrame(data=dataarray.T, columns=columns)
+        return pl.DataFrame(data=dataarray.T, schema=columns)
 
     def make_datarray_cell(
         self,
@@ -2320,4 +2315,4 @@ class Analysis_Functions:
                     ]
                 )
             dataarray_cell = dataarray_cell[:, np.sum(dataarray_cell, axis=0) > 0]
-        return pd.DataFrame(data=dataarray_cell.T, columns=columns)
+        return pl.DataFrame(data=dataarray_cell.T, schema=columns)

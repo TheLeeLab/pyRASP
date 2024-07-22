@@ -7,7 +7,7 @@ import json
 import os
 from skimage import io
 import numpy as np
-import pandas as pd
+import polars as pl
 
 import sys
 
@@ -43,7 +43,7 @@ class IO_Functions:
         saves analysis.
 
         Args:
-            to_save (pd.DataFrame): pandas dataframe.
+            to_save (pl.DataFrame): polars dataframe.
             to_save_largeobjects (pd.DataFrame): pandas dataframe of large objects.
             analysis_directory (string): analysis directory to save in
             imtype (string): string of image type
@@ -53,7 +53,7 @@ class IO_Functions:
             z_planes (np.1darray): array of z locations to count spots
             cell_analysis (boolean): if doing cell analysis saving
             cell_mask (np.ndarray): cell mask if cell analysis saving
-            to_save_cell (pd.DataFrame): pandas dataframe
+            to_save_cell (pl.DataFrame): polars dataframe
             one_savefile (boolean): if True, saving all analysis in one csv
         """
 
@@ -66,10 +66,10 @@ class IO_Functions:
                 analysis_directory,
                 os.path.split(files[i])[-1].split(imtype)[0] + "_largeobjects.csv",
             )
-            to_save.to_csv(savename, index=False)
-            to_save_largeobjects.to_csv(savename_lo, index=False)
+            to_save.write_csv(savename)
+            to_save_largeobjects.write_csv(savename_lo)
             if cell_analysis == True:
-                to_save_cell.to_csv(
+                to_save_cell.write_csv(
                     os.path.join(
                         analysis_directory,
                         os.path.split(files[i])[-1]
@@ -78,7 +78,6 @@ class IO_Functions:
                         + str(cell_string)
                         + "_cell_analysis.csv",
                     ),
-                    index=False,
                 )
                 self.write_tiff(
                     cell_mask,
@@ -93,11 +92,15 @@ class IO_Functions:
                     bit=np.uint8,
                 )
         else:
-            to_save["image_filename"] = np.full_like(
-                to_save.z.values, files[i], dtype="object"
+            to_save = to_save.with_columns(
+                image_filename=np.full_like(
+                    to_save["z"].to_numpy(), files[i], dtype="object"
+                )
             )
-            to_save_largeobjects["image_filename"] = np.full_like(
-                to_save_largeobjects.z.values, files[i], dtype="object"
+            to_save_largeobjects = to_save_largeobjects.with_columns(
+                image_filename=np.full_like(
+                    to_save_largeobjects["z"].to_numpy(), files[i], dtype="object"
+                )
             )
 
             savename = os.path.join(analysis_directory, "spot_analysis.csv")
@@ -108,20 +111,26 @@ class IO_Functions:
             )
 
             n_spots = A_F.count_spots(to_save, np.arange(z_planes[0], z_planes[1]))
-            n_spots["image_filename"] = np.full_like(
-                n_spots.z.values, files[i], dtype="object"
+            n_spots = n_spots.with_columns(
+                image_filename=np.full_like(
+                    n_spots["z"].to_numpy(), files[i], dtype="object"
+                )
             )
 
             n_largeobjects = A_F.count_spots(
                 to_save_largeobjects, np.arange(z_planes[0], z_planes[1])
             )
-            n_largeobjects["image_filename"] = np.full_like(
-                n_largeobjects.z.values, files[i], dtype="object"
+            n_largeobjects = n_largeobjects.with_columns(
+                image_filename=np.full_like(
+                    n_largeobjects["z"].to_numpy(), files[i], dtype="object"
+                )
             )
 
             if cell_analysis == True:
-                to_save_cell["image_filename"] = np.full_like(
-                    to_save_cell.z.values, files[i], dtype="object"
+                to_save_cell = to_save_cell.with_columns(
+                    image_filename=np.full_like(
+                        to_save_cell["z"].to_numpy(), files[i], dtype="object"
+                    )
                 )
                 savename_cell = os.path.join(
                     analysis_directory, "cell_colocalisation_analysis.csv"
@@ -140,25 +149,24 @@ class IO_Functions:
                 )
 
             if i != 0:
-                to_save.to_csv(savename, mode="a", header=False, index=False)
-                to_save_largeobjects.to_csv(
-                    savename_lo, mode="a", header=False, index=False
-                )
-                n_spots.to_csv(savename_spot, mode="a", header=False, index=False)
-                n_largeobjects.to_csv(
-                    savename_nlargeobjects, mode="a", header=False, index=False
-                )
+                with open(savename, mode="ab") as f:
+                    to_save.write_csv(f, include_header=False)
+                with open(savename_lo, mode="ab") as f:
+                    to_save_largeobjects.write_csv(f, include_header=False)
+                with open(savename_spot, mode="ab") as f:
+                    n_spots.write_csv(f, include_header=False)
+                with open(savename_nlargeobjects, mode="ab") as f:
+                    n_largeobjects.write_csv(f, include_header=False)
                 if cell_analysis == True:
-                    to_save_cell.to_csv(
-                        savename_cell, mode="a", header=False, index=False
-                    )
+                    with open(savename_cell, mode="ab") as f:
+                        to_save_cell.write_csv(f, include_header=False)
             else:
-                to_save.to_csv(savename, index=False)
-                to_save_largeobjects.to_csv(savename_lo, index=False)
-                n_spots.to_csv(savename_spot, index=False)
-                n_largeobjects.to_csv(savename_nlargeobjects, index=False)
+                to_save.write_csv(savename)
+                to_save_largeobjects.write_csv(savename_lo)
+                n_spots.write_csv(savename_spot)
+                n_largeobjects.write_csv(savename_nlargeobjects)
                 if cell_analysis == True:
-                    to_save_cell.to_csv(savename_cell, index=False)
+                    to_save_cell.write_csv(savename_cell)
         return
 
     def save_analysis_params(
@@ -224,50 +232,6 @@ class IO_Functions:
         """
         with open(file_name, "w") as json_file:
             json.dump(data, json_file, indent=4)
-
-    # def read_multichannel_tiff_tophotons(self, file_path, order='tzc', n_t=1, n_z=1, n_c=1):
-    #     """
-    #     Read a multichannel TIFF file using the skimage library,
-    #     averaging/splitting as appropriate. Converts to photons.
-
-    #     Args:
-    #     - file_path (str): The path to the TIFF file to be read.
-    #     - order (str): default 'tzc', order images are saved in (this defines the averaging).
-    #         Options are:
-    #             'tzc' (first does all time steps, then does these at different zs, then returns and does other colour channels)
-    #             'tcz' (first does all time steps, then does different colour channels, then moves in z)
-    #             'ztc' (first does all z stacks, then repeats at different time steps, then does other colour channels)
-    #             'zct' (first does all z stacks, then does at different colour channels, then does time steps)
-    #             'ctz' (first does different colours, then repeats at different time steps, then moves in z)
-    #             'czt' (first does different colours, then does different z stacks, then does all time steps)
-    #     - n_t (int): number of time steps per condition. Default 1
-    #     - n_z (int): number of z stacks per condition. Default 1
-    #     - n_c (int): number of colours per condition. Default 1
-
-    #     Returns:
-    #     - image_colourchannels (dict of numpy.ndarrays): Dict of the image data
-    #     from the TIFF file. Dict will contain N objects that are N colour channels.
-    #     Final dimension of the NDarrays is the z coordiante.
-    #     """
-    #     image_unaveraged = self.read_tiff_tophotons(file_path)
-    #     image_colourchannels = {}
-    #     if 't' == order[0]: # if a time average first
-    #         tlocs = np.arange(0, image_unaveraged.shape[-1]+n_t, n_t)
-    #         image = np.zeros([image_unaveraged.shape[0], image_unaveraged.shape[0], n_z*n_c])
-    #         for t in np.arange(len(tlocs)-1):
-    #             image[:, :, t] = np.mean(image_unaveraged[:, :, tlocs[t]:tlocs[t+1]], axis=-1)
-
-    #         if 'z' == order[1]: # if then does z-steps
-    #             dividing_locations = np.arange(0, image.shape[-1]+n_z, n_z)
-    #             for i in np.arange(len(dividing_locations)-1):
-    #                 minloc = dividing_locations[i]
-    #                 maxloc = dividing_locations[i+1]
-    #                 image_colourchannels[i] = image[:, :, minloc:maxloc]
-    #         else:
-    #             for colour in np.arange(n_c):
-    #                 colour_locs = np.arange(colour, image.shape[-1], n_c, dtype=int)
-    #                 image_colourchannels[colour] = image[:, :, colour_locs]
-    #     return image_colourchannels
 
     def read_tiff(self, file_path):
         """

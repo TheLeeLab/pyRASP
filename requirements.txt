@@ -79,6 +79,7 @@ pexpect==4.9.0
 pickleshare==0.7.5
 pillow==10.3.0
 platformdirs==4.2.0
+polars==1.2.1
 pox==0.3.4
 ppft==1.7.6.8
 prometheus_client==0.20.0

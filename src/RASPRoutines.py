@@ -6,7 +6,7 @@ jsb92, 2024/02/08
 import os
 import fnmatch
 import numpy as np
-import pandas as pd
+import polars as pl
 import sys
 import time
 
@@ -727,7 +727,14 @@ class RASP_Routines:
 
         z_to_plot = np.full_like(np.arange(z_planes[0] + 1, z_planes[-1] + 1), -1)
         for i, val in enumerate(np.arange(z_planes[0] + 1, z_planes[-1] + 1)):
-            if len(to_save[to_save.z == val].sum_intensity_in_photons.values) > 1:
+            if (
+                len(
+                    to_save.filter(pl.col("z") == val)[
+                        "sum_intensity_in_photons"
+                    ].to_numpy()
+                )
+                > 1
+            ):
                 z_to_plot[i] = val
         z_to_plot = z_to_plot[z_to_plot >= 0]
 
@@ -735,14 +742,15 @@ class RASP_Routines:
 
             for i in enumerate(z_to_plot):
                 fig, axs = plots.two_column_plot(nrows=1, ncolumns=2, widthratio=[1, 1])
-                xpositions = to_save[to_save.z == i[1]].x.values
-                ypositions = to_save[to_save.z == i[1]].y.values
-                xpositions_large = to_save_largeobjects[
-                    to_save_largeobjects.z == i[1]
-                ].x.values
-                ypositions_large = to_save_largeobjects[
-                    to_save_largeobjects.z == i[1]
-                ].y.values
+                xpositions = to_save.filter(pl.col("z") == i[1])["x"].to_numpy()
+                ypositions = to_save.filter(pl.col("z") == i[1])["y"].to_numpy()
+
+                xpositions_large = to_save_largeobjects.filter(pl.col("z") == i[1])[
+                    "x"
+                ].to_numpy()
+                ypositions_large = to_save_largeobjects.filter(pl.col("z") == i[1])[
+                    "y"
+                ].to_numpy()
                 testvals = (xpositions < image_size) * (ypositions < image_size)
                 xpositions = xpositions[testvals]
                 ypositions = ypositions[testvals]
@@ -777,14 +785,14 @@ class RASP_Routines:
                 fig, axs = plots.two_column_plot(
                     nrows=1, ncolumns=3, widthratio=[1, 1, 1]
                 )
-                xpositions = to_save[to_save.z == i[1]].x.values
-                ypositions = to_save[to_save.z == i[1]].y.values
-                xpositions_large = to_save_largeobjects[
-                    to_save_largeobjects.z == i[1]
-                ].x.values
-                ypositions_large = to_save_largeobjects[
-                    to_save_largeobjects.z == i[1]
-                ].y.values
+                xpositions = to_save.filter(pl.col("z") == i[1])["x"].to_numpy()
+                ypositions = to_save.filter(pl.col("z") == i[1])["y"].to_numpy()
+                xpositions_large = to_save_largeobjects.filter(pl.col("z") == i[1])[
+                    "x"
+                ].to_numpy()
+                ypositions_large = to_save_largeobjects.filter(pl.col("z") == i[1])[
+                    "y"
+                ].to_numpy()
                 testvals = (xpositions < image_size) * (ypositions < image_size)
                 xpositions = xpositions[testvals]
                 ypositions = ypositions[testvals]
@@ -854,13 +862,13 @@ class RASP_Routines:
         Returns:
             rdf (pd.DataArray): pandas datarray of the rdf
         """
-        analysis_data = pd.read_csv(analysis_file)
-        analysis_data = analysis_data[
-            analysis_data.sum_intensity_in_photons > threshold
-        ]
+        analysis_data = pl.read_csv(analysis_file)
+        analysis_data = analysis_data.filter(
+            pl.col("sum_intensity_in_photons") > threshold
+        )
         analysis_directory = os.path.split(analysis_file)[0]
         if out_cell == True:
-            analysis_data = analysis_data[analysis_data.incell == 0]
+            analysis_data = analysis_data.filter(pl.col("incell") == 0)
 
         start = time.time()
 
@@ -870,11 +878,13 @@ class RASP_Routines:
             else:
                 thesholdsavestr = str(threshold).replace(".", "p")
 
-            files = np.unique(analysis_data.image_filename.values)
+            files = np.unique(analysis_data["image_filename"].to_numpy())
             z_planes = {}  # make dict where z planes will be stored
             for i, file in enumerate(files):
                 z_planes[file] = np.unique(
-                    analysis_data[analysis_data.image_filename == file].z.values
+                    analysis_data.filter(pl.col("image_filename") == file)[
+                        "z"
+                    ].to_numpy()
                 )
 
             g_r = {}
@@ -891,12 +901,14 @@ class RASP_Routines:
                     )
                 )
                 zs = z_planes[file]
-                subset = analysis_data[analysis_data.image_filename == file]
+                subset = analysis_data.filter(pl.col("image_filename") == file)
                 image_size = cell_mask[:, :, 0].shape
                 for z in zs:
                     uid = str(file) + "___" + str(z)
-                    x = subset[subset.z == z].x.values
-                    y = subset[subset.z == z].y.values
+
+                    filtered_subset = subset.filter(pl.col("z") == z)
+                    x = filtered_subset["x"].to_numpy()
+                    y = filtered_subset["y"].to_numpy()
                     coordinates_spot = np.vstack([x, y]).T
                     xm, ym = np.where(cell_mask[:, :, int(z) - 1])
                     coordinates_mask = np.vstack([xm, ym]).T
@@ -928,11 +940,8 @@ class RASP_Routines:
             g_r_mean = np.mean(g_r_overall, axis=1)
             g_r_std = np.std(g_r_overall, axis=1)
 
-            rdf = pd.DataFrame(
-                data=np.vstack([g_r_mean, g_r_std]).T,
-                index=radii,
-                columns=["g_r_mean", "g_r_std"],
-            )
+            data = {"radii": radii, "g_r_mean": g_r_mean, "g_r_std": g_r_std}
+            rdf = pl.DataFrame(data)
             to_save_name = os.path.join(
                 os.path.split(analysis_file)[0],
                 "spot_to_mask_"
@@ -941,7 +950,7 @@ class RASP_Routines:
                 + thesholdsavestr
                 + "_rdf.csv",
             )
-            rdf.to_csv(to_save_name)
+            rdf.write_csv(to_save_name)
             return rdf
 
     def calculate_two_puncta_channels_rdf_with_thresholds(
@@ -973,17 +982,17 @@ class RASP_Routines:
             imtype (string): image type previously analysed
 
         Returns:
-            rdf (pd.DataArray): pandas datarray of the rdf
+            rdf (pl.DataArray): polars datarray of the rdf
         """
-        analysis_data_p1 = pd.read_csv(analysis_file_p1)
-        analysis_data_p1 = analysis_data_p1[
-            analysis_data_p1.sum_intensity_in_photons > threshold_p1
-        ]
+        analysis_data_p1 = pl.read_csv(analysis_file_p1)
+        analysis_data_p1 = analysis_data_p1.filter(
+            pl.col("sum_intensity_in_photons") > threshold_p1
+        )
 
-        analysis_data_p2 = pd.read_csv(analysis_file_p2)
-        analysis_data_p2 = analysis_data_p2[
-            analysis_data_p2.sum_intensity_in_photons > threshold_p2
-        ]
+        analysis_data_p2 = pl.read_csv(analysis_file_p2)
+        analysis_data_p2 = analysis_data_p2.filter(
+            pl.col("sum_intensity_in_photons") > threshold_p2
+        )
 
         start = time.time()
 
@@ -1001,13 +1010,13 @@ class RASP_Routines:
             files_p1 = np.unique(
                 [
                     file.split(imtype)[0].split(protein_string_1)[0]
-                    for file in analysis_data_p1.image_filename.values
+                    for file in analysis_data_p1["image_filename"].to_numpy()
                 ]
             )
             files_p2 = np.unique(
                 [
                     file.split(imtype)[0].split(protein_string_2)[0]
-                    for file in analysis_data_p2.image_filename.values
+                    for file in analysis_data_p2["image_filename"].to_numpy()
                 ]
             )
             files = np.unique(np.hstack([files_p1, files_p2]))
@@ -1015,37 +1024,39 @@ class RASP_Routines:
             z_planes = {}  # make dict where z planes will be stored
             for i, file in enumerate(files):
                 zp_f1 = np.unique(
-                    analysis_data_p1[
-                        analysis_data_p1.image_filename
+                    analysis_data_p1.filter(
+                        pl.col("image_filename")
                         == file + str(protein_string_1) + imtype
-                    ].z.values
+                    )["z"].to_numpy()
                 )
                 zp_f2 = np.unique(
-                    analysis_data_p2[
-                        analysis_data_p2.image_filename
+                    analysis_data_p2.filter(
+                        pl.col("image_filename")
                         == file + str(protein_string_2) + imtype
-                    ].z.values
+                    )["z"].to_numpy()
                 )
+
                 z_planes[file] = np.unique(np.hstack([zp_f1, zp_f2]))
 
             g_r = {}
 
             for i, file in enumerate(files):
                 zs = z_planes[file]
-                subset_p1 = analysis_data_p1[
-                    analysis_data_p1.image_filename
-                    == file + str(protein_string_1) + imtype
-                ]
-                subset_p2 = analysis_data_p1[
-                    analysis_data_p2.image_filename
-                    == file + str(protein_string_2) + imtype
-                ]
+                subset_p1 = analysis_data_p1.filter(
+                    pl.col("image_filename") == file + str(protein_string_1) + imtype
+                )
+                subset_p2 = analysis_data_p2.filter(
+                    pl.col("image_filename") == file + str(protein_string_2) + imtype
+                )
                 for z in zs:
                     uid = str(file) + "___" + str(z)
-                    x_p1 = subset_p1[subset_p1.z == z].x.values
-                    y_p1 = subset_p1[subset_p1.z == z].y.values
-                    x_p2 = subset_p2[subset_p2.z == z].x.values
-                    y_p2 = subset_p2[subset_p2.z == z].y.values
+                    filtered_subset_p1 = subset_p1.filter(pl.col("z") == z)
+                    filtered_subset_p2 = subset_p2.filter(pl.col("z") == z)
+
+                    x_p1 = filtered_subset_p1["x"].to_numpy()
+                    y_p1 = filtered_subset_p1["y"].to_numpy()
+                    x_p2 = filtered_subset_p2["x"].to_numpy()
+                    y_p2 = filtered_subset_p2["y"].to_numpy()
                     coordinates_p1_spot = np.asarray(
                         np.vstack([x_p1, y_p1]).T, dtype=int
                     )
@@ -1078,12 +1089,9 @@ class RASP_Routines:
 
             g_r_mean = np.mean(g_r_overall, axis=1)
             g_r_std = np.std(g_r_overall, axis=1)
+            data = {"radii": radii, "g_r_mean": g_r_mean, "g_r_std": g_r_std}
 
-            rdf = pd.DataFrame(
-                data=np.vstack([g_r_mean, g_r_std]).T,
-                index=radii,
-                columns=["g_r_mean", "g_r_std"],
-            )
+            rdf = pl.DataFrame(data)
             to_save_name = os.path.join(
                 os.path.split(analysis_file_p1)[0],
                 "puncta1_"
@@ -1096,7 +1104,7 @@ class RASP_Routines:
                 + theshold_p2_savestr
                 + "_rdf.csv",
             )
-            rdf.to_csv(to_save_name)
+            rdf.write_csv(to_save_name)
             return rdf
 
     def calculate_spot_rdf_with_threshold(
@@ -1121,21 +1129,23 @@ class RASP_Routines:
         Returns:
             rdf (pd.DataArray): pandas datarray of the rdf
         """
-        analysis_data = pd.read_csv(analysis_file)
-        analysis_data = analysis_data[
-            analysis_data.sum_intensity_in_photons > threshold
-        ]
+        analysis_data = pl.read_csv(analysis_file)
+        analysis_data = analysis_data.filter(
+            pl.col("sum_intensity_in_photons") > threshold
+        )
         if len(analysis_data) > 0:
             if int(threshold) == threshold:
                 thesholdsavestr = str(threshold)
             else:
                 thesholdsavestr = str(threshold).replace(".", "p")
 
-            files = np.unique(analysis_data.image_filename.values)
+            files = np.unique(analysis_data["image_filename"].to_numpy())
             z_planes = {}  # make dict where z planes will be stored
             for i, file in enumerate(files):
                 z_planes[file] = np.unique(
-                    analysis_data[analysis_data.image_filename == file].z.values
+                    analysis_data.filter(pl.col("image_filename") == file)[
+                        "z"
+                    ].to_numpy()
                 )
 
             g_r = {}
@@ -1145,11 +1155,12 @@ class RASP_Routines:
 
             for i, file in enumerate(files):
                 zs = z_planes[file]
-                subset = analysis_data[analysis_data.image_filename == file]
+                subset = analysis_data.filter(pl.col("image_filename") == file)
                 for z in zs:
                     uid = str(file) + "___" + str(z)
-                    x = subset[subset.z == z].x.values
-                    y = subset[subset.z == z].y.values
+                    subset_filter = subset.filter(pl.col("z") == z)
+                    x = subset_filter["x"].to_numpy()
+                    y = subset_filter["y"].to_numpy()
                     coordinates = np.vstack([x, y]).T
                     g_r[uid], radii[uid] = A_F.spot_to_spot_rdf(
                         coordinates, pixel_size=pixel_size, dr=dr
@@ -1172,17 +1183,14 @@ class RASP_Routines:
                 )
             g_r_mean = np.mean(g_r_overall, axis=1)
             g_r_std = np.std(g_r_overall, axis=1)
+            data = {"radii": radii_overall, "g_r_mean": g_r_mean, "g_r_std": g_r_std}
 
-            rdf = pd.DataFrame(
-                data=np.vstack([g_r_mean, g_r_std]).T,
-                index=radii_overall,
-                columns=["g_r_mean", "g_r_std"],
-            )
+            rdf = pl.DataFrame(data)
             to_save_name = os.path.join(
                 os.path.split(analysis_file)[0],
                 "spot_to_spot_threshold_" + thesholdsavestr + "_rdf.csv",
             )
-            rdf.to_csv(to_save_name)
+            rdf.write_csv(to_save_name)
             return rdf
 
     def colocalise_with_threshold(
@@ -1213,12 +1221,13 @@ class RASP_Routines:
         else:
             threshold_str = str(threshold).replace(".", "p")
 
-        spots_with_intensities = pd.read_csv(analysis_file)
-        spots_with_intensities = spots_with_intensities[
-            spots_with_intensities.sum_intensity_in_photons > threshold
-        ].reset_index(drop=True)
+        spots_with_intensities = pl.read_csv(analysis_file)
+        spots_with_intensities = spots_with_intensities.filter(
+            pl.col("sum_intensity_in_photons") > threshold
+        )
+
         analysis_directory = os.path.split(analysis_file)[0]
-        image_filenames = np.unique(spots_with_intensities.image_filename.values)
+        image_filenames = np.unique(spots_with_intensities["image_filename"].to_numpy())
 
         if calc_clr == False:
             columns = ["coincidence", "chance_coincidence", "n_iter", "image_filename"]
@@ -1244,18 +1253,19 @@ class RASP_Routines:
                 )
             )
             image_size = cell_mask.shape[:-1]
-            image_file = spots_with_intensities[
-                spots_with_intensities.image_filename == image
-            ].reset_index(drop=True)
-            z_planes = np.unique(image_file.z.values)
+            image_file = spots_with_intensities.filter(
+                pl.col("image_filename") == image
+            )
+            z_planes = np.unique(image_file["z"].to_numpy())
 
-            dataarray = np.zeros([len(z_planes), len(columns)], dtype="object")
+            dataarray = np.zeros([len(z_planes), len(columns)])
 
-            temp_pd = pd.DataFrame(data=dataarray, columns=columns)
+            temp_pl = pl.DataFrame(data=dataarray, schema=columns)
 
             for j, z_plane in enumerate(z_planes):
-                xcoords = image_file[image_file.z == z_plane].x.values
-                ycoords = image_file[image_file.z == z_plane].y.values
+                filtered_file = image_file.filter(pl.col("z") == z_plane)
+                xcoords = filtered_file["x"].to_numpy()
+                ycoords = filtered_file["y"].to_numpy()
                 mask = cell_mask[:, :, int(z_plane) - 1]
                 centroids = np.asarray(np.vstack([xcoords, ycoords]), dtype=int).T
                 mask_indices, spot_indices = A_F.generate_mask_and_spot_indices(
@@ -1263,10 +1273,10 @@ class RASP_Routines:
                 )
                 if calc_clr == False:
                     (
-                        temp_pd.values[j, 0],
-                        temp_pd.values[j, 1],
+                        temp_pl[j, 0],
+                        temp_pl[j, 1],
                         raw_colocalisation,
-                        temp_pd.values[j, 2],
+                        temp_pl[j, 2],
                     ) = A_F.calculate_spot_to_mask_coincidence(
                         spot_indices,
                         mask_indices,
@@ -1275,14 +1285,14 @@ class RASP_Routines:
                     )
                 else:
                     (
-                        temp_pd.values[j, 0],
-                        temp_pd.values[j, 1],
-                        temp_pd.values[j, 2],
-                        temp_pd.values[j, 3],
-                        temp_pd.values[j, 4],
-                        temp_pd.values[j, 5],
+                        temp_pl[j, 0],
+                        temp_pl[j, 1],
+                        temp_pl[j, 2],
+                        temp_pl[j, 3],
+                        temp_pl[j, 4],
+                        temp_pl[j, 5],
                         raw_colocalisation,
-                        temp_pd.values[j, 6],
+                        temp_pl[j, 6],
                     ) = A_F.calculate_spot_colocalisation_likelihood_ratio(
                         spot_indices, mask_indices, image_size, blur_degree=1
                     )
@@ -1290,20 +1300,17 @@ class RASP_Routines:
                     rc = raw_colocalisation
                 else:
                     rc = np.hstack([rc, raw_colocalisation])
-            temp_pd["image_filename"] = np.full_like(z_planes, image, dtype="object")
-            image_file["incell"] = rc * 1
+            temp_pl = temp_pl.with_columns(
+                image_filename=np.full_like(z_planes, image, dtype="object")
+            )
+            image_file = image_file.with_columns(incell=rc * 1)
             if i == 0:
-                cell_analysis = temp_pd
+                cell_analysis = temp_pl
                 spot_analysis = image_file
             else:
-                cell_analysis = pd.concat([cell_analysis, temp_pd]).reset_index(
-                    drop=True
-                )
-                spot_analysis = pd.concat([spot_analysis, image_file]).reset_index(
-                    drop=True
-                )
-
-        cell_analysis.to_csv(
+                cell_analysis = pl.concat([cell_analysis, temp_pl])
+                spot_analysis = pl.concat([spot_analysis, image_file])
+        cell_analysis.write_csv(
             os.path.join(
                 analysis_directory,
                 "cell_colocalisation_analysis_"
@@ -1311,7 +1318,7 @@ class RASP_Routines:
                 + "_photonthreshold.csv",
             )
         )
-        spot_analysis.to_csv(
+        spot_analysis.write_csv(
             analysis_file.split(".")[0] + "_" + threshold_str + "_photonthreshold.csv"
         )
         return cell_analysis, spot_analysis
@@ -1353,18 +1360,22 @@ class RASP_Routines:
         else:
             threshold2_str = str(threshold_2).replace(".", "p")
 
-        spots_1_with_intensities = pd.read_csv(analysis_file_1)
-        spots_1_with_intensities = spots_1_with_intensities[
-            spots_1_with_intensities.sum_intensity_in_photons > threshold_1
-        ].reset_index(drop=True)
+        spots_1_with_intensities = pl.read_csv(analysis_file_1)
+        spots_1_with_intensities = spots_1_with_intensities.filter(
+            pl.col("sum_intensity_in_photons") > threshold_1
+        )
 
-        spots_2_with_intensities = pd.read_csv(analysis_file_2)
-        spots_2_with_intensities = spots_2_with_intensities[
-            spots_2_with_intensities.sum_intensity_in_photons > threshold_2
-        ].reset_index(drop=True)
+        spots_2_with_intensities = pl.read_csv(analysis_file_2)
+        spots_2_with_intensities = spots_2_with_intensities.filter(
+            pl.col("sum_intensity_in_photons") > threshold_2
+        )
 
-        image_1_filenames = np.unique(spots_1_with_intensities.image_filename.values)
-        image_2_filenames = np.unique(spots_2_with_intensities.image_filename.values)
+        image_1_filenames = np.unique(
+            spots_1_with_intensities["image_filename"].to_numpy()
+        )
+        image_2_filenames = np.unique(
+            spots_2_with_intensities["image_filename"].to_numpy()
+        )
 
         overall_1_filenames = [
             i.split(imtype)[0].split(spot_1_string)[0] for i in image_1_filenames
@@ -1379,30 +1390,38 @@ class RASP_Routines:
         columns = ["coincidence", "chance_coincidence", "image_filename"]
 
         for i, image in enumerate(overall_filenames):
-            image_1_file = spots_1_with_intensities[
-                spots_1_with_intensities.image_filename
-                == image + spot_1_string + imtype
-            ].reset_index(drop=True)
+            image_1_file = spots_1_with_intensities.filter(
+                pl.col("image_filename") == image + spot_1_string + imtype
+            )
 
-            image_2_file = spots_2_with_intensities[
-                spots_2_with_intensities.image_filename
-                == image + spot_2_string + imtype
-            ].reset_index(drop=True)
+            image_2_file = spots_2_with_intensities.filter(
+                pl.col("image_filename") == image + spot_2_string + imtype
+            )
             if (len(image_1_file) > 0) & (len(image_2_file) > 0):
-                z_planes = np.intersect1d(image_1_file.z.values, image_2_file.z.values)
+                z_planes = np.intersect1d(
+                    image_1_file["z"].to_numpy(), image_2_file["z"].to_numpy()
+                )
 
-                dataarray_1 = np.zeros([len(z_planes), len(columns)], dtype="object")
-                dataarray_2 = np.zeros([len(z_planes), len(columns)], dtype="object")
+                dataarray_1 = np.zeros([len(z_planes), len(columns)])
+                dataarray_2 = np.zeros([len(z_planes), len(columns)])
 
-                temp_1_pd = pd.DataFrame(data=dataarray_1, columns=columns)
-                temp_2_pd = pd.DataFrame(data=dataarray_2, columns=columns)
+                temp_1_pl = pl.DataFrame(data=dataarray_1, schema=columns)
+                temp_2_pl = pl.DataFrame(data=dataarray_2, schema=columns)
 
                 for j, z_plane in enumerate(z_planes):
-                    x_1_coords = image_1_file[image_1_file.z == z_plane].x.values
-                    y_1_coords = image_1_file[image_1_file.z == z_plane].y.values
+                    x_1_coords = image_1_file.filter(pl.col("z") == z_plane)[
+                        "x"
+                    ].to_numpy()
+                    y_1_coords = image_1_file.filter(pl.col("z") == z_plane)[
+                        "y"
+                    ].to_numpy()
 
-                    x_2_coords = image_2_file[image_2_file.z == z_plane].x.values
-                    y_2_coords = image_2_file[image_2_file.z == z_plane].y.values
+                    x_2_coords = image_1_file.filter(pl.col("z") == z_plane)[
+                        "x"
+                    ].to_numpy()
+                    y_2_coords = image_2_file.filter(pl.col("z") == z_plane)[
+                        "y"
+                    ].to_numpy()
 
                     centroids1 = np.asarray(
                         np.vstack([x_1_coords, y_1_coords]), dtype=int
@@ -1415,8 +1434,8 @@ class RASP_Routines:
                         centroids1, centroids2, image_size
                     )
                     (
-                        temp_1_pd.values[j, 0],
-                        temp_1_pd.values[j, 1],
+                        temp_1_pl[j, 0],
+                        temp_1_pl[j, 1],
                         raw_1_coincidence,
                     ) = A_F.calculate_spot_to_spot_coincidence(
                         spot_1_indices,
@@ -1426,8 +1445,8 @@ class RASP_Routines:
                     )
 
                     (
-                        temp_2_pd.values[j, 0],
-                        temp_2_pd.values[j, 1],
+                        temp_2_pl[j, 0],
+                        temp_2_pl[j, 1],
                         raw_2_coincidence,
                     ) = A_F.calculate_spot_to_spot_coincidence(
                         spot_2_indices,
@@ -1441,85 +1460,91 @@ class RASP_Routines:
                     else:
                         rc1 = np.hstack([rc1, raw_1_coincidence])
                         rc2 = np.hstack([rc2, raw_2_coincidence])
-                image_1_file["coincidence_with_channel_" + spot_2_string] = rc1
-                image_2_file["coincidence_with_channel_" + spot_1_string] = rc2
-                temp_1_pd["image_filename"] = np.full_like(
-                    z_planes, image + spot_1_string + imtype, dtype="object"
+
+                image_1_file = image_1_file.with_columns(channelcol=rc1).rename(
+                    {"channelcol": "coincidence_with_channel_" + spot_2_string}
                 )
-                temp_2_pd["image_filename"] = np.full_like(
-                    z_planes, image + spot_2_string + imtype, dtype="object"
+                image_2_file = image_2_file.with_columns(channelcol=rc2).rename(
+                    {"channelcol": "coincidence_with_channel_" + spot_1_string}
                 )
 
+                temp_1_pl = temp_1_pl.with_columns(
+                    image_filename=np.full_like(
+                        z_planes, image + spot_1_string + imtype, dtype="object"
+                    )
+                )
+
+                temp_2_pl = temp_2_pl.with_columns(
+                    image_filename=np.full_like(
+                        z_planes, image + spot_2_string + imtype, dtype="object"
+                    )
+                )
                 if i == 0:
-                    plane_1_analysis = temp_1_pd
-                    plane_2_analysis = temp_2_pd
+                    plane_1_analysis = temp_1_pl
+                    plane_2_analysis = temp_2_pl
                     spot_1_analysis = image_1_file
                     spot_2_analysis = image_2_file
                 else:
-                    plane_1_analysis = pd.concat(
-                        [plane_1_analysis, temp_1_pd]
-                    ).reset_index(drop=True)
-                    plane_2_analysis = pd.concat(
-                        [plane_2_analysis, temp_2_pd]
-                    ).reset_index(drop=True)
-                    spot_1_analysis = pd.concat([spot_1_analysis, image_1_file])
-                    spot_2_analysis = pd.concat([spot_2_analysis, image_2_file])
-            plane_1_analysis.to_csv(
-                analysis_file_1.split(".")[0]
-                + "_colocalisationwith_"
-                + spot_2_string
-                + "_"
-                + threshold1_str
-                + "_"
-                + spot_1_string
-                + "_photonthreshold_"
-                + threshold2_str
-                + "_"
-                + spot_2_string
-                + "_photonthreshold.csv"
-            )
-            plane_2_analysis.to_csv(
-                analysis_file_2.split(".")[0]
-                + "_colocalisationwith_"
-                + spot_1_string
-                + "_"
-                + threshold2_str
-                + "_"
-                + spot_2_string
-                + "_photonthreshold_"
-                + threshold1_str
-                + "_"
-                + spot_1_string
-                + "_photonthreshold.csv"
-            )
-            spot_1_analysis.to_csv(
-                analysis_file_1.split(".")[0]
-                + "_rawcolocalisationwith_"
-                + spot_2_string
-                + "_"
-                + threshold1_str
-                + "_"
-                + spot_1_string
-                + "_photonthreshold_"
-                + threshold2_str
-                + "_"
-                + spot_2_string
-                + "_photonthreshold.csv"
-            )
-            spot_2_analysis.to_csv(
-                analysis_file_2.split(".")[0]
-                + "_rawcolocalisationwith_"
-                + spot_1_string
-                + "_"
-                + threshold2_str
-                + "_"
-                + spot_2_string
-                + "_photonthreshold_"
-                + threshold1_str
-                + "_"
-                + spot_1_string
-                + "_photonthreshold.csv"
-            )
+                    plane_1_analysis = pl.concat([plane_1_analysis, temp_1_pl])
+                    plane_2_analysis = pl.concat([plane_2_analysis, temp_2_pl])
+                    spot_1_analysis = pl.concat([spot_1_analysis, image_1_file])
+                    spot_2_analysis = pl.concat([spot_2_analysis, image_2_file])
+        plane_1_analysis.write_csv(
+            analysis_file_1.split(".")[0]
+            + "_colocalisationwith_"
+            + spot_2_string
+            + "_"
+            + threshold1_str
+            + "_"
+            + spot_1_string
+            + "_photonthreshold_"
+            + threshold2_str
+            + "_"
+            + spot_2_string
+            + "_photonthreshold.csv"
+        )
+        plane_2_analysis.write_csv(
+            analysis_file_2.split(".")[0]
+            + "_colocalisationwith_"
+            + spot_1_string
+            + "_"
+            + threshold2_str
+            + "_"
+            + spot_2_string
+            + "_photonthreshold_"
+            + threshold1_str
+            + "_"
+            + spot_1_string
+            + "_photonthreshold.csv"
+        )
+        spot_1_analysis.write_csv(
+            analysis_file_1.split(".")[0]
+            + "_rawcolocalisationwith_"
+            + spot_2_string
+            + "_"
+            + threshold1_str
+            + "_"
+            + spot_1_string
+            + "_photonthreshold_"
+            + threshold2_str
+            + "_"
+            + spot_2_string
+            + "_photonthreshold.csv"
+        )
+        spot_2_analysis.write_csv(
+            analysis_file_2.split(".")[0]
+            + "_rawcolocalisationwith_"
+            + spot_1_string
+            + "_"
+            + threshold2_str
+            + "_"
+            + spot_2_string
+            + "_photonthreshold_"
+            + threshold1_str
+            + "_"
+            + spot_1_string
+            + "_photonthreshold.csv"
+        )
         return (
             plane_1_analysis,
             plane_2_analysis,
