@@ -11,16 +11,104 @@ import polars as pl
 
 import sys
 
-module_dir = os.path.dirname(__file__)
-sys.path.append(module_dir)
-import AnalysisFunctions
-
-A_F = AnalysisFunctions.Analysis_Functions()
-
 
 class IO_Functions:
     def __init__(self):
         self = self
+        return
+
+    def save_abovebelowthresholdcoloc(
+        self,
+        plane_1_analysis_AT,
+        plane_2_analysis_AT,
+        spot_1_analysis_AT,
+        spot_2_analysis_AT,
+        plane_1_analysis_UT,
+        plane_2_analysis_UT,
+        spot_1_analysis_UT,
+        spot_2_analysis_UT,
+        analysis_file_1,
+        analysis_file_2,
+        spot_1_string,
+        spot_2_string,
+        threshold1_str,
+        threshold2_str,
+    ):
+        """
+        saves analysis of above and below threshold.
+
+        Args:
+            plane_1_analysis_AT (pl.DataFrame): polars dataframe.
+            plane_2_analysis_AT (pl.DataFrame): polars dataframe.
+            spot_1_analysis_AT (pl.DataFrame): polars dataframe.
+            spot_2_analysis_AT (pl.DataFrame): polars dataframe.
+            plane_1_analysis_UT (pl.DataFrame): polars dataframe.
+            plane_2_analysis_UT (pl.DataFrame): polars dataframe.
+            spot_1_analysis_UT (pl.DataFrame): polars dataframe.
+            spot_2_analysis_UT (pl.DataFrame): polars dataframe.
+            analysis_file_1 (str): string of analysis file 1.
+            analysis_file_2 (str): string of analysis file 1.
+            spot_1_string (str): string of spot 1.
+            spot_2_string (str): string of spot 2.
+            threshold1_str (str): string of threshold 1.
+            threshold2_str (str): string of threshold 2.
+        """
+        plane_1_analysis_AT.write_csv(
+            analysis_file_1.split(".")[0]
+            + "_colocalisationwith_"
+            + spot_2_string
+            + "_"
+            + threshold1_str
+            + "_"
+            + spot_1_string
+            + "_photonthreshold_"
+            + threshold2_str
+            + "_"
+            + spot_2_string
+            + "_photonthreshold_abovethreshold.csv"
+        )
+        plane_2_analysis_AT.write_csv(
+            analysis_file_2.split(".")[0]
+            + "_colocalisationwith_"
+            + spot_1_string
+            + "_"
+            + threshold2_str
+            + "_"
+            + spot_2_string
+            + "_photonthreshold_"
+            + threshold1_str
+            + "_"
+            + spot_1_string
+            + "_photonthreshold_abovethreshold.csv"
+        )
+        spot_1_analysis_AT.write_csv(
+            analysis_file_1.split(".")[0]
+            + "_rawcolocalisationwith_"
+            + spot_2_string
+            + "_"
+            + threshold1_str
+            + "_"
+            + spot_1_string
+            + "_photonthreshold_"
+            + threshold2_str
+            + "_"
+            + spot_2_string
+            + "_photonthreshold_abovethreshold.csv"
+        )
+        spot_2_analysis_AT.write_csv(
+            analysis_file_2.split(".")[0]
+            + "_rawcolocalisationwith_"
+            + spot_1_string
+            + "_"
+            + threshold2_str
+            + "_"
+            + spot_2_string
+            + "_photonthreshold_"
+            + threshold1_str
+            + "_"
+            + spot_1_string
+            + "_photonthreshold_abovethreshold.csv"
+        )
         return
 
     def save_analysis(
@@ -56,6 +144,11 @@ class IO_Functions:
             to_save_cell (pl.DataFrame): polars dataframe
             one_savefile (boolean): if True, saving all analysis in one csv
         """
+        module_dir = os.path.dirname(__file__)
+        sys.path.append(module_dir)
+        import AnalysisFunctions
+
+        A_F = AnalysisFunctions.Analysis_Functions()
 
         if one_savefile == False:
             savename = os.path.join(

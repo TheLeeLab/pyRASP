@@ -862,96 +862,45 @@ class RASP_Routines:
         Returns:
             rdf (pd.DataArray): pandas datarray of the rdf
         """
-        analysis_data = pl.read_csv(analysis_file)
-        analysis_data = analysis_data.filter(
-            pl.col("sum_intensity_in_photons") > threshold
+        if int(threshold) == threshold:
+            thesholdsavestr = str(threshold)
+        else:
+            thesholdsavestr = str(threshold).replace(".", "p")
+
+        rdf_AT = A_F.spot_mask_rdf_with_threshold(
+            analysis_file,
+            threshold,
+            out_cell=out_cell,
+            pixel_size=pixel_size,
+            dr=dr,
+            cell_string=cell_string,
+            protein_string=protein_string,
+            imtype=imtype,
+            aboveT=1,
         )
-        analysis_directory = os.path.split(analysis_file)[0]
-        if out_cell == True:
-            analysis_data = analysis_data.filter(pl.col("incell") == 0)
 
-        start = time.time()
+        rdf_UT = A_F.spot_mask_rdf_with_threshold(
+            analysis_file,
+            threshold,
+            out_cell=out_cell,
+            pixel_size=pixel_size,
+            dr=dr,
+            cell_string=cell_string,
+            protein_string=protein_string,
+            imtype=imtype,
+            aboveT=0,
+        )
 
-        if len(analysis_data) > 0:
-            if int(threshold) == threshold:
-                thesholdsavestr = str(threshold)
-            else:
-                thesholdsavestr = str(threshold).replace(".", "p")
+        to_save_name = os.path.join(
+            os.path.split(analysis_file)[0],
+            "spot_to_mask_" + cell_string + "_threshold_" + thesholdsavestr,
+        )
 
-            files = np.unique(analysis_data["image_filename"].to_numpy())
-            z_planes = {}  # make dict where z planes will be stored
-            for i, file in enumerate(files):
-                z_planes[file] = np.unique(
-                    analysis_data.filter(pl.col("image_filename") == file)[
-                        "z"
-                    ].to_numpy()
-                )
-
-            g_r = {}
-
-            for i, file in enumerate(files):
-                cell_mask = IO.read_tiff(
-                    os.path.join(
-                        analysis_directory,
-                        os.path.split(file.split(imtype)[0])[-1].split(protein_string)[
-                            0
-                        ]
-                        + str(cell_string)
-                        + "_cellMask.tiff",
-                    )
-                )
-                zs = z_planes[file]
-                subset = analysis_data.filter(pl.col("image_filename") == file)
-                image_size = cell_mask[:, :, 0].shape
-                for z in zs:
-                    uid = str(file) + "___" + str(z)
-
-                    filtered_subset = subset.filter(pl.col("z") == z)
-                    x = filtered_subset["x"].to_numpy()
-                    y = filtered_subset["y"].to_numpy()
-                    coordinates_spot = np.vstack([x, y]).T
-                    xm, ym = np.where(cell_mask[:, :, int(z) - 1])
-                    coordinates_mask = np.vstack([xm, ym]).T
-
-                    if len(coordinates_mask) > 0:
-                        g_r[uid], radii = A_F.spot_to_mask_rdf(
-                            coordinates_spot,
-                            coordinates_mask,
-                            pixel_size=pixel_size,
-                            dr=dr,
-                            r_max=np.divide(
-                                np.multiply(np.max(image_size), pixel_size), 4.0
-                            ),
-                            image_size=image_size,
-                        )
-                print(
-                    "Computing RDF     File {}/{}    Time elapsed: {:.3f} s".format(
-                        i + 1, len(files), time.time() - start
-                    ),
-                    end="\r",
-                    flush=True,
-                )
-
-            g_r_overall = np.zeros([len(radii), len(g_r.keys())])
-
-            for i, uid in enumerate(g_r.keys()):
-                g_r_overall[:, i] = g_r[uid]
-
-            g_r_mean = np.mean(g_r_overall, axis=1)
-            g_r_std = np.std(g_r_overall, axis=1)
-
-            data = {"radii": radii, "g_r_mean": g_r_mean, "g_r_std": g_r_std}
-            rdf = pl.DataFrame(data)
-            to_save_name = os.path.join(
-                os.path.split(analysis_file)[0],
-                "spot_to_mask_"
-                + cell_string
-                + "_threshold_"
-                + thesholdsavestr
-                + "_rdf.csv",
-            )
-            rdf.write_csv(to_save_name)
-            return rdf
+        if isinstance(rdf_AT, pl.DataFrame):
+            rdf_AT.write_csv(to_save_name + "_abovethreshold_rdf.csv")
+        if isinstance(rdf_UT, pl.DataFrame):
+            rdf_UT.write_csv(to_save_name + "_belowthreshold_rdf.csv")
+        return rdf_AT, rdf_UT
 
     def calculate_two_puncta_channels_rdf_with_thresholds(
         self,
@@ -961,7 +910,6 @@ class RASP_Routines:
         threshold_p2,
         pixel_size=0.11,
         dr=1.0,
-        n_iter=10,
         protein_string_1="C0",
         protein_string_2="C1",
         imtype=".tif",
@@ -985,127 +933,64 @@ class RASP_Routines:
             rdf (pl.DataArray): polars datarray of the rdf
         """
         analysis_data_p1 = pl.read_csv(analysis_file_p1)
-        analysis_data_p1 = analysis_data_p1.filter(
-            pl.col("sum_intensity_in_photons") > threshold_p1
-        )
 
         analysis_data_p2 = pl.read_csv(analysis_file_p2)
-        analysis_data_p2 = analysis_data_p2.filter(
-            pl.col("sum_intensity_in_photons") > threshold_p2
+
+        if int(threshold_p1) == threshold_p1:
+            theshold_p1_savestr = str(threshold_p1)
+        else:
+            theshold_p1_savestr = str(threshold_p1).replace(".", "p")
+
+        if int(threshold_p2) == threshold_p2:
+            theshold_p2_savestr = str(threshold_p2)
+        else:
+            theshold_p2_savestr = str(threshold_p2).replace(".", "p")
+
+        rdf_AT = A_F.two_puncta_channels_rdf_with_thresholds(
+            analysis_data_p1,
+            analysis_data_p2,
+            threshold_p1,
+            threshold_p2,
+            pixel_size=pixel_size,
+            dr=dr,
+            protein_string_1=protein_string_1,
+            protein_string_2=protein_string_2,
+            imtype=imtype,
+            aboveT=1,
         )
 
-        start = time.time()
+        rdf_UT = A_F.two_puncta_channels_rdf_with_thresholds(
+            analysis_data_p1,
+            analysis_data_p2,
+            threshold_p1,
+            threshold_p2,
+            pixel_size=pixel_size,
+            dr=dr,
+            protein_string_1=protein_string_1,
+            protein_string_2=protein_string_2,
+            imtype=imtype,
+            aboveT=0,
+        )
 
-        if (len(analysis_data_p1) > 0) and (len(analysis_data_p2) > 0):
-            if int(threshold_p1) == threshold_p1:
-                theshold_p1_savestr = str(threshold_p1)
-            else:
-                theshold_p1_savestr = str(threshold_p1).replace(".", "p")
+        to_save_name = os.path.join(
+            os.path.split(analysis_file_p1)[0],
+            "puncta1_"
+            + protein_string_1
+            + "_to_puncta2_"
+            + protein_string_2
+            + "_threshold_puncta1_"
+            + theshold_p1_savestr
+            + "_threshold_puncta2_"
+            + theshold_p2_savestr,
+        )
 
-            if int(threshold_p2) == threshold_p2:
-                theshold_p2_savestr = str(threshold_p2)
-            else:
-                theshold_p2_savestr = str(threshold_p2).replace(".", "p")
-
-            files_p1 = np.unique(
-                [
-                    file.split(imtype)[0].split(protein_string_1)[0]
-                    for file in analysis_data_p1["image_filename"].to_numpy()
-                ]
+        if isinstance(rdf_AT, pl.DataFrame):
+            rdf_AT.write_csv(to_save_name + "_rdf_abovethreshold.csv")
+        if isinstance(rdf_UT, pl.DataFrame):
+            rdf_UT.write_csv(
+                to_save_name + "_rdf_belowthreshold.csv",
             )
-            files_p2 = np.unique(
-                [
-                    file.split(imtype)[0].split(protein_string_2)[0]
-                    for file in analysis_data_p2["image_filename"].to_numpy()
-                ]
-            )
-            files = np.unique(np.hstack([files_p1, files_p2]))
-
-            z_planes = {}  # make dict where z planes will be stored
-            for i, file in enumerate(files):
-                zp_f1 = np.unique(
-                    analysis_data_p1.filter(
-                        pl.col("image_filename")
-                        == file + str(protein_string_1) + imtype
-                    )["z"].to_numpy()
-                )
-                zp_f2 = np.unique(
-                    analysis_data_p2.filter(
-                        pl.col("image_filename")
-                        == file + str(protein_string_2) + imtype
-                    )["z"].to_numpy()
-                )
-
-                z_planes[file] = np.unique(np.hstack([zp_f1, zp_f2]))
-
-            g_r = {}
-
-            for i, file in enumerate(files):
-                zs = z_planes[file]
-                subset_p1 = analysis_data_p1.filter(
-                    pl.col("image_filename") == file + str(protein_string_1) + imtype
-                )
-                subset_p2 = analysis_data_p2.filter(
-                    pl.col("image_filename") == file + str(protein_string_2) + imtype
-                )
-                for z in zs:
-                    uid = str(file) + "___" + str(z)
-                    filtered_subset_p1 = subset_p1.filter(pl.col("z") == z)
-                    filtered_subset_p2 = subset_p2.filter(pl.col("z") == z)
-
-                    x_p1 = filtered_subset_p1["x"].to_numpy()
-                    y_p1 = filtered_subset_p1["y"].to_numpy()
-                    x_p2 = filtered_subset_p2["x"].to_numpy()
-                    y_p2 = filtered_subset_p2["y"].to_numpy()
-                    coordinates_p1_spot = np.asarray(
-                        np.vstack([x_p1, y_p1]).T, dtype=int
-                    )
-                    coordinates_p2_spot = np.asarray(
-                        np.vstack([x_p2, y_p2]).T, dtype=int
-                    )
-                    if (len(coordinates_p1_spot) > 0) and (
-                        len(coordinates_p2_spot) > 0
-                    ):
-                        g_r[uid], radii = A_F.spot_to_mask_rdf(
-                            coordinates_p1_spot,
-                            coordinates_p2_spot,
-                            pixel_size=pixel_size,
-                            dr=dr,
-                            r_max=np.divide(np.multiply(1200.0, pixel_size), 4.0),
-                            image_size=(1200.0, 1200.0),
-                        )
-                print(
-                    "Computing RDF     File {}/{}    Time elapsed: {:.3f} s".format(
-                        i + 1, len(files), time.time() - start
-                    ),
-                    end="\r",
-                    flush=True,
-                )
-
-            g_r_overall = np.zeros([len(radii), len(g_r.keys())])
-
-            for i, uid in enumerate(g_r.keys()):
-                g_r_overall[:, i] = g_r[uid]
-
-            g_r_mean = np.mean(g_r_overall, axis=1)
-            g_r_std = np.std(g_r_overall, axis=1)
-            data = {"radii": radii, "g_r_mean": g_r_mean, "g_r_std": g_r_std}
-
-            rdf = pl.DataFrame(data)
-            to_save_name = os.path.join(
-                os.path.split(analysis_file_p1)[0],
-                "puncta1_"
-                + protein_string_1
-                + "_to_puncta2_"
-                + protein_string_2
-                + "_threshold_puncta1_"
-                + theshold_p1_savestr
-                + "_threshold_puncta2_"
-                + theshold_p2_savestr
-                + "_rdf.csv",
-            )
-            rdf.write_csv(to_save_name)
-            return rdf
+        return rdf_AT, rdf_UT
 
     def calculate_spot_rdf_with_threshold(
         self,
@@ -1129,69 +1014,95 @@ class RASP_Routines:
         Returns:
             rdf (pd.DataArray): pandas datarray of the rdf
         """
-        analysis_data = pl.read_csv(analysis_file)
-        analysis_data = analysis_data.filter(
-            pl.col("sum_intensity_in_photons") > threshold
+        if int(threshold) == threshold:
+            thesholdsavestr = str(threshold)
+        else:
+            thesholdsavestr = str(threshold).replace(".", "p")
+        rdf_AT = A_F.single_spot_channel_rdf_with_threshold(
+            analysis_file, threshold, pixel_size=pixel_size, dr=dr, aboveT=1
         )
-        if len(analysis_data) > 0:
-            if int(threshold) == threshold:
-                thesholdsavestr = str(threshold)
-            else:
-                thesholdsavestr = str(threshold).replace(".", "p")
+        rdf_UT = A_F.single_spot_channel_rdf_with_threshold(
+            analysis_file, threshold, pixel_size=pixel_size, dr=dr, aboveT=0
+        )
+        to_save_name = os.path.join(
+            os.path.split(analysis_file)[0], "spot_to_spot_threshold_" + thesholdsavestr
+        )
 
-            files = np.unique(analysis_data["image_filename"].to_numpy())
-            z_planes = {}  # make dict where z planes will be stored
-            for i, file in enumerate(files):
-                z_planes[file] = np.unique(
-                    analysis_data.filter(pl.col("image_filename") == file)[
-                        "z"
-                    ].to_numpy()
-                )
+        if isinstance(rdf_AT, pl.DataFrame):
+            rdf_AT.write_csv(to_save_name + "_abovethreshold_rdf.csv")
+        if isinstance(rdf_UT, pl.DataFrame):
+            rdf_UT.write_csv(to_save_name + "_belowthreshold_rdf.csv")
+        return rdf_AT, rdf_UT
 
-            g_r = {}
-            radii = {}
+    def count_puncta_in_individual_cells_threshold(
+        self,
+        analysis_file,
+        threshold,
+        cell_string,
+        protein_string,
+        imtype=".tif",
+        blur_degree=1,
+    ):
+        """
+        Redo colocalisation analayses of spots above a photon threshold in an
+        analysis file.
 
-            start = time.time()
+        Args:
+            analysis_file (str): The analysis file to be re-done.
+            threshold (float): The photon threshold
+            cell_string (str): string of cell to analyse
+            protein_string (str): string of analysed protein
+            imtype (str): image type
+            blur_degree (int): blur degree for colocalisation analysis
 
-            for i, file in enumerate(files):
-                zs = z_planes[file]
-                subset = analysis_data.filter(pl.col("image_filename") == file)
-                for z in zs:
-                    uid = str(file) + "___" + str(z)
-                    subset_filter = subset.filter(pl.col("z") == z)
-                    x = subset_filter["x"].to_numpy()
-                    y = subset_filter["y"].to_numpy()
-                    coordinates = np.vstack([x, y]).T
-                    g_r[uid], radii[uid] = A_F.spot_to_spot_rdf(
-                        coordinates, pixel_size=pixel_size, dr=dr
-                    )
-                print(
-                    "Computing RDF     File {}/{}    Time elapsed: {:.3f} s".format(
-                        i + 1, len(files), time.time() - start
-                    ),
-                    end="\r",
-                    flush=True,
-                )
+        Returns:
+            cell_punctum_analysis_AT (pl.DataFrame): dataframe of cell analysis above threshold
+            cell_punctum_analysis_UT (pl.DataFrame): dataframe of cell analysis below threshold
 
-            radii_key, radii_overall = max(radii.items(), key=lambda x: len(set(x[1])))
+        """
+        if int(threshold) == threshold:
+            threshold_str = str(int(threshold))
+        else:
+            threshold_str = str(threshold).replace(".", "p")
 
-            g_r_overall = np.zeros([len(radii_overall), len(g_r.keys())])
-
-            for i, uid in enumerate(g_r.keys()):
-                g_r_overall[:, i] = np.interp(
-                    fp=g_r[uid], xp=radii[uid], x=radii_overall, left=0.0, right=0.0
-                )
-            g_r_mean = np.mean(g_r_overall, axis=1)
-            g_r_std = np.std(g_r_overall, axis=1)
-            data = {"radii": radii_overall, "g_r_mean": g_r_mean, "g_r_std": g_r_std}
-
-            rdf = pl.DataFrame(data)
-            to_save_name = os.path.join(
-                os.path.split(analysis_file)[0],
-                "spot_to_spot_threshold_" + thesholdsavestr + "_rdf.csv",
+        cell_punctum_analysis_AT = (
+            A_F.number_of_puncta_per_segmented_cell_with_threshold(
+                analysis_file,
+                threshold,
+                blur_degree=blur_degree,
+                cell_string=cell_string,
+                protein_string=protein_string,
+                imtype=imtype,
+                aboveT=1,
             )
-            rdf.write_csv(to_save_name)
-            return rdf
+        )
+
+        cell_punctum_analysis_UT = (
+            A_F.number_of_puncta_per_segmented_cell_with_threshold(
+                analysis_file,
+                threshold,
+                blur_degree=blur_degree,
+                cell_string=cell_string,
+                protein_string=protein_string,
+                imtype=imtype,
+                aboveT=0,
+            )
+        )
+
+        savecell_string = os.path.join(
+            os.path.split(analysis_file)[0],
+            "single_cell_coincidence_" + threshold_str,
+        )
+
+        if isinstance(cell_punctum_analysis_AT, pl.DataFrame):
+            cell_punctum_analysis_AT.write_csv(
+                savecell_string + "_abovephotonthreshold.csv"
+            )
+        if isinstance(cell_punctum_analysis_UT, pl.DataFrame):
+            cell_punctum_analysis_UT.write_csv(
+                savecell_string + "_belowphotonthreshold.csv"
+            )
+        return cell_punctum_analysis_AT, cell_punctum_analysis_UT
 
     def colocalise_with_threshold(
         self,
@@ -1221,107 +1132,53 @@ class RASP_Routines:
         else:
             threshold_str = str(threshold).replace(".", "p")
 
-        spots_with_intensities = pl.read_csv(analysis_file)
-        spots_with_intensities = spots_with_intensities.filter(
-            pl.col("sum_intensity_in_photons") > threshold
+        cell_analysis_AT, spot_analysis_AT = A_F.colocalise_with_threshold(
+            analysis_file,
+            threshold,
+            protein_string,
+            cell_string,
+            imtype=".tif",
+            blur_degree=1,
+            calc_clr=False,
+            aboveT=1,
         )
 
-        analysis_directory = os.path.split(analysis_file)[0]
-        image_filenames = np.unique(spots_with_intensities["image_filename"].to_numpy())
+        cell_analysis_UT, spot_analysis_UT = A_F.colocalise_with_threshold(
+            analysis_file,
+            threshold,
+            protein_string,
+            cell_string,
+            imtype=".tif",
+            blur_degree=1,
+            calc_clr=False,
+            aboveT=0,
+        )
 
-        if calc_clr == False:
-            columns = ["coincidence", "chance_coincidence", "n_iter", "image_filename"]
-        else:
-            columns = [
-                "clr",
-                "norm_std",
-                "norm_CSR",
-                "expected_spots",
-                "coincidence",
-                "chance_coincidence",
-                "n_iter",
-                "image_filename",
-            ]
+        savecell_string = os.path.join(
+            os.path.split(analysis_file)[0],
+            "cell_colocalisation_analysis_" + threshold_str,
+        )
 
-        for i, image in enumerate(image_filenames):
-            cell_mask = IO.read_tiff(
-                os.path.join(
-                    analysis_directory,
-                    os.path.split(image.split(imtype)[0])[-1].split(protein_string)[0]
-                    + str(cell_string)
-                    + "_cellMask.tiff",
-                )
-            )
-            image_size = cell_mask.shape[:-1]
-            image_file = spots_with_intensities.filter(
-                pl.col("image_filename") == image
-            )
-            z_planes = np.unique(image_file["z"].to_numpy())
-
-            dataarray = np.zeros([len(z_planes), len(columns)])
-
-            temp_pl = pl.DataFrame(data=dataarray, schema=columns)
-
-            for j, z_plane in enumerate(z_planes):
-                filtered_file = image_file.filter(pl.col("z") == z_plane)
-                xcoords = filtered_file["x"].to_numpy()
-                ycoords = filtered_file["y"].to_numpy()
-                mask = cell_mask[:, :, int(z_plane) - 1]
-                centroids = np.asarray(np.vstack([xcoords, ycoords]), dtype=int).T
-                mask_indices, spot_indices = A_F.generate_mask_and_spot_indices(
-                    mask, centroids, image_size
-                )
-                if calc_clr == False:
-                    (
-                        temp_pl[j, 0],
-                        temp_pl[j, 1],
-                        raw_colocalisation,
-                        temp_pl[j, 2],
-                    ) = A_F.calculate_spot_to_mask_coincidence(
-                        spot_indices,
-                        mask_indices,
-                        image_size,
-                        blur_degree=blur_degree,
-                    )
-                else:
-                    (
-                        temp_pl[j, 0],
-                        temp_pl[j, 1],
-                        temp_pl[j, 2],
-                        temp_pl[j, 3],
-                        temp_pl[j, 4],
-                        temp_pl[j, 5],
-                        raw_colocalisation,
-                        temp_pl[j, 6],
-                    ) = A_F.calculate_spot_colocalisation_likelihood_ratio(
-                        spot_indices, mask_indices, image_size, blur_degree=1
-                    )
-                if j == 0:
-                    rc = raw_colocalisation
-                else:
-                    rc = np.hstack([rc, raw_colocalisation])
-            temp_pl = temp_pl.with_columns(
-                image_filename=np.full_like(z_planes, image, dtype="object")
-            )
-            image_file = image_file.with_columns(incell=rc * 1)
-            if i == 0:
-                cell_analysis = temp_pl
-                spot_analysis = image_file
-            else:
-                cell_analysis = pl.concat([cell_analysis, temp_pl])
-                spot_analysis = pl.concat([spot_analysis, image_file])
-        cell_analysis.write_csv(
-            os.path.join(
-                analysis_directory,
-                "cell_colocalisation_analysis_"
+        if isinstance(cell_analysis_AT, pl.DataFrame):
+            cell_analysis_AT.write_csv(savecell_string + "_abovephotonthreshold.csv")
+        if isinstance(spot_analysis_AT, pl.DataFrame):
+            spot_analysis_AT.write_csv(
+                analysis_file.split(".")[0]
+                + "_"
                 + threshold_str
-                + "_photonthreshold.csv",
+                + "_abovephotonthreshold.csv"
             )
-        )
-        spot_analysis.write_csv(
-            analysis_file.split(".")[0] + "_" + threshold_str + "_photonthreshold.csv"
-        )
-        return cell_analysis, spot_analysis
+
+        if isinstance(cell_analysis_UT, pl.DataFrame):
+            cell_analysis_UT.write_csv(savecell_string + "_belowphotonthreshold.csv")
+        if isinstance(spot_analysis_UT, pl.DataFrame):
+            spot_analysis_UT.write_csv(
+                analysis_file.split(".")[0]
+                + "_"
+                + threshold_str
+                + "_belowphotonthreshold.csv"
+            )
+        return cell_analysis_AT, spot_analysis_AT, cell_analysis_UT, spot_analysis_UT
 
     def colocalise_spots_with_threshold(
         self,
@@ -1349,6 +1206,16 @@ class RASP_Routines:
             imtype (str): image type
             image_size (list): original image size
             blur_degree (int): blur degree for colocalisation analysis
+
+        Returns:
+            channel_1_analysis_AT (pl.DataFrame): channel 1 type above threshold
+            channel_2_analysis_AT (pl.DataFrame): channel 2 type above threshold
+            spot_1_analysis_AT (pl.DataFrame): channel 1 type above threshold
+            spot_2_analysis_AT (pl.DataFrame): channel 2 type above threshold
+            channel_1_analysis_UT (pl.DataFrame): channel 1 type below threshold
+            channel_2_analysis_UT (pl.DataFrame): channel 2 type below threshold
+            spot_1_analysis_UT (pl.DataFrame): channel 1 type below threshold
+            spot_2_analysis_UT (pl.DataFrame): channel 2 type below threshold
         """
         if int(threshold_1) == threshold_1:
             threshold1_str = str(int(threshold_1))
@@ -1361,195 +1228,70 @@ class RASP_Routines:
             threshold2_str = str(threshold_2).replace(".", "p")
 
         spots_1_with_intensities = pl.read_csv(analysis_file_1)
-        spots_1_with_intensities = spots_1_with_intensities.filter(
-            pl.col("sum_intensity_in_photons") > threshold_1
-        )
-
         spots_2_with_intensities = pl.read_csv(analysis_file_2)
-        spots_2_with_intensities = spots_2_with_intensities.filter(
-            pl.col("sum_intensity_in_photons") > threshold_2
+
+        (
+            channel_1_analysis_AT,
+            channel_2_analysis_AT,
+            spot_1_analysis_AT,
+            spot_2_analysis_AT,
+        ) = A_F.colocalise_spots_with_threshold(
+            spots_1_with_intensities,
+            spots_2_with_intensities,
+            threshold_1,
+            threshold_2,
+            spot_1_string,
+            spot_2_string,
+            imtype=imtype,
+            image_size=image_size,
+            blur_degree=blur_degree,
+            aboveT=1,
         )
 
-        image_1_filenames = np.unique(
-            spots_1_with_intensities["image_filename"].to_numpy()
+        (
+            channel_1_analysis_UT,
+            channel_2_analysis_UT,
+            spot_1_analysis_UT,
+            spot_2_analysis_UT,
+        ) = A_F.colocalise_spots_with_threshold(
+            spots_1_with_intensities,
+            spots_2_with_intensities,
+            threshold_1,
+            threshold_2,
+            spot_1_string,
+            spot_2_string,
+            imtype=imtype,
+            image_size=image_size,
+            blur_degree=blur_degree,
+            aboveT=0,
         )
-        image_2_filenames = np.unique(
-            spots_2_with_intensities["image_filename"].to_numpy()
+
+        IO.save_abovebelowthresholdcoloc(
+            channel_1_analysis_AT,
+            channel_2_analysis_AT,
+            spot_1_analysis_AT,
+            spot_2_analysis_AT,
+            channel_1_analysis_UT,
+            channel_2_analysis_UT,
+            spot_1_analysis_UT,
+            spot_2_analysis_UT,
+            analysis_file_1,
+            analysis_file_2,
+            spot_1_string,
+            spot_2_string,
+            threshold1_str,
+            threshold2_str,
         )
 
-        overall_1_filenames = [
-            i.split(imtype)[0].split(spot_1_string)[0] for i in image_1_filenames
-        ]
-        overall_2_filenames = [
-            i.split(imtype)[0].split(spot_2_string)[0] for i in image_2_filenames
-        ]
-        overall_filenames = np.unique(
-            np.hstack([overall_1_filenames, overall_2_filenames])
-        )
-
-        columns = ["coincidence", "chance_coincidence", "image_filename"]
-
-        for i, image in enumerate(overall_filenames):
-            image_1_file = spots_1_with_intensities.filter(
-                pl.col("image_filename") == image + spot_1_string + imtype
-            )
-
-            image_2_file = spots_2_with_intensities.filter(
-                pl.col("image_filename") == image + spot_2_string + imtype
-            )
-            if (len(image_1_file) > 0) & (len(image_2_file) > 0):
-                z_planes = np.intersect1d(
-                    image_1_file["z"].to_numpy(), image_2_file["z"].to_numpy()
-                )
-
-                dataarray_1 = np.zeros([len(z_planes), len(columns)])
-                dataarray_2 = np.zeros([len(z_planes), len(columns)])
-
-                temp_1_pl = pl.DataFrame(data=dataarray_1, schema=columns)
-                temp_2_pl = pl.DataFrame(data=dataarray_2, schema=columns)
-
-                for j, z_plane in enumerate(z_planes):
-                    x_1_coords = image_1_file.filter(pl.col("z") == z_plane)[
-                        "x"
-                    ].to_numpy()
-                    y_1_coords = image_1_file.filter(pl.col("z") == z_plane)[
-                        "y"
-                    ].to_numpy()
-
-                    x_2_coords = image_1_file.filter(pl.col("z") == z_plane)[
-                        "x"
-                    ].to_numpy()
-                    y_2_coords = image_2_file.filter(pl.col("z") == z_plane)[
-                        "y"
-                    ].to_numpy()
-
-                    centroids1 = np.asarray(
-                        np.vstack([x_1_coords, y_1_coords]), dtype=int
-                    ).T
-                    centroids2 = np.asarray(
-                        np.vstack([x_2_coords, y_2_coords]), dtype=int
-                    ).T
-
-                    spot_1_indices, spot_2_indices = A_F.generate_spot_and_spot_indices(
-                        centroids1, centroids2, image_size
-                    )
-                    (
-                        temp_1_pl[j, 0],
-                        temp_1_pl[j, 1],
-                        raw_1_coincidence,
-                    ) = A_F.calculate_spot_to_spot_coincidence(
-                        spot_1_indices,
-                        spot_2_indices,
-                        image_size,
-                        blur_degree=blur_degree,
-                    )
-
-                    (
-                        temp_2_pl[j, 0],
-                        temp_2_pl[j, 1],
-                        raw_2_coincidence,
-                    ) = A_F.calculate_spot_to_spot_coincidence(
-                        spot_2_indices,
-                        spot_1_indices,
-                        image_size,
-                        blur_degree=blur_degree,
-                    )
-                    if j == 0:
-                        rc1 = raw_1_coincidence
-                        rc2 = raw_2_coincidence
-                    else:
-                        rc1 = np.hstack([rc1, raw_1_coincidence])
-                        rc2 = np.hstack([rc2, raw_2_coincidence])
-
-                image_1_file = image_1_file.with_columns(channelcol=rc1).rename(
-                    {"channelcol": "coincidence_with_channel_" + spot_2_string}
-                )
-                image_2_file = image_2_file.with_columns(channelcol=rc2).rename(
-                    {"channelcol": "coincidence_with_channel_" + spot_1_string}
-                )
-
-                temp_1_pl = temp_1_pl.with_columns(
-                    image_filename=np.full_like(
-                        z_planes, image + spot_1_string + imtype, dtype="object"
-                    )
-                )
-
-                temp_2_pl = temp_2_pl.with_columns(
-                    image_filename=np.full_like(
-                        z_planes, image + spot_2_string + imtype, dtype="object"
-                    )
-                )
-                if i == 0:
-                    plane_1_analysis = temp_1_pl
-                    plane_2_analysis = temp_2_pl
-                    spot_1_analysis = image_1_file
-                    spot_2_analysis = image_2_file
-                else:
-                    plane_1_analysis = pl.concat([plane_1_analysis, temp_1_pl])
-                    plane_2_analysis = pl.concat([plane_2_analysis, temp_2_pl])
-                    spot_1_analysis = pl.concat([spot_1_analysis, image_1_file])
-                    spot_2_analysis = pl.concat([spot_2_analysis, image_2_file])
-        plane_1_analysis.write_csv(
-            analysis_file_1.split(".")[0]
-            + "_colocalisationwith_"
-            + spot_2_string
-            + "_"
-            + threshold1_str
-            + "_"
-            + spot_1_string
-            + "_photonthreshold_"
-            + threshold2_str
-            + "_"
-            + spot_2_string
-            + "_photonthreshold.csv"
-        )
-        plane_2_analysis.write_csv(
-            analysis_file_2.split(".")[0]
-            + "_colocalisationwith_"
-            + spot_1_string
-            + "_"
-            + threshold2_str
-            + "_"
-            + spot_2_string
-            + "_photonthreshold_"
-            + threshold1_str
-            + "_"
-            + spot_1_string
-            + "_photonthreshold.csv"
-        )
-        spot_1_analysis.write_csv(
-            analysis_file_1.split(".")[0]
-            + "_rawcolocalisationwith_"
-            + spot_2_string
-            + "_"
-            + threshold1_str
-            + "_"
-            + spot_1_string
-            + "_photonthreshold_"
-            + threshold2_str
-            + "_"
-            + spot_2_string
-            + "_photonthreshold.csv"
-        )
-        spot_2_analysis.write_csv(
-            analysis_file_2.split(".")[0]
-            + "_rawcolocalisationwith_"
-            + spot_1_string
-            + "_"
-            + threshold2_str
-            + "_"
-            + spot_2_string
-            + "_photonthreshold_"
-            + threshold1_str
-            + "_"
-            + spot_1_string
-            + "_photonthreshold.csv"
-        )
         return (
-            plane_1_analysis,
-            plane_2_analysis,
-            spot_1_analysis,
-            spot_2_analysis,
+            channel_1_analysis_AT,
+            channel_2_analysis_AT,
+            spot_1_analysis_AT,
+            spot_2_analysis_AT,
+            channel_1_analysis_UT,
+            channel_2_analysis_UT,
+            spot_1_analysis_UT,
+            spot_2_analysis_UT,
         )
 
     def file_search(self, folder, string1, string2):
