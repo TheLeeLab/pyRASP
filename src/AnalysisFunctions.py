@@ -17,7 +17,12 @@ import polars as pl
 import pathos
 from pathos.pools import ThreadPool as Pool
 from rdfpy import rdf
-from src import MultiD_RD_functions
+
+import os
+import sys
+module_dir = os.path.dirname(__file__)
+sys.path.append(module_dir)
+import MultiD_RD_functions
 
 cpu_number = int(pathos.helpers.cpu_count() * 0.8)
 
