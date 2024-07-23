@@ -2685,12 +2685,14 @@ class Analysis_Functions:
 
                     for k in np.arange(len(areas)):
                         coords = pil_mask[k]
-                        xm = coords[:,0]
-                        ym = coords[:,1]
+                        xm = coords[:, 0]
+                        ym = coords[:, 1]
                         if (np.any(xm > image_size[0])) or (np.any(ym > image_size[1])):
                             n_spots_in_object[k] = 0
                         else:
-                            coordinates_mask = np.asarray(np.vstack([xm, ym]), dtype=int)
+                            coordinates_mask = np.asarray(
+                                np.vstack([xm, ym]), dtype=int
+                            )
                             mask_indices = np.ravel_multi_index(
                                 coordinates_mask, image_size, order="F"
                             )
