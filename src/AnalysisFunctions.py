@@ -20,6 +20,7 @@ from rdfpy import rdf
 
 import os
 import sys
+
 module_dir = os.path.dirname(__file__)
 sys.path.append(module_dir)
 import MultiD_RD_functions
