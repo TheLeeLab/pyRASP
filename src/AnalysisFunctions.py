@@ -2682,7 +2682,7 @@ class Analysis_Functions:
                     )
                     filename_tosave = np.full_like(x_m, file, dtype="object")
                     n_spots_in_object = np.zeros_like(x_m)
-                    z = np.full_like(x_m, z)
+                    z_tosave = np.full_like(x_m, z)
 
                     for k in np.arange(len(areas)):
                         coords = pil_mask[k]
@@ -2712,7 +2712,7 @@ class Analysis_Functions:
                         "area/pixels": areas,
                         "x_centre": x_m,
                         "y_centre": y_m,
-                        "z": z,
+                        "z": z_tosave,
                         "n_puncta_in_cell": n_spots_in_object,
                         "image_filename": filename_tosave,
                     }
