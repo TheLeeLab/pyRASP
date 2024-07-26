@@ -1116,6 +1116,7 @@ class RASP_Routines:
                 "area/pixels",
                 "x_centre",
                 "y_centre",
+                "z",
                 below_str,
                 above_str,
                 "n_puncta_in_cell_ratio_aboveandbelow",
