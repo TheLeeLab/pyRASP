@@ -246,6 +246,64 @@ class Plotter:
         axs.set_xlabel(xaxislabel, fontsize=fontsz)
         return axs
 
+    def scatter_plot(
+        self,
+        axs,
+        x,
+        y,
+        xlim=None,
+        ylim=None,
+        label="",
+        edgecolor="k",
+        facecolor="white",
+        s=5,
+        lw=0.75,
+        xaxislabel="x axis",
+        yaxislabel="y axis",
+        alpha=1,
+    ):
+        """scatter_plot function
+        takes data and makes a scatter plot
+        Args:
+            x is x data
+            y os y data
+            xlim is x limits; default is None (which computes max/min)
+            ylim is y limits; default is None (which computes max/min)
+            label is label; default is nothing
+            edgecolor is edge colour; default is black
+            facecolor is face colour; default is white
+            s is size of scatter point; default is 5
+            lw is line width (default 0.75)
+            xaxislabel is x axis label (default is 'x axis')
+            yaxislabel is y axis label (default is 'y axis')
+        Returns:
+            axs is axis object"""
+        if self.poster == True:
+            fontsz = 15
+        else:
+            fontsz = 7.0
+
+        if xlim is None:
+            xlim = np.array([np.min(x), np.max(x)])
+        if ylim is None:
+            ylim = np.array([np.min(y), np.max(y)])
+        axs.scatter(
+            x,
+            y,
+            s=s,
+            edgecolors=edgecolor,
+            facecolor=facecolor,
+            lw=lw,
+            label=label,
+            alpha=alpha,
+        )
+        axs.set_xlim(xlim)
+        axs.set_ylim(ylim)
+        axs.grid(True, which="both", ls="--", c="gray", lw=0.25, alpha=0.25)
+        axs.set_xlabel(xaxislabel, fontsize=fontsz)
+        axs.set_ylabel(yaxislabel, fontsize=fontsz)
+        return axs
+
     def image_plot(
         self,
         axs,
@@ -258,8 +316,8 @@ class Plotter:
         label="",
         labelcolor="white",
         pixelsize=110,
-        scalebarsize=5000,
-        scalebarlabel=r"5$\,\mu$m",
+        scalebarsize=10000,
+        scalebarlabel=r"10$\,\mu$m",
         alpha=1,
         plotmask=False,
         mask=None,
@@ -345,8 +403,8 @@ class Plotter:
         label="",
         labelcolor="white",
         pixelsize=110,
-        scalebarsize=5000,
-        scalebarlabel=r"5$\,\mu$m",
+        scalebarsize=10000,
+        scalebarlabel=r"10$\,\mu$m",
         alpha=1,
         scattercolor="red",
         s=20,

@@ -3101,6 +3101,29 @@ class Analysis_Functions:
                     flush=True,
                 )
         return (plane_1_analysis, plane_2_analysis, spot_1_analysis, spot_2_analysis)
+    
+    def create_npuncta_cellmasks(self, cell_analysis, puncta, cell_mask, z_plane):
+        from copy import copy
+        cell_mask_toplot_AT = copy(cell_mask[:,:,z_plane-1])
+        cell_mask_toplot_UT = copy(cell_mask[:,:,z_plane-1])
+        cell_mask_toplot_R = copy(cell_mask[:,:,z_plane-1])
+        pil, areas, centroids = self.calculate_region_properties(cell_mask_toplot_AT)
+        
+        puncta = ( puncta.filter(pl.col("z") == z_plane) )
+        
+        analysis = (
+                            cell_analysis.filter(pl.col("z") == z_plane)
+                        )
+        
+        for i, mask in enumerate(pil):
+            cell_mask_toplot_AT[mask[:, 0], mask[:,1]] = analysis[i, 5]
+            cell_mask_toplot_UT[mask[:, 0], mask[:,1]] = analysis[i, 4]
+            if np.isfinite(analysis[i, 6]):
+                val = analysis[i, 6]
+            else:
+                val = 0.
+            cell_mask_toplot_R[mask[:, 0], mask[:, 1]] = val
+        return analysis, cell_mask_toplot_AT, cell_mask_toplot_UT, cell_mask_toplot_R
 
     def make_datarray_cell(
         self,
