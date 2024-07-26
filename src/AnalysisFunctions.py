@@ -382,53 +382,115 @@ class Analysis_Functions:
                                 consider part of spot). Default 1
 
         Returns:
-            coincidence (float): coincidence FoV
-            chance_coincidence (float): chance coincidence
+            coincidence_1 (float): coincidence from 1 to 2 FoV
+            chance_coincidence_1 (float): chance coincidence from 1 to 2
+            coincidence_2 (float): coincidence from 2 to 1 FoV
+            chance_coincidence_2 (float): chance coincidence from 2 to 1
+            raw_coincidence_1 (np.1darray): raw colocalisation values per spot 1 to 2
+            raw_coincidence_2 (np.1darray): raw colocalisation values per spot 2 to 1
         """
-        original_n_spots = len(spot_1_indices)  # get number of spots
+        original_n_spots_1 = len(spot_1_indices)  # get number of spots 1
+        original_n_spots_2 = len(spot_2_indices)  # get number of spots 2
 
-        if original_n_spots == 0:
-            coincidence = np.NAN
-            chance_coincidence = np.NAN
-            return coincidence, chance_coincidence
+        if (original_n_spots_1 == 0) or (original_n_spots_2 == 0):
+            coincidence_1 = np.NAN
+            chance_coincidence_1 = np.NAN
+            coincidence_2 = np.NAN
+            chance_coincidence_2 = np.NAN
+            raw_coincidence_1 = np.full_like(spot_1_indices, np.NAN)
+            raw_coincidence_2 = np.full_like(spot_1_indices, np.NAN)
+            return (
+                coincidence_1,
+                chance_coincidence_1,
+                coincidence_2,
+                chance_coincidence_2,
+                raw_coincidence_1,
+                raw_coincidence_2,
+            )
 
         if blur_degree > 0:
             spot_1_indices = self.dilate_pixels(
                 spot_1_indices, image_size, width=blur_degree + 1, edge=blur_degree
             )
+            spot_2_indices = self.dilate_pixels(
+                spot_2_indices, image_size, width=blur_degree + 1, edge=blur_degree
+            )
+
         possible_indices = np.arange(
             0, np.prod(image_size)
         )  # get list of where is possible to exist in an image
-        raw_coincidence = self.test_spot_spot_overlap(
-            spot_1_indices, spot_2_indices, original_n_spots
+        raw_coincidence_1 = self.test_spot_spot_overlap(
+            spot_1_indices, spot_2_indices, original_n_spots_1
         )  # get nspots in mask
+        raw_coincidence_1[raw_coincidence_1 >= 1.0] = 1.0
+        raw_coincidence_2 = self.test_spot_spot_overlap(
+            spot_2_indices, spot_1_indices, original_n_spots_2
+        )  # get nspots in mask
+        raw_coincidence_2[raw_coincidence_2 >= 1.0] = 1.0
 
-        coincidence = np.divide(
-            np.sum(raw_coincidence), original_n_spots
+        coincidence_1 = np.divide(
+            np.sum(raw_coincidence_1), original_n_spots_1
+        )  # generate coincidence
+        coincidence_2 = np.divide(
+            np.sum(raw_coincidence_2), original_n_spots_2
         )  # generate coincidence
 
-        random_spot_locations = np.random.choice(
-            possible_indices, size=(n_iter, original_n_spots)
+        random_spot_locations_1 = np.random.choice(
+            possible_indices, size=(n_iter, original_n_spots_1)
         )  # get random spot locations
+        random_spot_locations_2 = np.random.choice(
+            possible_indices, size=(n_iter, original_n_spots_2)
+        )  # get random spot locations
+
         if blur_degree > 0:
-            random_spot_locations = self.dilate_pixel_matrix(
-                random_spot_locations,
+            random_spot_locations_1 = self.dilate_pixel_matrix(
+                random_spot_locations_1,
                 image_size,
                 width=blur_degree + 1,
                 edge=blur_degree,
             )
-        CC = np.zeros([n_iter])  # generate CSR array to fill in
-        for i in np.arange(n_iter):
-            CC[i] = np.divide(
-                np.sum(
-                    self.test_spot_spot_overlap(
-                        random_spot_locations[i, :], spot_2_indices, original_n_spots
-                    )
-                ),
-                original_n_spots,
+            random_spot_locations_2 = self.dilate_pixel_matrix(
+                random_spot_locations_2,
+                image_size,
+                width=blur_degree + 1,
+                edge=blur_degree,
             )
-            chance_coincidence = np.nanmean(CC)
-        return coincidence, chance_coincidence, raw_coincidence
+
+        CC_1 = np.zeros([n_iter])  # generate CSR array to fill in
+        CC_2 = np.zeros([n_iter])  # generate CSR array to fill in
+        for i in np.arange(n_iter):
+            rc_1 = self.test_spot_spot_overlap(
+                random_spot_locations_1[i, :],
+                spot_2_indices,
+                original_n_spots_1,
+            )
+            rc_1[rc_1 >= 1.0] = 1.0
+            CC_1[i] = np.divide(
+                np.sum(rc_1),
+                original_n_spots_1,
+            )
+            rc_2 = self.test_spot_spot_overlap(
+                random_spot_locations_2[i, :],
+                spot_1_indices,
+                original_n_spots_2,
+            )
+            rc_2[rc_2 >= 1.0] = 1.0
+            CC_2[i] = np.divide(
+                np.sum(rc_2),
+                original_n_spots_2,
+            )
+
+        chance_coincidence_1 = np.nanmean(CC_1)
+        chance_coincidence_2 = np.nanmean(CC_2)
+
+        return (
+            coincidence_1,
+            chance_coincidence_1,
+            coincidence_2,
+            chance_coincidence_2,
+            raw_coincidence_1,
+            raw_coincidence_2,
+        )
 
     def calculate_largeobj_coincidence(
         self, largeobj_indices, mask_indices, n_largeobjs, image_size
@@ -2541,10 +2603,12 @@ class Analysis_Functions:
             analysis_data = analysis_data.filter(
                 pl.col("sum_intensity_in_photons") > threshold
             )
+            typestr = "> threshold"
         else:
             analysis_data = analysis_data.filter(
                 pl.col("sum_intensity_in_photons") <= threshold
             )
+            typestr = "<= threshold"
 
         if len(analysis_data) > 0:
 
@@ -2575,7 +2639,9 @@ class Analysis_Functions:
                         coordinates, pixel_size=pixel_size, dr=dr
                     )
                 print(
-                    "Computing RDF     File {}/{}    Time elapsed: {:.3f} s".format(
+                    "Computing "
+                    + typestr
+                    + " RDF     File {}/{}    Time elapsed: {:.3f} s".format(
                         i + 1, len(files), time.time() - start
                     ),
                     end="\r",
@@ -2633,10 +2699,12 @@ class Analysis_Functions:
             analysis_data = analysis_data.filter(
                 pl.col("sum_intensity_in_photons") > threshold
             )
+            typestr = "> threshold"
         else:
             analysis_data = analysis_data.filter(
                 pl.col("sum_intensity_in_photons") <= threshold
             )
+            typestr = "<= threshold"
 
         analysis_directory = os.path.split(analysis_file)[0]
         analysis_data = analysis_data.filter(pl.col("incell") == 1)
@@ -2724,7 +2792,9 @@ class Analysis_Functions:
                         )
 
                 print(
-                    "Computing spots in cells     File {}/{}    Time elapsed: {:.3f} s".format(
+                    "Computing "
+                    + typestr
+                    + " spots in cells     File {}/{}    Time elapsed: {:.3f} s".format(
                         i + 1, len(files), time.time() - start
                     ),
                     end="\r",
@@ -2880,7 +2950,7 @@ class Analysis_Functions:
             blur_degree (int): blur degree for colocalisation analysis
             aboveT (int): do the calculation above or below threshold
         """
-
+        # todo: make faster, add z
         if aboveT == 1:
             spots_1_with_intensities = spots_1_with_intensities.filter(
                 pl.col("sum_intensity_in_photons") > threshold_1
@@ -2889,6 +2959,7 @@ class Analysis_Functions:
             spots_2_with_intensities = spots_2_with_intensities.filter(
                 pl.col("sum_intensity_in_photons") > threshold_2
             )
+            typestr = "> threshold"
         else:
             spots_1_with_intensities = spots_1_with_intensities.filter(
                 pl.col("sum_intensity_in_photons") <= threshold_1
@@ -2897,6 +2968,7 @@ class Analysis_Functions:
             spots_2_with_intensities = spots_2_with_intensities.filter(
                 pl.col("sum_intensity_in_photons") <= threshold_2
             )
+            typestr = "<= threshold"
 
         image_1_filenames = np.unique(
             spots_1_with_intensities["image_filename"].to_numpy()
@@ -2915,7 +2987,9 @@ class Analysis_Functions:
             np.hstack([overall_1_filenames, overall_2_filenames])
         )
 
-        columns = ["coincidence", "chance_coincidence", "image_filename"]
+        columns = ["coincidence", "chance_coincidence", "z", "image_filename"]
+
+        start = time.time()
 
         for i, image in enumerate(overall_filenames):
             image_1_file = spots_1_with_intensities.filter(
@@ -2932,6 +3006,9 @@ class Analysis_Functions:
 
                 dataarray_1 = np.zeros([len(z_planes), len(columns)])
                 dataarray_2 = np.zeros([len(z_planes), len(columns)])
+
+                dataarray_1[:, 2] = z_planes
+                dataarray_2[:, 2] = z_planes
 
                 temp_1_pl = pl.DataFrame(data=dataarray_1, schema=columns)
                 temp_2_pl = pl.DataFrame(data=dataarray_2, schema=columns)
@@ -2963,27 +3040,22 @@ class Analysis_Functions:
                             centroids1, centroids2, image_size
                         )
                     )
+
                     (
                         temp_1_pl[j, 0],
                         temp_1_pl[j, 1],
+                        temp_2_pl[j, 0],
+                        temp_2_pl[j, 1],
                         raw_1_coincidence,
+                        raw_2_coincidence,
                     ) = self.calculate_spot_to_spot_coincidence(
                         spot_1_indices,
                         spot_2_indices,
                         image_size,
+                        n_iter=100,
                         blur_degree=blur_degree,
                     )
 
-                    (
-                        temp_2_pl[j, 0],
-                        temp_2_pl[j, 1],
-                        raw_2_coincidence,
-                    ) = self.calculate_spot_to_spot_coincidence(
-                        spot_2_indices,
-                        spot_1_indices,
-                        image_size,
-                        blur_degree=blur_degree,
-                    )
                     if j == 0:
                         rc1 = raw_1_coincidence
                         rc2 = raw_2_coincidence
@@ -3019,6 +3091,15 @@ class Analysis_Functions:
                     plane_2_analysis = pl.concat([plane_2_analysis, temp_2_pl])
                     spot_1_analysis = pl.concat([spot_1_analysis, image_1_file])
                     spot_2_analysis = pl.concat([spot_2_analysis, image_2_file])
+                print(
+                    "Computing "
+                    + typestr
+                    + " spot-to-spot coincidence     File {}/{}    Time elapsed: {:.3f} s".format(
+                        i + 1, len(overall_filenames), time.time() - start
+                    ),
+                    end="\r",
+                    flush=True,
+                )
         return (plane_1_analysis, plane_2_analysis, spot_1_analysis, spot_2_analysis)
 
     def make_datarray_cell(

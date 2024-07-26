@@ -53,63 +53,223 @@ class IO_Functions:
             threshold1_str (str): string of threshold 1.
             threshold2_str (str): string of threshold 2.
         """
-        plane_1_analysis_AT.write_csv(
-            analysis_file_1.split(".")[0]
-            + "_colocalisationwith_"
-            + spot_2_string
-            + "_"
-            + threshold1_str
-            + "_"
-            + spot_1_string
-            + "_photonthreshold_"
-            + threshold2_str
-            + "_"
-            + spot_2_string
-            + "_photonthreshold_abovethreshold.csv"
-        )
-        plane_2_analysis_AT.write_csv(
-            analysis_file_2.split(".")[0]
-            + "_colocalisationwith_"
-            + spot_1_string
-            + "_"
-            + threshold2_str
-            + "_"
-            + spot_2_string
-            + "_photonthreshold_"
-            + threshold1_str
-            + "_"
-            + spot_1_string
-            + "_photonthreshold_abovethreshold.csv"
-        )
-        spot_1_analysis_AT.write_csv(
-            analysis_file_1.split(".")[0]
-            + "_rawcolocalisationwith_"
-            + spot_2_string
-            + "_"
-            + threshold1_str
-            + "_"
-            + spot_1_string
-            + "_photonthreshold_"
-            + threshold2_str
-            + "_"
-            + spot_2_string
-            + "_photonthreshold_abovethreshold.csv"
-        )
-        spot_2_analysis_AT.write_csv(
-            analysis_file_2.split(".")[0]
-            + "_rawcolocalisationwith_"
-            + spot_1_string
-            + "_"
-            + threshold2_str
-            + "_"
-            + spot_2_string
-            + "_photonthreshold_"
-            + threshold1_str
-            + "_"
-            + spot_1_string
-            + "_photonthreshold_abovethreshold.csv"
-        )
-        return
+        if isinstance(plane_1_analysis_AT, pl.DataFrame) and isinstance(
+            plane_1_analysis_UT, pl.DataFrame
+        ):
+            above_str = "coincidence_above_" + threshold1_str
+            above_cc_str = "chance_coincidence_above_" + threshold1_str
+            below_str = "coincidence_below_" + threshold1_str
+            below_cc_str = "chance_coincidence_below_" + threshold1_str
+
+            plane_1_analysis = plane_1_analysis_AT
+            plane_1_analysis = plane_1_analysis.rename({"coincidence": above_str})
+            plane_1_analysis = plane_1_analysis.rename(
+                {"chance_coincidence": above_cc_str}
+            )
+
+            plane_1_analysis = plane_1_analysis.with_columns(
+                channelcol=plane_1_analysis_UT["coincidence"]
+            ).rename({"channelcol": below_str})
+            plane_1_analysis = plane_1_analysis.with_columns(
+                channelcol=plane_1_analysis_UT["chance_coincidence"]
+            ).rename({"channelcol": below_cc_str})
+
+            plane_1_analysis = plane_1_analysis[
+                above_str,
+                above_cc_str,
+                below_str,
+                below_cc_str,
+                "z",
+                "image_filename",
+            ]
+
+            plane_1_analysis.write_csv(
+                analysis_file_1.split(".")[0]
+                + "_colocalisationwith_"
+                + spot_2_string
+                + "_"
+                + threshold1_str
+                + "_"
+                + spot_1_string
+                + "_photonthreshold_"
+                + threshold2_str
+                + "_"
+                + spot_2_string
+                + "_photonthreshold.csv"
+            )
+        else:
+            if isinstance(plane_1_analysis_AT, pl.DataFrame):
+                plane_1_analysis = plane_1_analysis_AT
+                plane_1_analysis_AT.write_csv(
+                    analysis_file_1.split(".")[0]
+                    + "_colocalisationwith_"
+                    + spot_2_string
+                    + "_"
+                    + threshold1_str
+                    + "_"
+                    + spot_1_string
+                    + "_photonthreshold_"
+                    + threshold2_str
+                    + "_"
+                    + spot_2_string
+                    + "_photonthreshold_abovethreshold.csv"
+                )
+            if isinstance(plane_1_analysis_UT, pl.DataFrame):
+                plane_1_analysis = plane_1_analysis_UT
+                plane_1_analysis_UT.write_csv(
+                    analysis_file_1.split(".")[0]
+                    + "_colocalisationwith_"
+                    + spot_2_string
+                    + "_"
+                    + threshold1_str
+                    + "_"
+                    + spot_1_string
+                    + "_photonthreshold_"
+                    + threshold2_str
+                    + "_"
+                    + spot_2_string
+                    + "_photonthreshold_belowthreshold.csv"
+                )
+
+        if isinstance(plane_2_analysis_AT, pl.DataFrame) and isinstance(
+            plane_2_analysis_UT, pl.DataFrame
+        ):
+            above_str = "coincidence_above_" + threshold2_str
+            above_cc_str = "chance_coincidence_above_" + threshold2_str
+            below_str = "coincidence_below_" + threshold2_str
+            below_cc_str = "chance_coincidence_below_" + threshold2_str
+
+            plane_2_analysis = plane_2_analysis_AT
+            plane_2_analysis = plane_2_analysis.rename({"coincidence": above_str})
+            plane_2_analysis = plane_2_analysis.rename(
+                {"chance_coincidence": above_cc_str}
+            )
+
+            plane_2_analysis = plane_2_analysis.with_columns(
+                channelcol=plane_2_analysis_UT["coincidence"]
+            ).rename({"channelcol": below_str})
+            plane_2_analysis = plane_2_analysis.with_columns(
+                channelcol=plane_2_analysis_UT["chance_coincidence"]
+            ).rename({"channelcol": below_cc_str})
+
+            plane_2_analysis = plane_2_analysis[
+                above_str,
+                above_cc_str,
+                below_str,
+                below_cc_str,
+                "z",
+                "image_filename",
+            ]
+
+            plane_2_analysis.write_csv(
+                analysis_file_2.split(".")[0]
+                + "_colocalisationwith_"
+                + spot_1_string
+                + "_"
+                + threshold2_str
+                + "_"
+                + spot_2_string
+                + "_photonthreshold_"
+                + threshold1_str
+                + "_"
+                + spot_1_string
+                + "_photonthreshold.csv"
+            )
+        else:
+            if isinstance(plane_2_analysis_AT, pl.DataFrame):
+                plane_2_analysis = plane_2_analysis_AT
+                plane_2_analysis_AT.write_csv(
+                    analysis_file_2.split(".")[0]
+                    + "_colocalisationwith_"
+                    + spot_1_string
+                    + "_"
+                    + threshold2_str
+                    + "_"
+                    + spot_2_string
+                    + "_photonthreshold_"
+                    + threshold1_str
+                    + "_"
+                    + spot_1_string
+                    + "_photonthreshold_abovethreshold.csv"
+                )
+            if isinstance(plane_2_analysis_UT, pl.DataFrame):
+                plane_2_analysis = plane_2_analysis_UT
+                plane_2_analysis_UT.write_csv(
+                    analysis_file_2.split(".")[0]
+                    + "_colocalisationwith_"
+                    + spot_1_string
+                    + "_"
+                    + threshold2_str
+                    + "_"
+                    + spot_2_string
+                    + "_photonthreshold_"
+                    + threshold1_str
+                    + "_"
+                    + spot_1_string
+                    + "_photonthreshold_belowthreshold.csv"
+                )
+
+        if isinstance(spot_1_analysis_AT, pl.DataFrame):
+            spot_1_analysis_AT.write_csv(
+                analysis_file_1.split(".")[0]
+                + "_rawcolocalisationwith_"
+                + spot_2_string
+                + "_"
+                + threshold1_str
+                + "_"
+                + spot_1_string
+                + "_photonthreshold_"
+                + threshold2_str
+                + "_"
+                + spot_2_string
+                + "_photonthreshold_abovethreshold.csv"
+            )
+        if isinstance(spot_1_analysis_UT, pl.DataFrame):
+            spot_1_analysis_UT.write_csv(
+                analysis_file_1.split(".")[0]
+                + "_rawcolocalisationwith_"
+                + spot_2_string
+                + "_"
+                + threshold1_str
+                + "_"
+                + spot_1_string
+                + "_photonthreshold_"
+                + threshold2_str
+                + "_"
+                + spot_2_string
+                + "_photonthreshold_belowthreshold.csv"
+            )
+        if isinstance(spot_2_analysis_AT, pl.DataFrame):
+            spot_2_analysis_AT.write_csv(
+                analysis_file_2.split(".")[0]
+                + "_rawcolocalisationwith_"
+                + spot_1_string
+                + "_"
+                + threshold2_str
+                + "_"
+                + spot_2_string
+                + "_photonthreshold_"
+                + threshold1_str
+                + "_"
+                + spot_1_string
+                + "_photonthreshold_abovethreshold.csv"
+            )
+        if isinstance(spot_2_analysis_UT, pl.DataFrame):
+            spot_2_analysis_UT.write_csv(
+                analysis_file_2.split(".")[0]
+                + "_rawcolocalisationwith_"
+                + spot_1_string
+                + "_"
+                + threshold2_str
+                + "_"
+                + spot_2_string
+                + "_photonthreshold_"
+                + threshold1_str
+                + "_"
+                + spot_1_string
+                + "_photonthreshold_belowthreshold.csv"
+            )
+        return plane_1_analysis, plane_2_analysis
 
     def save_analysis(
         self,

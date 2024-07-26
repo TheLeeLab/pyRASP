@@ -1094,15 +1094,46 @@ class RASP_Routines:
             "single_cell_coincidence_" + threshold_str,
         )
 
-        if isinstance(cell_punctum_analysis_AT, pl.DataFrame):
-            cell_punctum_analysis_AT.write_csv(
-                savecell_string + "_abovephotonthreshold.csv"
+        if isinstance(cell_punctum_analysis_AT, pl.DataFrame) and isinstance(
+            cell_punctum_analysis_UT, pl.DataFrame
+        ):
+            above_str = "n_puncta_in_cell_above_" + threshold_str
+            below_str = "n_puncta_in_cell_below_" + threshold_str
+            cell_punctum_analysis = cell_punctum_analysis_AT
+            cell_punctum_analysis = cell_punctum_analysis.rename(
+                {"n_puncta_in_cell": above_str}
             )
-        if isinstance(cell_punctum_analysis_UT, pl.DataFrame):
-            cell_punctum_analysis_UT.write_csv(
-                savecell_string + "_belowphotonthreshold.csv"
+            cell_punctum_analysis = cell_punctum_analysis.with_columns(
+                channelcol=cell_punctum_analysis_UT["n_puncta_in_cell"]
+            ).rename({"channelcol": below_str})
+            ratio_brightdim = (
+                cell_punctum_analysis[above_str] / cell_punctum_analysis[below_str]
             )
-        return cell_punctum_analysis_AT, cell_punctum_analysis_UT
+            cell_punctum_analysis = cell_punctum_analysis.with_columns(
+                channelcol=ratio_brightdim
+            ).rename({"channelcol": "n_puncta_in_cell_ratio_aboveandbelow"})
+            cell_punctum_analysis = cell_punctum_analysis[
+                "area/pixels",
+                "x_centre",
+                "y_centre",
+                below_str,
+                above_str,
+                "n_puncta_in_cell_ratio_aboveandbelow",
+                "image_filename",
+            ]
+            cell_punctum_analysis.write_csv(savecell_string + "_photonthreshold.csv")
+        else:
+            if isinstance(cell_punctum_analysis_AT, pl.DataFrame):
+                cell_punctum_analysis_AT.write_csv(
+                    savecell_string + "_abovephotonthreshold.csv"
+                )
+                cell_punctum_analysis = cell_punctum_analysis_AT
+            if isinstance(cell_punctum_analysis_UT, pl.DataFrame):
+                cell_punctum_analysis_UT.write_csv(
+                    savecell_string + "_belowphotonthreshold.csv"
+                )
+                cell_punctum_analysis = cell_punctum_analysis_UT
+        return cell_punctum_analysis
 
     def colocalise_with_threshold(
         self,
@@ -1115,7 +1146,7 @@ class RASP_Routines:
         calc_clr=False,
     ):
         """
-        Redo colocalisation analayses of spots above a photon threshold in an
+        Redo colocalisation analyses of spots above a photon threshold in an
         analysis file.
 
         Args:
@@ -1158,9 +1189,53 @@ class RASP_Routines:
             os.path.split(analysis_file)[0],
             "cell_colocalisation_analysis_" + threshold_str,
         )
+        if isinstance(cell_analysis_AT, pl.DataFrame) and isinstance(
+            cell_analysis_UT, pl.DataFrame
+        ):
+            above_str = "coincidence_above_" + threshold_str
+            above_cc_str = "chance_coincidence_above_" + threshold_str
+            niter_str = "n_iter_above_" + threshold_str
+            below_str = "coincidence_below_" + threshold_str
+            below_cc_str = "chance_coincidence_below_" + threshold_str
+            niter_below_str = "n_iter_below_" + threshold_str
 
-        if isinstance(cell_analysis_AT, pl.DataFrame):
-            cell_analysis_AT.write_csv(savecell_string + "_abovephotonthreshold.csv")
+            cell_analysis = cell_analysis_AT
+            cell_analysis = cell_analysis.rename({"coincidence": above_str})
+            cell_analysis = cell_analysis.rename({"chance_coincidence": above_cc_str})
+            cell_analysis = cell_analysis.rename({"n_iter": niter_str})
+
+            cell_analysis = cell_analysis.with_columns(
+                channelcol=cell_analysis_UT["coincidence"]
+            ).rename({"channelcol": below_str})
+            cell_analysis = cell_analysis.with_columns(
+                channelcol=cell_analysis_UT["chance_coincidence"]
+            ).rename({"channelcol": below_cc_str})
+            cell_analysis = cell_analysis.with_columns(
+                channelcol=cell_analysis_UT["n_iter"]
+            ).rename({"channelcol": niter_below_str})
+
+            cell_analysis = cell_analysis[
+                above_str,
+                above_cc_str,
+                niter_str,
+                below_str,
+                below_cc_str,
+                niter_below_str,
+                "image_filename",
+            ]
+            cell_analysis.write_csv(savecell_string + "_photonthreshold.csv")
+        else:
+            if isinstance(cell_analysis_AT, pl.DataFrame):
+                cell_analysis = cell_analysis_AT
+                cell_analysis_AT.write_csv(
+                    savecell_string + "_abovephotonthreshold.csv"
+                )
+            if isinstance(cell_analysis_UT, pl.DataFrame):
+                cell_analysis = cell_analysis_UT
+                cell_analysis_UT.write_csv(
+                    savecell_string + "_belowphotonthreshold.csv"
+                )
+
         if isinstance(spot_analysis_AT, pl.DataFrame):
             spot_analysis_AT.write_csv(
                 analysis_file.split(".")[0]
@@ -1169,8 +1244,6 @@ class RASP_Routines:
                 + "_abovephotonthreshold.csv"
             )
 
-        if isinstance(cell_analysis_UT, pl.DataFrame):
-            cell_analysis_UT.write_csv(savecell_string + "_belowphotonthreshold.csv")
         if isinstance(spot_analysis_UT, pl.DataFrame):
             spot_analysis_UT.write_csv(
                 analysis_file.split(".")[0]
@@ -1178,7 +1251,7 @@ class RASP_Routines:
                 + threshold_str
                 + "_belowphotonthreshold.csv"
             )
-        return cell_analysis_AT, spot_analysis_AT, cell_analysis_UT, spot_analysis_UT
+        return cell_analysis, spot_analysis_AT, spot_analysis_UT
 
     def colocalise_spots_with_threshold(
         self,
@@ -1208,12 +1281,10 @@ class RASP_Routines:
             blur_degree (int): blur degree for colocalisation analysis
 
         Returns:
-            channel_1_analysis_AT (pl.DataFrame): channel 1 type above threshold
-            channel_2_analysis_AT (pl.DataFrame): channel 2 type above threshold
+            channel_1_analysis (pl.DataFrame): channel 1 type above and below threshold
+            channel_2_analysis (pl.DataFrame): channel 2 type above and below threshold
             spot_1_analysis_AT (pl.DataFrame): channel 1 type above threshold
             spot_2_analysis_AT (pl.DataFrame): channel 2 type above threshold
-            channel_1_analysis_UT (pl.DataFrame): channel 1 type below threshold
-            channel_2_analysis_UT (pl.DataFrame): channel 2 type below threshold
             spot_1_analysis_UT (pl.DataFrame): channel 1 type below threshold
             spot_2_analysis_UT (pl.DataFrame): channel 2 type below threshold
         """
@@ -1266,7 +1337,7 @@ class RASP_Routines:
             aboveT=0,
         )
 
-        IO.save_abovebelowthresholdcoloc(
+        channel_1_analysis, channel_2_analysis = IO.save_abovebelowthresholdcoloc(
             channel_1_analysis_AT,
             channel_2_analysis_AT,
             spot_1_analysis_AT,
@@ -1284,12 +1355,10 @@ class RASP_Routines:
         )
 
         return (
-            channel_1_analysis_AT,
-            channel_2_analysis_AT,
+            channel_1_analysis,
+            channel_2_analysis,
             spot_1_analysis_AT,
             spot_2_analysis_AT,
-            channel_1_analysis_UT,
-            channel_2_analysis_UT,
             spot_1_analysis_UT,
             spot_2_analysis_UT,
         )
