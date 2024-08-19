@@ -402,24 +402,49 @@ class IO_Functions:
                 )
 
             if i != 0:
-                with open(savename, mode="ab") as f:
-                    to_save.write_csv(f, include_header=False)
-                with open(savename_lo, mode="ab") as f:
-                    to_save_largeobjects.write_csv(f, include_header=False)
-                with open(savename_spot, mode="ab") as f:
-                    n_spots.write_csv(f, include_header=False)
-                with open(savename_nlargeobjects, mode="ab") as f:
-                    n_largeobjects.write_csv(f, include_header=False)
+                if to_save.shape[0] > 0:
+                    if os.path.isfile(savename):
+                        with open(savename, mode="ab") as f:
+                            to_save.write_csv(f, include_header=False)
+                    else:
+                        to_save.write_csv(savename)
+                if to_save_largeobjects.shape[0] > 0:
+                    if os.path.isfile(savename_lo):
+                        with open(savename_lo, mode="ab") as f:
+                            to_save_largeobjects.write_csv(f, include_header=False)
+                    else:
+                        to_save_largeobjects.write_csv(savename_lo)
+                if n_spots.shape[0] > 0:
+                    if os.path.isfile(savename_spot):
+                        with open(savename_spot, mode="ab") as f:
+                            n_spots.write_csv(f, include_header=False)
+                    else:
+                        n_spots.write_csv(savename_spot)
+                if n_largeobjects.shape[0] > 0:
+                    if os.path.isfile(savename_nlargeobjects):
+                        with open(savename_nlargeobjects, mode="ab") as f:
+                            n_largeobjects.write_csv(f, include_header=False)
+                    else:
+                        n_largeobjects.write_csv(savename_nlargeobjects)
                 if cell_analysis == True:
-                    with open(savename_cell, mode="ab") as f:
-                        to_save_cell.write_csv(f, include_header=False)
+                    if to_save_cell.shape[0] > 0:
+                        if os.path.isfile(savename_cell):
+                            with open(savename_cell, mode="ab") as f:
+                                to_save_cell.write_csv(f, include_header=False)
+                        else:
+                            to_save_cell.write_csv(savename_cell)
             else:
-                to_save.write_csv(savename)
-                to_save_largeobjects.write_csv(savename_lo)
-                n_spots.write_csv(savename_spot)
-                n_largeobjects.write_csv(savename_nlargeobjects)
+                if to_save.shape[0] > 0:
+                    to_save.write_csv(savename)
+                if to_save_largeobjects.shape[0] > 0:
+                    to_save_largeobjects.write_csv(savename_lo)
+                if n_spots.shape[0] > 0:
+                    n_spots.write_csv(savename_spot)
+                if n_largeobjects.shape[0] > 0:
+                    n_largeobjects.write_csv(savename_nlargeobjects)
                 if cell_analysis == True:
-                    to_save_cell.write_csv(savename_cell)
+                    if to_save_cell.shape[0] > 0:
+                        to_save_cell.write_csv(savename_cell)
         return
 
     def save_analysis_params(
