@@ -51,7 +51,7 @@ class Analysis_Functions:
 
         spots_per_plane = np.zeros_like(z_planes)
         for z in enumerate(z_planes):
-            spots_per_plane[z[0]] = len(database["z"].to_numpy() == (z[1] + 1))
+            spots_per_plane[z[0]] = sum(1 * (database["z"].to_numpy() == (z[1] + 1)))
 
         data = {"z": z_planes + 1, "n_spots": spots_per_plane}
         n_spots = pl.DataFrame(data)

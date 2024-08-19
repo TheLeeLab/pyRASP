@@ -564,7 +564,6 @@ class IO_Functions:
             file_path,
             np.asarray(volume, dtype=bit),
             plugin="tifffile",
-            bigtiff=True,
             photometric="minisblack",
             metadata={"Software": "Python"},
             check_contrast=False,
