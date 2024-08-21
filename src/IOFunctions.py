@@ -8,7 +8,6 @@ import os
 from skimage import io
 import numpy as np
 import polars as pl
-
 import sys
 
 
@@ -568,7 +567,7 @@ class IO_Functions:
             data = np.divide(np.divide(np.subtract(data, offset_map), gain_map), QE)
         return data
 
-    def write_tiff(self, volume, file_path, bit=np.uint16):
+    def write_tiff(self, volume, file_path, bit=np.uint16, pixel_size=0.11):
         """
         Write a TIFF file using the skimage library.
 
@@ -582,14 +581,27 @@ class IO_Functions:
             The plugin is set to 'tifffile' and photometric to 'minisblack'.
             Additional metadata specifying the software as 'Python' is included.
         """
+        xamount = str(volume.shape[0])
+        yamount = str(volume.shape[1])
         if len(volume.shape) > 2:  # if image a stack
             volume = volume.T
             volume = np.asarray(np.swapaxes(volume, 1, 2), dtype="double")
+
+        description = "ImageJ=1.54f\nunit=micron\nmin=" + xamount + "\nmax=" + yamount
+
+        pixel_unit = int(1e6 / pixel_size)
+
+        extra_tags = [
+            ("ImageDescription", "s", 1, description, True),
+            ("XResolution", "i", 2, (pixel_unit, 1000000), True),
+            ("YResolution", "i", 2, (pixel_unit, 1000000), True),
+            ("ResolutionUnit", "i", 1, True),
+        ]
+
         io.imsave(
             file_path,
             np.asarray(volume, dtype=bit),
             plugin="tifffile",
-            photometric="minisblack",
-            metadata={"Software": "Python"},
+            extratags=extra_tags,
             check_contrast=False,
         )
