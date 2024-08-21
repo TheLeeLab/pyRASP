@@ -3004,6 +3004,9 @@ class Analysis_Functions:
                     image_1_file["z"].to_numpy(), image_2_file["z"].to_numpy()
                 )
 
+                image_1_file = image_1_file.filter(pl.col("z").is_in(z_planes))
+                image_2_file = image_2_file.filter(pl.col("z").is_in(z_planes))
+
                 dataarray_1 = np.zeros([len(z_planes), len(columns)])
                 dataarray_2 = np.zeros([len(z_planes), len(columns)])
 
@@ -3021,7 +3024,7 @@ class Analysis_Functions:
                         "y"
                     ].to_numpy()
 
-                    x_2_coords = image_1_file.filter(pl.col("z") == z_plane)[
+                    x_2_coords = image_2_file.filter(pl.col("z") == z_plane)[
                         "x"
                     ].to_numpy()
                     y_2_coords = image_2_file.filter(pl.col("z") == z_plane)[
