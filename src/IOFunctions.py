@@ -585,7 +585,7 @@ class IO_Functions:
         yamount = str(volume.shape[1])
         if len(volume.shape) > 2:  # if image a stack
             volume = volume.T
-            volume = np.asarray(np.swapaxes(volume, 1, 2), dtype="double")
+            volume = np.asarray(np.swapaxes(volume, 1, 2))
 
         description = "ImageJ=1.54f\nunit=micron\nmin=" + xamount + "\nmax=" + yamount
 

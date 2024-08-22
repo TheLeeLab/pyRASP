@@ -2950,7 +2950,6 @@ class Analysis_Functions:
             blur_degree (int): blur degree for colocalisation analysis
             aboveT (int): do the calculation above or below threshold
         """
-        # todo: make faster, add z
         if aboveT == 1:
             spots_1_with_intensities = spots_1_with_intensities.filter(
                 pl.col("sum_intensity_in_photons") > threshold_1
@@ -2989,8 +2988,21 @@ class Analysis_Functions:
 
         columns = ["coincidence", "chance_coincidence", "z", "image_filename"]
 
+        if len(overall_filenames) == 0:
+            plane_1_analysis = None
+            plane_2_analysis = None
+            spot_1_analysis = None
+            spot_2_analysis = None
+            return (
+                plane_1_analysis,
+                plane_2_analysis,
+                spot_1_analysis,
+                spot_2_analysis,
+            )
+
         start = time.time()
 
+        # TODO: add in case for where no spots in first image
         for i, image in enumerate(overall_filenames):
             image_1_file = spots_1_with_intensities.filter(
                 pl.col("image_filename") == image + spot_1_string + imtype
