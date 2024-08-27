@@ -2366,7 +2366,7 @@ class Analysis_Functions:
                     "n_iter",
                     "image_filename",
                 ]
-                
+
             start = time.time()
 
             for i, image in enumerate(image_filenames):
@@ -2438,14 +2438,14 @@ class Analysis_Functions:
                 else:
                     lo_analysis = pl.concat([lo_analysis, temp_pl])
                     spot_analysis = pl.concat([spot_analysis, image_file])
-                
+
                 print(
                     "Computing colocalisation     File {}/{}    Time elapsed: {:.3f} s".format(
                         i + 1, len(image_filenames), time.time() - start
                     ),
                     end="\r",
                     flush=True,
-                )                
+                )
             return lo_analysis, spot_analysis
         else:
             return np.NAN, np.NAN
