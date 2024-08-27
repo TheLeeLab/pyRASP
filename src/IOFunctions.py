@@ -281,6 +281,7 @@ class IO_Functions:
         files,
         i=0,
         z_planes=[0, 0],
+        lo_mask=[0],
         cell_analysis=False,
         cell_mask=False,
         to_save_cell=False,
@@ -298,6 +299,7 @@ class IO_Functions:
             cell_string (np.1darray): strings for cell-containing data (default C0)
             i (int): location in files where we're analysing
             z_planes (np.1darray): array of z locations to count spots
+            lo_mask (np.ndarray): mask of large objects
             cell_analysis (boolean): if doing cell analysis saving
             cell_mask (np.ndarray): cell mask if cell analysis saving
             to_save_cell (pl.DataFrame): polars dataframe
@@ -320,6 +322,16 @@ class IO_Functions:
             )
             to_save.write_csv(savename)
             to_save_largeobjects.write_csv(savename_lo)
+
+            self.write_tiff(
+                lo_mask,
+                os.path.join(
+                    analysis_directory,
+                    os.path.split(files[i])[-1].split(imtype)[0] + "_loMask.tiff",
+                ),
+                bit=np.uint8,
+            )
+
             if cell_analysis == True:
                 to_save_cell.write_csv(
                     os.path.join(
@@ -353,6 +365,15 @@ class IO_Functions:
                 image_filename=np.full_like(
                     to_save_largeobjects["z"].to_numpy(), files[i], dtype="object"
                 )
+            )
+
+            self.write_tiff(
+                lo_mask,
+                os.path.join(
+                    analysis_directory,
+                    os.path.split(files[i])[-1].split(imtype)[0] + "_loMask.tiff",
+                ),
+                bit=np.uint8,
             )
 
             savename = os.path.join(analysis_directory, "spot_analysis.csv")

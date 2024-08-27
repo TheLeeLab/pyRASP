@@ -497,6 +497,8 @@ class RASP_Routines:
             folder, protein_string, imtype
         )  # first get all files in any subfolders
 
+        all_files = np.sort([e for e in all_files if "loMask" not in e])
+
         folders = np.unique(
             [os.path.split(i)[0] for i in all_files]
         )  # get unique folders in this
@@ -565,7 +567,7 @@ class RASP_Routines:
                 if z_test:  # if a z-stack
                     z_planes = self.get_infocus_planes(img, k1)
                     if cell_analysis == False:
-                        to_save, to_save_largeobjects = A_F.compute_spot_props(
+                        to_save, to_save_largeobjects, lo_mask = A_F.compute_spot_props(
                             img,
                             k1,
                             k2,
@@ -577,24 +579,28 @@ class RASP_Routines:
                             d=self.d,
                         )
                     else:
-                        to_save, to_save_largeobjects, to_save_cell, cell_mask = (
-                            A_F.compute_spot_and_cell_props(
-                                img,
-                                img_cell,
-                                k1,
-                                k2,
-                                prot_thres=thres,
-                                large_prot_thres=large_thres,
-                                areathres=self.areathres,
-                                rdl=rdl,
-                                z=z_planes,
-                                cell_threshold1=self.cell_threshold1,
-                                cell_threshold2=self.cell_threshold1,
-                                cell_sigma1=self.cell_sigma1,
-                                cell_sigma2=self.cell_sigma2,
-                                d=self.d,
-                                analyse_clr=analyse_clr,
-                            )
+                        (
+                            to_save,
+                            to_save_largeobjects,
+                            lo_mask,
+                            to_save_cell,
+                            cell_mask,
+                        ) = A_F.compute_spot_and_cell_props(
+                            img,
+                            img_cell,
+                            k1,
+                            k2,
+                            prot_thres=thres,
+                            large_prot_thres=large_thres,
+                            areathres=self.areathres,
+                            rdl=rdl,
+                            z=z_planes,
+                            cell_threshold1=self.cell_threshold1,
+                            cell_threshold2=self.cell_threshold1,
+                            cell_sigma1=self.cell_sigma1,
+                            cell_sigma2=self.cell_sigma2,
+                            d=self.d,
+                            analyse_clr=analyse_clr,
                         )
 
                     if cell_analysis == True:
@@ -608,6 +614,7 @@ class RASP_Routines:
                             files,
                             i,
                             z_planes,
+                            lo_mask,
                             cell_analysis=cell_analysis,
                             cell_mask=cell_mask,
                             to_save_cell=to_save_cell,
@@ -624,6 +631,7 @@ class RASP_Routines:
                             files,
                             i,
                             z_planes,
+                            lo_mask,
                             cell_analysis=False,
                             cell_mask=False,
                             to_save_cell=False,
@@ -694,7 +702,7 @@ class RASP_Routines:
             z_planes = self.get_infocus_planes(img, k1)
 
             if cell_analysis == False:
-                to_save, to_save_largeobjects = A_F.compute_spot_props(
+                to_save, to_save_largeobjects, lo_mask = A_F.compute_spot_props(
                     img,
                     k1,
                     k2,
@@ -706,7 +714,7 @@ class RASP_Routines:
                     d=self.d,
                 )
             else:
-                to_save, to_save_largeobjects, to_save_cell, cell_mask = (
+                to_save, to_save_largeobjects, lo_mask, to_save_cell, cell_mask = (
                     A_F.compute_spot_and_cell_props(
                         img,
                         img_cell,
@@ -1141,7 +1149,8 @@ class RASP_Routines:
         analysis_file,
         threshold,
         protein_string,
-        cell_string,
+        lo_string,
+        coloc_type=1,
         imtype=".tif",
         blur_degree=1,
         calc_clr=False,
@@ -1154,32 +1163,40 @@ class RASP_Routines:
             analysis_file (str): The analysis file to be re-done.
             threshold (float): The photon threshold
             protein_string (str): string of analysed protein
-            cell_string (str): string of cell to analyse
+            lo_string (str): string of large object to analyse
+            coloc_type (boolean): if 1 (default), for cells. if 0, for large protein objects
             imtype (str): image type
             blur_degree (int): blur degree for colocalisation analysis
             calc_clr (boolean): Calculate the clr, yes/no.
         """
+        if coloc_type == 1:
+            startstr = "cell_"
+        else:
+            startstr = "lo_"
+
         if int(threshold) == threshold:
             threshold_str = str(int(threshold))
         else:
             threshold_str = str(threshold).replace(".", "p")
 
-        cell_analysis_AT, spot_analysis_AT = A_F.colocalise_with_threshold(
+        lo_analysis_AT, spot_analysis_AT = A_F.colocalise_with_threshold(
             analysis_file,
             threshold,
             protein_string,
-            cell_string,
+            lo_string,
+            coloc_type=coloc_type,
             imtype=".tif",
             blur_degree=1,
             calc_clr=False,
             aboveT=1,
         )
 
-        cell_analysis_UT, spot_analysis_UT = A_F.colocalise_with_threshold(
+        lo_analysis_UT, spot_analysis_UT = A_F.colocalise_with_threshold(
             analysis_file,
             threshold,
             protein_string,
-            cell_string,
+            lo_string,
+            coloc_type=coloc_type,
             imtype=".tif",
             blur_degree=1,
             calc_clr=False,
@@ -1188,10 +1205,10 @@ class RASP_Routines:
 
         savecell_string = os.path.join(
             os.path.split(analysis_file)[0],
-            "cell_colocalisation_analysis_" + threshold_str,
+            startstr + "colocalisation_analysis_" + threshold_str,
         )
-        if isinstance(cell_analysis_AT, pl.DataFrame) and isinstance(
-            cell_analysis_UT, pl.DataFrame
+        if isinstance(lo_analysis_AT, pl.DataFrame) and isinstance(
+            lo_analysis_UT, pl.DataFrame
         ):
             above_str = "coincidence_above_" + threshold_str
             above_cc_str = "chance_coincidence_above_" + threshold_str
@@ -1200,22 +1217,22 @@ class RASP_Routines:
             below_cc_str = "chance_coincidence_below_" + threshold_str
             niter_below_str = "n_iter_below_" + threshold_str
 
-            cell_analysis = cell_analysis_AT
-            cell_analysis = cell_analysis.rename({"coincidence": above_str})
-            cell_analysis = cell_analysis.rename({"chance_coincidence": above_cc_str})
-            cell_analysis = cell_analysis.rename({"n_iter": niter_str})
+            lo_analysis = lo_analysis_AT
+            lo_analysis = lo_analysis.rename({"coincidence": above_str})
+            lo_analysis = lo_analysis.rename({"chance_coincidence": above_cc_str})
+            lo_analysis = lo_analysis.rename({"n_iter": niter_str})
 
-            cell_analysis = cell_analysis.with_columns(
-                channelcol=cell_analysis_UT["coincidence"]
+            lo_analysis = lo_analysis.with_columns(
+                channelcol=lo_analysis_UT["coincidence"]
             ).rename({"channelcol": below_str})
-            cell_analysis = cell_analysis.with_columns(
-                channelcol=cell_analysis_UT["chance_coincidence"]
+            lo_analysis = lo_analysis.with_columns(
+                channelcol=lo_analysis_UT["chance_coincidence"]
             ).rename({"channelcol": below_cc_str})
-            cell_analysis = cell_analysis.with_columns(
-                channelcol=cell_analysis_UT["n_iter"]
+            lo_analysis = lo_analysis.with_columns(
+                channelcol=lo_analysis_UT["n_iter"]
             ).rename({"channelcol": niter_below_str})
 
-            cell_analysis = cell_analysis[
+            lo_analysis = lo_analysis[
                 above_str,
                 above_cc_str,
                 niter_str,
@@ -1224,18 +1241,14 @@ class RASP_Routines:
                 niter_below_str,
                 "image_filename",
             ]
-            cell_analysis.write_csv(savecell_string + "_photonthreshold.csv")
+            lo_analysis.write_csv(savecell_string + "_photonthreshold.csv")
         else:
-            if isinstance(cell_analysis_AT, pl.DataFrame):
-                cell_analysis = cell_analysis_AT
-                cell_analysis_AT.write_csv(
-                    savecell_string + "_abovephotonthreshold.csv"
-                )
-            if isinstance(cell_analysis_UT, pl.DataFrame):
-                cell_analysis = cell_analysis_UT
-                cell_analysis_UT.write_csv(
-                    savecell_string + "_belowphotonthreshold.csv"
-                )
+            if isinstance(lo_analysis_AT, pl.DataFrame):
+                lo_analysis = lo_analysis_AT
+                lo_analysis_AT.write_csv(savecell_string + "_abovephotonthreshold.csv")
+            if isinstance(lo_analysis_UT, pl.DataFrame):
+                lo_analysis = lo_analysis_UT
+                lo_analysis_UT.write_csv(savecell_string + "_belowphotonthreshold.csv")
 
         if isinstance(spot_analysis_AT, pl.DataFrame):
             spot_analysis_AT.write_csv(
@@ -1252,7 +1265,7 @@ class RASP_Routines:
                 + threshold_str
                 + "_belowphotonthreshold.csv"
             )
-        return cell_analysis, spot_analysis_AT, spot_analysis_UT
+        return lo_analysis, spot_analysis_AT, spot_analysis_UT
 
     def colocalise_spots_with_threshold(
         self,

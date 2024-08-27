@@ -235,32 +235,22 @@ class Analysis_Functions:
 
         return radiality
 
-    def generate_largeaggregate_indices(self, pil, image_size):
+    def generate_largeaggregate_indices(self, mask, image_size):
         """
-        makes large aggregate indices from list of xy coordinates
+        makes large aggregate xy coordinates
 
         Args:
-            pil (list): list of 2d arrays
+            mask (2D array): boolean matrix
             image_size (tuple): Image dimensions (height, width).
 
         Returns:
-            la_indices (list): list of indices of large aggregates
+            mask_indices (1D array): indices of mask
         """
-        la_indices = []
-        for i in np.arange(len(pil)):
-            if i == 0:
-                la_indices = [
-                    np.ravel_multi_index(
-                        [pil[i][:, 0], pil[i][:, 1]], image_size, order="F"
-                    )
-                ]
-            else:
-                la_indices.append(
-                    np.ravel_multi_index(
-                        [pil[i][:, 0], pil[i][:, 1]], image_size, order="F"
-                    )
-                )
-        return la_indices
+        mask_coords = np.transpose((mask > 0).nonzero())
+        mask_indices = np.ravel_multi_index(
+            [mask_coords[:, 0], mask_coords[:, 1]], image_size, order="F"
+        )
+        return mask_indices
 
     def generate_mask_and_spot_indices(self, mask, centroids, image_size):
         """
@@ -747,7 +737,7 @@ class Analysis_Functions:
             centroids_large (np.2darray): centroids of large objects
             meanintensities_large (np.1darray): mean intensities of large objects
             sumintensities_large (np.1darray): sum intensities of large objects
-            pil_large (list of np.2darray): pixels where large objects found
+            lo_mask (list of np.2darray): pixels where large objects found
 
         """
         large_mask = self.detect_large_features(image, large_thres)
@@ -764,6 +754,10 @@ class Analysis_Functions:
             sumintensities_large[i] = np.sum(
                 image[pil_large[i][:, 0], pil_large[i][:, 1]]
             )
+
+        lo_mask = np.zeros_like(large_mask, dtype=bool)
+        for i in np.arange(len(centroids_large)):
+            lo_mask[pil_large[i][:, 0], pil_large[i][:, 1]] = True
         meanintensities_large = np.divide(sumintensities_large, areas_large)
         img2, Gx, Gy, focusScore, cfactor = self.calculate_gradient_field(image, k1)
         dl_mask, centroids, radiality, idxs = self.small_feature_kernel(
@@ -787,7 +781,7 @@ class Analysis_Functions:
             centroids_large,
             meanintensities_large,
             sumintensities_large,
-            pil_large,
+            lo_mask,
         ]
 
         return to_return
@@ -1387,6 +1381,7 @@ class Analysis_Functions:
         Returns:
             to_save (pl.DataFrame): spot properties ready to save
             to_save_largeobjects (pl.DataFrame): large object properties ready to save
+            lo_mask (np.ndarray): lo masks
             to_save_cell (pl.DataFrame): cell properties ready to save
             cell_mask (np.ndarray): cell mask
         """
@@ -1439,6 +1434,7 @@ class Analysis_Functions:
         if not isinstance(z, int):
             z_planes = np.arange(z[0], z[1])
             cell_mask = np.zeros_like(image_cell, dtype=bool)
+            lo_mask = np.zeros_like(image, dtype=bool)
             (
                 clr,
                 norm_std,
@@ -1462,7 +1458,6 @@ class Analysis_Functions:
             centroids_large = {}
             meanintensities_large = {}
             sumintensities_large = {}
-            pil_large = {}
 
             def analyse_zplanes(zp):
                 img_z = image[:, :, zp]
@@ -1476,7 +1471,7 @@ class Analysis_Functions:
                     centroids_large[zp],
                     meanintensities_large[zp],
                     sumintensities_large[zp],
-                    pil_large[zp],
+                    lo_mask[:, :, zp],
                 ) = self.default_spotanalysis_routine(
                     img_z, k1, k2, prot_thres, large_prot_thres, areathres, rdl, d
                 )
@@ -1520,8 +1515,9 @@ class Analysis_Functions:
                     )
 
                 large_aggregate_indices = self.generate_largeaggregate_indices(
-                    pil_large[zp], image_size
+                    lo_mask[:, :, zp], image_size
                 )
+
                 (
                     coincidence_large[zp],
                     chance_coincidence_large[zp],
@@ -1529,7 +1525,7 @@ class Analysis_Functions:
                 ) = self.calculate_largeobj_coincidence(
                     large_aggregate_indices,
                     mask_indices,
-                    len(pil_large[zp]),
+                    len(areas_large[zp]),
                     image_size,
                 )
 
@@ -1584,7 +1580,7 @@ class Analysis_Functions:
                 centroids_large,
                 meanintensities_large,
                 sumintensities_large,
-                pil_large,
+                lo_mask,
             ) = self.default_spotanalysis_routine(
                 image, k1, k2, prot_thres, large_prot_thres, areathres, rdl, d
             )
@@ -1619,11 +1615,11 @@ class Analysis_Functions:
                 )
 
             large_aggregate_indices = self.generate_largeaggregate_indices(
-                pil_large, image_size
+                lo_mask, image_size
             )
             coincidence_large, chance_coincidence_large, raw_coloc_large = (
                 self.calculate_largeobj_coincidence(
-                    large_aggregate_indices, mask_indices, len(pil_large), image_size
+                    large_aggregate_indices, mask_indices, len(areas_large), image_size
                 )
             )
 
@@ -1658,7 +1654,7 @@ class Analysis_Functions:
                 columns_cell[:-1],
                 analyse_clr,
             )
-        return to_save, to_save_largeobjects, to_save_cell, cell_mask
+        return to_save, to_save_largeobjects, lo_mask, to_save_cell, cell_mask
 
     def compute_spot_props(
         self,
@@ -1687,10 +1683,11 @@ class Analysis_Functions:
             d (int): Pixel radius value
 
         Returns:
-            to_save (pl.DataFrame): data array to save as pandas object,
-                                            or dict of pandas objects
+            to_save (pl.DataFrame): data array to save as polars object,
+                                            or dict of polars objects
             to_save_largeobjects (pl.DataFrame): data array of large objects
                                                         or dict of large objects
+            lo_mask: mask of large objects in image
         """
         columns = [
             "x",
@@ -1722,7 +1719,7 @@ class Analysis_Functions:
             centroids_large = {}
             meanintensities_large = {}
             sumintensities_large = {}
-            pil_large = {}
+            lo_mask = np.zeros_like(image, dtype=bool)
 
             def analyse_zplanes(zp):
                 (
@@ -1734,7 +1731,7 @@ class Analysis_Functions:
                     centroids_large[zp],
                     meanintensities_large[zp],
                     sumintensities_large[zp],
-                    pil_large[zp],
+                    lo_mask[:, :, zp],
                 ) = self.default_spotanalysis_routine(
                     image[:, :, zp], k1, k2, thres, large_thres, areathres, rdl, d
                 )
@@ -1770,7 +1767,7 @@ class Analysis_Functions:
         else:
             centroids, estimated_intensity, estimated_background,
             estimated_background_perpixel, areas_large, centroids_large,
-            meanintensities_large, sumintensities_large, pil_large = (
+            meanintensities_large, sumintensities_large, lo_mask = (
                 self.default_spotanalysis_routine(
                     image, k1, k2, thres, large_thres, areathres, rdl, d
                 )
@@ -1795,7 +1792,7 @@ class Analysis_Functions:
                 cell_analysis=False,
             )
 
-        return to_save, to_save_largeobjects
+        return to_save, to_save_largeobjects, lo_mask
 
     @staticmethod
     @jit(nopython=True)
@@ -2305,7 +2302,8 @@ class Analysis_Functions:
         analysis_file,
         threshold,
         protein_string,
-        cell_string,
+        lo_string,
+        coloc_type=1,
         imtype=".tif",
         blur_degree=1,
         calc_clr=False,
@@ -2318,16 +2316,21 @@ class Analysis_Functions:
             analysis_file (string): The analysis file of puncta.
             threshold (float): The photon threshold for puncta.
             protein_string (str): string of protein images
-            cell_string (str): string of cell images
+            lo_string (str): string of larger object images
+            coloc_typ (boolean): if 1 (default), for cells. if 0, for large protein objects
             imtype (str): image end string
             blur_degree (int): degree of blur to apply to puncta
             calc_clr (boolean): calculate clr yes/no
             aboveT (int): do the calculation above or below threshold
 
         Returns:
-            cell_analysis (pl.DataFrame): polars dataframe of the cell analysis
+            lo_analysis (pl.DataFrame): polars dataframe of the cell analysis
             spot_analysis (pl.DataFrame): polars dataframe of the spot analysis
         """
+        if coloc_type == 1:
+            end_str = "_cellMask.tiff"
+        else:
+            end_str = "_loMask.tiff"
 
         spots_with_intensities = pl.read_csv(analysis_file)
         if aboveT == 1:
@@ -2363,19 +2366,21 @@ class Analysis_Functions:
                     "n_iter",
                     "image_filename",
                 ]
+                
+            start = time.time()
 
             for i, image in enumerate(image_filenames):
-                cell_mask = IO.read_tiff(
+                lo_mask = IO.read_tiff(
                     os.path.join(
                         analysis_directory,
                         os.path.split(image.split(imtype)[0])[-1].split(protein_string)[
                             0
                         ]
-                        + str(cell_string)
-                        + "_cellMask.tiff",
+                        + str(lo_string)
+                        + end_str,
                     )
                 )
-                image_size = cell_mask.shape[:-1]
+                image_size = lo_mask.shape[:-1]
                 image_file = spots_with_intensities.filter(
                     pl.col("image_filename") == image
                 )
@@ -2389,7 +2394,7 @@ class Analysis_Functions:
                     filtered_file = image_file.filter(pl.col("z") == z_plane)
                     xcoords = filtered_file["x"].to_numpy()
                     ycoords = filtered_file["y"].to_numpy()
-                    mask = cell_mask[:, :, int(z_plane) - 1]
+                    mask = lo_mask[:, :, int(z_plane) - 1]
                     centroids = np.asarray(np.vstack([xcoords, ycoords]), dtype=int).T
                     mask_indices, spot_indices = self.generate_mask_and_spot_indices(
                         mask, centroids, image_size
@@ -2428,13 +2433,20 @@ class Analysis_Functions:
                 )
                 image_file = image_file.with_columns(incell=rc * 1)
                 if i == 0:
-                    cell_analysis = temp_pl
+                    lo_analysis = temp_pl
                     spot_analysis = image_file
                 else:
-                    cell_analysis = pl.concat([cell_analysis, temp_pl])
+                    lo_analysis = pl.concat([lo_analysis, temp_pl])
                     spot_analysis = pl.concat([spot_analysis, image_file])
-
-            return cell_analysis, spot_analysis
+                
+                print(
+                    "Computing colocalisation     File {}/{}    Time elapsed: {:.3f} s".format(
+                        i + 1, len(image_filenames), time.time() - start
+                    ),
+                    end="\r",
+                    flush=True,
+                )                
+            return lo_analysis, spot_analysis
         else:
             return np.NAN, np.NAN
 
