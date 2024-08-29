@@ -324,18 +324,18 @@ class Analysis_Functions:
             spot_indices = self.dilate_pixels(
                 spot_indices, image_size, width=blur_degree + 1, edge=blur_degree
             )
-        n_spots = len(spot_indices)
         n_iter_rec = n_iter
         possible_indices = np.arange(
             0, np.prod(image_size)
         )  # get list of where is possible to exist in an image
+
         raw_colocalisation = self.test_spot_spot_overlap(
             spot_indices, mask_indices, original_n_spots, raw=True
         )
-        nspots_in_mask = self.test_spot_mask_overlap(
-            spot_indices, mask_indices
-        )  # get nspots in mask
-        coincidence = np.divide(nspots_in_mask, n_spots)  # generate coincidence
+
+        coincidence = np.divide(
+            np.sum(raw_colocalisation), original_n_spots
+        )  # generate coincidence
 
         random_spot_locations = np.random.choice(
             possible_indices, size=(n_iter, original_n_spots)
@@ -349,11 +349,19 @@ class Analysis_Functions:
             )
         chance_coincidence_raw = np.zeros([n_iter])  # generate CSR array to fill in
         for i in np.arange(n_iter):
-            chance_coincidence_raw[i] = self.test_spot_mask_overlap(
-                random_spot_locations[i, :], mask_indices
+            chance_coincidence_raw[i] = np.divide(
+                np.sum(
+                    self.test_spot_spot_overlap(
+                        random_spot_locations[i, :],
+                        mask_indices,
+                        original_n_spots,
+                        raw=True,
+                    )
+                ),
+                original_n_spots,
             )
 
-        chance_coincidence = np.divide(np.nanmean(chance_coincidence_raw), n_spots)
+        chance_coincidence = np.nanmean(chance_coincidence_raw)
         return coincidence, chance_coincidence, raw_colocalisation, n_iter_rec
 
     def calculate_spot_to_spot_coincidence(
