@@ -531,24 +531,30 @@ class IO_Functions:
         with open(file_name, "w") as json_file:
             json.dump(data, json_file, indent=4)
 
-    def read_tiff(self, file_path):
+    def read_tiff(self, file_path, frame=None):
         """
         Read a TIFF file using the skimage library.
 
         Args:
             file_path (str): The path to the TIFF file to be read.
+            frame (int): if not None, loads a single frame
 
         Returns:
             image (numpy.ndarray): The image data from the TIFF file.
         """
         # Use skimage's imread function to read the TIFF file
         # specifying the 'tifffile' plugin explicitly
-        image = io.imread(file_path, plugin="tifffile")
+        if isinstance(frame, type(None)):
+            image = io.imread(file_path, plugin="tifffile")
+        else:
+            image = io.imread(file_path, plugin="tifffile", key=frame)
         if len(image.shape) > 2:  # if image a stack
-            image = image.T
-        return np.asarray(np.swapaxes(image, 0, 1), dtype="double")
+            image = np.swapaxes(np.swapaxes(image, 0, -1), 0, 1)
+        return np.asarray(image, dtype="double")
 
-    def read_tiff_tophotons(self, file_path, QE=0.95, gain_map=1.0, offset_map=0.0):
+    def read_tiff_tophotons(
+        self, file_path, QE=0.95, gain_map=1.0, offset_map=0.0, frame=None
+    ):
         """
         Read a TIFF file using the skimage library.
         Use camera parameters to convert output to photons
@@ -558,16 +564,20 @@ class IO_Functions:
             QR (float): QE of camera
             gain_map (matrix, or float): gain map. Assumes units of ADU/photoelectrons
             offset_map (matrix, or float): offset map. Assumes units of ADU
+            frame (int, optional): if not None, loads a single frame
 
         Returns:
             image (numpy.ndarray): The image data from the TIFF file.
         """
         # Use skimage's imread function to read the TIFF file
         # specifying the 'tifffile' plugin explicitly
-        image = io.imread(file_path, plugin="tifffile")
+        if isinstance(frame, type(None)):
+            image = io.imread(file_path, plugin="tifffile")
+        else:
+            image = io.imread(file_path, plugin="tifffile", key=frame)
         if len(image.shape) > 2:  # if image a stack
-            image = image.T
-        data = np.asarray(np.swapaxes(image, 0, 1), dtype="double")
+            data = np.swapaxes(np.swapaxes(image, 0, -1), 0, 1)
+
         if type(gain_map) is not float:
             if data.shape[:2] != gain_map.shape:
                 print(
