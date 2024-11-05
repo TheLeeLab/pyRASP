@@ -127,6 +127,13 @@ class RASP_Routines:
                 )
             else:
                 self.gain_map = 1.0
+                
+            if os.path.isfile(os.path.join(self.defaultfolder, "variance_map.tif")):
+                self.variance_map = IO.read_tiff(
+                    os.path.join(self.defaultfolder, "variance_map.tif")
+                )
+            else:
+                self.variance_map = 1.0
 
             if os.path.isfile(os.path.join(self.defaultfolder, "offset_map.tif")):
                 self.offset_map = IO.read_tiff(
@@ -466,6 +473,7 @@ class RASP_Routines:
         one_savefile=True,
         disp=True,
         analyse_clr=False,
+        error_reduction=False,
     ):
         """
         analyses data from images in a specified folder,
@@ -491,6 +499,7 @@ class RASP_Routines:
                 per image but amalgamates them into one file. Default True.
             disp (boolean): If true, prints when analysed an image stack. Default True.
             analyse_clr (boolean): If true, calculates the clr. If not, just coincidence. Default True.
+            error_reduction (boolean): If true, reduces error on the oligomer image using Huang's code
 
         """
         all_files = self.file_search(
@@ -531,6 +540,7 @@ class RASP_Routines:
             to_save,
             gain_map=self.gain_map,
             offset_map=self.offset_map,
+            variance_map=self.variance_map,
         )
 
         start = time.time()
@@ -549,12 +559,22 @@ class RASP_Routines:
             IO.make_directory(analysis_directory)
 
             for i in np.arange(len(files)):
-                img = IO.read_tiff_tophotons(
-                    os.path.join(folder, files[i]),
-                    QE=self.QE,
-                    gain_map=self.gain_map,
-                    offset_map=self.offset_map,
-                )[:, :, im_start:]
+                if error_reduction == False:
+                    img = IO.read_tiff_tophotons(
+                        os.path.join(folder, files[i]),
+                        QE=self.QE,
+                        gain_map=self.gain_map,
+                        offset_map=self.offset_map,
+                    )[:, :, im_start:]
+                else:
+                    img = IO.read_tiff_tophotons(
+                        os.path.join(folder, files[i]),
+                        QE=self.QE,
+                        gain_map=self.gain_map,
+                        offset_map=self.offset_map,
+                        variance_map=self.variance_map,
+                        error_correction=True
+                    )[:, :, im_start:]
                 if cell_analysis == True:
                     img_cell = IO.read_tiff_tophotons(
                         os.path.join(folder, cell_files[i]),
@@ -1048,7 +1068,7 @@ class RASP_Routines:
         threshold,
         cell_string,
         protein_string,
-        cell_size_threshold=100,
+        cell_size_threshold=1000,
         imtype=".tif",
         blur_degree=1,
     ):
@@ -1138,7 +1158,6 @@ class RASP_Routines:
                 "area/pixels",
                 "x_centre",
                 "y_centre",
-                "z",
                 below_coinc_str,
                 above_coinc_str,
                 below_str,

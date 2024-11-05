@@ -351,7 +351,6 @@ class Analysis_Functions:
                 width=blur_degree + 1,
                 edge=blur_degree,
             )
-
         if analytical_solution == True:
             n_olig_in_cell_random = original_n_spots * (
                 len(mask_indices.ravel()) / len(possible_indices)
@@ -2815,22 +2814,13 @@ class Analysis_Functions:
             typestr = "<= threshold"
 
         analysis_directory = os.path.split(analysis_file)[0]
-        analysis_data = analysis_data.filter(pl.col("incell") == 1)
-
         start = time.time()
 
         if len(analysis_data) > 0:
             files = np.unique(analysis_data["image_filename"].to_numpy())
-            z_planes = {}  # make dict where z planes will be stored
-            for i, file in enumerate(files):
-                z_planes[file] = np.unique(
-                    analysis_data.filter(pl.col("image_filename") == file)[
-                        "z"
-                    ].to_numpy()
-                )
 
             for i, file in enumerate(files):
-                cell_mask = IO.read_tiff(
+                cell_mask = np.sum(IO.read_tiff(
                     os.path.join(
                         analysis_directory,
                         os.path.split(file.split(imtype)[0])[-1].split(protein_string)[
@@ -2839,77 +2829,73 @@ class Analysis_Functions:
                         + str(cell_string)
                         + "_cellMask.tiff",
                     )
-                )
-                zs = z_planes[file]
+                ), axis=-1)
+                cell_mask[cell_mask > 1] = 1
                 subset = analysis_data.filter(pl.col("image_filename") == file)
-                image_size = cell_mask[:, :, 0].shape
-                for j, z in enumerate(zs):
-                    pil_mask, areas, centroids = self.calculate_region_properties(
-                        cell_mask[:, :, int(z) - 1]
+                image_size = cell_mask.shape
+                pil_mask, areas, centroids = self.calculate_region_properties(
+                        cell_mask
                     )
-                    to_keep = np.ones(len(pil_mask))
-                    for c in np.arange(len(centroids)):
-                        if areas[c] < cell_size_threshold:
-                            to_keep[c] = 0
-                            centroids[c, :] = np.NAN
-                            areas[c] = np.NAN
-                    areas = areas[~np.isnan(areas)]
-                    centroids = centroids[~np.isnan(centroids)].reshape(len(areas), 2)
-                    pil_mask = pil_mask[np.asarray(to_keep, dtype=bool)]
-                    x_m = centroids[:, 0]
-                    y_m = centroids[:, 1]
-                    filtered_subset = subset.filter(pl.col("z") == z)
-                    x = filtered_subset["x"].to_numpy()
-                    y = filtered_subset["y"].to_numpy()
-                    centroids_puncta = np.asarray(np.vstack([x, y]), dtype=int)
-                    spot_indices = np.ravel_multi_index(
-                        centroids_puncta, image_size, order="F"
-                    )
-                    filename_tosave = np.full_like(x_m, file, dtype="object")
-                    n_spots_in_object = np.zeros_like(x_m)
-                    n_cell_ratios = np.zeros_like(x_m)
-                    z_tosave = np.full_like(x_m, z)
+                to_keep = np.ones(len(pil_mask))
+                for c in np.arange(len(centroids)):
+                    if areas[c] < cell_size_threshold:
+                        to_keep[c] = 0
+                        centroids[c, :] = np.NAN
+                        areas[c] = np.NAN
+                areas = areas[~np.isnan(areas)]
+                centroids = centroids[~np.isnan(centroids)].reshape(len(areas), 2)
+                pil_mask = pil_mask[np.asarray(to_keep, dtype=bool)]
+                x_m = centroids[:, 0]
+                y_m = centroids[:, 1]
+                x = subset["x"].to_numpy()
+                y = subset["y"].to_numpy()
+                centroids_puncta = np.asarray(np.vstack([x, y]), dtype=int)
+                spot_indices = np.unique(np.ravel_multi_index(
+                    centroids_puncta, image_size, order="F"
+                ))
+                filename_tosave = np.full_like(x_m, file, dtype="object")
+                n_spots_in_object = np.zeros_like(x_m)
+                n_cell_ratios = np.zeros_like(x_m)
 
-                    for k in np.arange(len(areas)):
-                        coords = pil_mask[k]
-                        xm = coords[:, 0]
-                        ym = coords[:, 1]
-                        if (np.any(xm > image_size[0])) or (np.any(ym > image_size[1])):
-                            n_spots_in_object[k] = 0
-                        else:
-                            coordinates_mask = np.asarray(
-                                np.vstack([xm, ym]), dtype=int
-                            )
-                            mask_indices = np.ravel_multi_index(
-                                coordinates_mask, image_size, order="F"
-                            )
-                            olig_cell_ratio, n_olig_in_cell, n_iter_rec = (
-                                self.calculate_spot_to_cell_numbers(
-                                    spot_indices,
-                                    mask_indices,
-                                    image_size,
-                                    n_iter=1,
-                                    blur_degree=1,
-                                )
-                            )
-                            n_cell_ratios[k] = olig_cell_ratio
-                            n_spots_in_object[k] = n_olig_in_cell
-
-                    data = {
-                        "area/pixels": areas,
-                        "x_centre": x_m,
-                        "y_centre": y_m,
-                        "z": z_tosave,
-                        "puncta_cell_likelihood": n_cell_ratios,
-                        "n_puncta_in_cell": n_spots_in_object,
-                        "image_filename": filename_tosave,
-                    }
-                    if (i == 0) and (j == 0):
-                        cell_punctum_analysis = pl.DataFrame(data)
+                for k in np.arange(len(areas)):
+                    coords = pil_mask[k]
+                    xm = coords[:, 0]
+                    ym = coords[:, 1]
+                    if (np.any(xm > image_size[0])) or (np.any(ym > image_size[1])):
+                        n_spots_in_object[k] = 0
                     else:
-                        cell_punctum_analysis = pl.concat(
-                            [cell_punctum_analysis, pl.DataFrame(data)], rechunk=True
+                        coordinates_mask = np.asarray(
+                            np.vstack([xm, ym]), dtype=int
                         )
+                        mask_indices = np.ravel_multi_index(
+                            coordinates_mask, image_size, order="F"
+                        )
+                        olig_cell_ratio, n_olig_in_cell, n_iter_rec = (
+                            self.calculate_spot_to_cell_numbers(
+                                spot_indices,
+                                mask_indices,
+                                image_size,
+                                n_iter=1,
+                                blur_degree=1,
+                            )
+                        )
+                        n_cell_ratios[k] = olig_cell_ratio
+                        n_spots_in_object[k] = n_olig_in_cell
+
+                data = {
+                    "area/pixels": areas,
+                    "x_centre": x_m,
+                    "y_centre": y_m,
+                    "puncta_cell_likelihood": n_cell_ratios,
+                    "n_puncta_in_cell": n_spots_in_object,
+                    "image_filename": filename_tosave,
+                }
+                if (i == 0):
+                    cell_punctum_analysis = pl.DataFrame(data)
+                else:
+                    cell_punctum_analysis = pl.concat(
+                        [cell_punctum_analysis, pl.DataFrame(data)], rechunk=True
+                    )
 
                 print(
                     "Computing "
@@ -3237,7 +3223,7 @@ class Analysis_Functions:
                 )
         return (plane_1_analysis, plane_2_analysis, spot_1_analysis, spot_2_analysis)
 
-    def create_npuncta_cellmasks(self, cell_analysis, puncta, cell_mask, z_plane):
+    def create_npuncta_cellmasks(self, cell_analysis, puncta, cell_mask, cell_size_threshold=100):
         """
         create_npuncta_cellmasks plots number of puncta in cell objects
 
@@ -3245,9 +3231,6 @@ class Analysis_Functions:
             cell_analysis (polars dataarray): cell analysis
             puncta (polars dataarray): puncta analysis
             cell_mask (np.2darray): cell mask object
-            z_plane (int): z_plane to analyse
-            coincidence (np.1darray): array of coincidence values
-            cell_size_threshold (float): area above which we determine that an object is a "cell"
 
         Returns:
             analysis (polars DataArray): analysis object
@@ -3256,14 +3239,22 @@ class Analysis_Functions:
 
         from copy import copy
 
-        cell_mask_toplot_AT = copy(cell_mask[:, :, z_plane - 1])
-        cell_mask_toplot_UT = copy(cell_mask[:, :, z_plane - 1])
-        cell_mask_toplot_R = copy(cell_mask[:, :, z_plane - 1])
+        cell_mask_toplot_AT = copy(cell_mask)
+        cell_mask_toplot_UT = copy(cell_mask)
+        cell_mask_toplot_R = copy(cell_mask)
         pil, areas, centroids = self.calculate_region_properties(cell_mask_toplot_AT)
+        to_keep = np.ones(len(pil))
+        for c in np.arange(len(centroids)):
+            if areas[c] < cell_size_threshold:
+                to_keep[c] = 0
+                centroids[c, :] = np.NAN
+                areas[c] = np.NAN
+                cell_mask[pil[c][:,0], pil[c][:,1]] = 0
+        areas = areas[~np.isnan(areas)]
+        centroids = centroids[~np.isnan(centroids)].reshape(len(areas), 2)
+        pil = pil[np.asarray(to_keep, dtype=bool)]
 
-        puncta = puncta.filter(pl.col("z") == z_plane)
-
-        analysis = cell_analysis.filter(pl.col("z") == z_plane)
+        analysis = copy(cell_analysis)
 
         for i, mask in enumerate(pil):
             cell_mask_toplot_AT[mask[:, 0], mask[:, 1]] = analysis[i, 5]
@@ -3273,7 +3264,7 @@ class Analysis_Functions:
             else:
                 val = 0.0
             cell_mask_toplot_R[mask[:, 0], mask[:, 1]] = val
-        return analysis, cell_mask_toplot_AT, cell_mask_toplot_UT, cell_mask_toplot_R
+        return analysis, cell_mask_toplot_AT, cell_mask_toplot_UT, cell_mask_toplot_R, cell_mask
 
     def make_datarray_cell(
         self,
