@@ -127,7 +127,7 @@ class RASP_Routines:
                 )
             else:
                 self.gain_map = 1.0
-                
+
             if os.path.isfile(os.path.join(self.defaultfolder, "variance_map.tif")):
                 self.variance_map = IO.read_tiff(
                     os.path.join(self.defaultfolder, "variance_map.tif")
@@ -573,7 +573,7 @@ class RASP_Routines:
                         gain_map=self.gain_map,
                         offset_map=self.offset_map,
                         variance_map=self.variance_map,
-                        error_correction=True
+                        error_correction=True,
                     )[:, :, im_start:]
                 if cell_analysis == True:
                     img_cell = IO.read_tiff_tophotons(

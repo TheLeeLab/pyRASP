@@ -469,7 +469,12 @@ class IO_Functions:
         return
 
     def save_analysis_params(
-        self, analysis_p_directory, to_save, gain_map=0, offset_map=0, variance_map=0,
+        self,
+        analysis_p_directory,
+        to_save,
+        gain_map=0,
+        offset_map=0,
+        variance_map=0,
     ):
         """
         saves analysis parameters.
@@ -497,11 +502,11 @@ class IO_Functions:
                 np.uint32,
             )
         if type(variance_map) != float:
-                self.write_tiff(
-                    variance_map,
-                    os.path.join(analysis_p_directory, "variance_map.tif"),
-                    np.uint32,
-                )
+            self.write_tiff(
+                variance_map,
+                os.path.join(analysis_p_directory, "variance_map.tif"),
+                np.uint32,
+            )
         return
 
     def load_json(self, filename):
@@ -615,19 +620,21 @@ class IO_Functions:
 
         if error_correction == True:
             for z in np.arange(data.shape[-1]):
-                data[:,:,z] = np.squeeze(ncs.reducenoise(
-                    R,
-                    np.expand_dims(data[:,:,z], 0),
-                    variance_map,
-                    gain_map,
-                    int(data.shape[0]),
-                    pixelsize,
-                    NA,
-                    wavelength,
-                    alpha,
-                    15,
-                    Type="OTFweighted",
-                ))
+                data[:, :, z] = np.squeeze(
+                    ncs.reducenoise(
+                        R,
+                        np.expand_dims(data[:, :, z], 0),
+                        variance_map,
+                        gain_map,
+                        int(data.shape[0]),
+                        pixelsize,
+                        NA,
+                        wavelength,
+                        alpha,
+                        15,
+                        Type="OTFweighted",
+                    )
+                )
         else:
             if type(gain_map) is not float:
                 if len(data.shape) > 2:
@@ -639,7 +646,9 @@ class IO_Functions:
                         QE,
                     )
                 else:
-                    data = np.divide(np.divide(np.subtract(data, offset_map), gain_map), QE)
+                    data = np.divide(
+                        np.divide(np.subtract(data, offset_map), gain_map), QE
+                    )
             else:
                 data = np.divide(np.divide(np.subtract(data, offset_map), gain_map), QE)
         return data

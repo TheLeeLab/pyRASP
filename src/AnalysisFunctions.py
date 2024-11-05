@@ -2820,22 +2820,23 @@ class Analysis_Functions:
             files = np.unique(analysis_data["image_filename"].to_numpy())
 
             for i, file in enumerate(files):
-                cell_mask = np.sum(IO.read_tiff(
-                    os.path.join(
-                        analysis_directory,
-                        os.path.split(file.split(imtype)[0])[-1].split(protein_string)[
-                            0
-                        ]
-                        + str(cell_string)
-                        + "_cellMask.tiff",
-                    )
-                ), axis=-1)
+                cell_mask = np.sum(
+                    IO.read_tiff(
+                        os.path.join(
+                            analysis_directory,
+                            os.path.split(file.split(imtype)[0])[-1].split(
+                                protein_string
+                            )[0]
+                            + str(cell_string)
+                            + "_cellMask.tiff",
+                        )
+                    ),
+                    axis=-1,
+                )
                 cell_mask[cell_mask > 1] = 1
                 subset = analysis_data.filter(pl.col("image_filename") == file)
                 image_size = cell_mask.shape
-                pil_mask, areas, centroids = self.calculate_region_properties(
-                        cell_mask
-                    )
+                pil_mask, areas, centroids = self.calculate_region_properties(cell_mask)
                 to_keep = np.ones(len(pil_mask))
                 for c in np.arange(len(centroids)):
                     if areas[c] < cell_size_threshold:
@@ -2850,9 +2851,9 @@ class Analysis_Functions:
                 x = subset["x"].to_numpy()
                 y = subset["y"].to_numpy()
                 centroids_puncta = np.asarray(np.vstack([x, y]), dtype=int)
-                spot_indices = np.unique(np.ravel_multi_index(
-                    centroids_puncta, image_size, order="F"
-                ))
+                spot_indices = np.unique(
+                    np.ravel_multi_index(centroids_puncta, image_size, order="F")
+                )
                 filename_tosave = np.full_like(x_m, file, dtype="object")
                 n_spots_in_object = np.zeros_like(x_m)
                 n_cell_ratios = np.zeros_like(x_m)
@@ -2864,9 +2865,7 @@ class Analysis_Functions:
                     if (np.any(xm > image_size[0])) or (np.any(ym > image_size[1])):
                         n_spots_in_object[k] = 0
                     else:
-                        coordinates_mask = np.asarray(
-                            np.vstack([xm, ym]), dtype=int
-                        )
+                        coordinates_mask = np.asarray(np.vstack([xm, ym]), dtype=int)
                         mask_indices = np.ravel_multi_index(
                             coordinates_mask, image_size, order="F"
                         )
@@ -2890,7 +2889,7 @@ class Analysis_Functions:
                     "n_puncta_in_cell": n_spots_in_object,
                     "image_filename": filename_tosave,
                 }
-                if (i == 0):
+                if i == 0:
                     cell_punctum_analysis = pl.DataFrame(data)
                 else:
                     cell_punctum_analysis = pl.concat(
@@ -3223,7 +3222,9 @@ class Analysis_Functions:
                 )
         return (plane_1_analysis, plane_2_analysis, spot_1_analysis, spot_2_analysis)
 
-    def create_npuncta_cellmasks(self, cell_analysis, puncta, cell_mask, cell_size_threshold=100):
+    def create_npuncta_cellmasks(
+        self, cell_analysis, puncta, cell_mask, cell_size_threshold=100
+    ):
         """
         create_npuncta_cellmasks plots number of puncta in cell objects
 
@@ -3249,7 +3250,7 @@ class Analysis_Functions:
                 to_keep[c] = 0
                 centroids[c, :] = np.NAN
                 areas[c] = np.NAN
-                cell_mask[pil[c][:,0], pil[c][:,1]] = 0
+                cell_mask[pil[c][:, 0], pil[c][:, 1]] = 0
         areas = areas[~np.isnan(areas)]
         centroids = centroids[~np.isnan(centroids)].reshape(len(areas), 2)
         pil = pil[np.asarray(to_keep, dtype=bool)]
@@ -3264,7 +3265,13 @@ class Analysis_Functions:
             else:
                 val = 0.0
             cell_mask_toplot_R[mask[:, 0], mask[:, 1]] = val
-        return analysis, cell_mask_toplot_AT, cell_mask_toplot_UT, cell_mask_toplot_R, cell_mask
+        return (
+            analysis,
+            cell_mask_toplot_AT,
+            cell_mask_toplot_UT,
+            cell_mask_toplot_R,
+            cell_mask,
+        )
 
     def make_datarray_cell(
         self,
