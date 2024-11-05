@@ -289,7 +289,8 @@ class Analysis_Functions:
         return spot1_indices, spot2_indices
     
     def calculate_spot_to_cell_numbers(
-        self, spot_indices, mask_indices, image_size, n_iter=100, blur_degree=1
+        self, spot_indices, mask_indices, image_size, n_iter=100, blur_degree=1,
+        analytical_solution=True,
     ):
         """
         gets cell analysis likelihood, as well as reporting error
@@ -343,17 +344,21 @@ class Analysis_Functions:
                 width=blur_degree + 1,
                 edge=blur_degree,
             )
-        n_olig_in_cell_random = np.zeros([n_iter])  # generate CSR array to fill in
-        for i in np.arange(n_iter):
-            n_olig_in_cell_random[i] = (
-                np.sum(
-                    self.test_spot_spot_overlap(
-                        random_spot_locations[i, :],
-                        mask_indices,
-                        original_n_spots,
-                        raw=True,
-                    )
-                ))
+            
+        if analytical_solution == True:
+            n_olig_in_cell_random = original_n_spots*(len(mask_indices.ravel())/len(possible_indices))
+        else:
+            n_olig_in_cell_random = np.zeros([n_iter])  # generate CSR array to fill in
+            for i in np.arange(n_iter):
+                n_olig_in_cell_random[i] = (
+                    np.sum(
+                        self.test_spot_spot_overlap(
+                            random_spot_locations[i, :],
+                            mask_indices,
+                            original_n_spots,
+                            raw=True,
+                        )
+                    ))
         if (n_olig_in_cell == 0) or (np.nanmean(n_olig_in_cell_random) == 0):
             olig_cell_ratio = np.NAN
         else:
