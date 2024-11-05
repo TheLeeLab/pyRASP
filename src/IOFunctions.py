@@ -9,7 +9,7 @@ from skimage import io
 import numpy as np
 import polars as pl
 import sys
-
+import denoisetools as ncs
 
 class IO_Functions:
     def __init__(self):
@@ -553,7 +553,8 @@ class IO_Functions:
         return np.asarray(image, dtype="double")
 
     def read_tiff_tophotons(
-        self, file_path, QE=0.95, gain_map=1.0, offset_map=0.0, frame=None
+        self, file_path, QE=0.95, gain_map=1.0, offset_map=0.0, frame=None, error_correction=False,
+        NA=1.45, wavelength=0.6, pixelsize=0.11, alpha=0.2, R=8
     ):
         """
         Read a TIFF file using the skimage library.
@@ -565,6 +566,13 @@ class IO_Functions:
             gain_map (matrix, or float): gain map. Assumes units of ADU/photoelectrons
             offset_map (matrix, or float): offset map. Assumes units of ADU
             frame (int, optional): if not None, loads a single frame
+            error_correction (boolean): if True, uses Huang's error correction
+            NA (float): if using Huang's error correction, needed
+            wavelength (float): if using Huang's error correction, needed (same units as pixel size)
+            pixelsize (float): pixel size if error correcting
+            alpha (float): weighting parameter for error correction (typically 0.2)
+            iterationN (int): number of iterations for the error correction
+            
 
         Returns:
             image (numpy.ndarray): The image data from the TIFF file.
@@ -572,11 +580,11 @@ class IO_Functions:
         # Use skimage's imread function to read the TIFF file
         # specifying the 'tifffile' plugin explicitly
         if isinstance(frame, type(None)):
-            image = io.imread(file_path, plugin="tifffile")
+            data = io.imread(file_path, plugin="tifffile")
         else:
-            image = io.imread(file_path, plugin="tifffile", key=frame)
-        if len(image.shape) > 2:  # if image a stack
-            data = np.swapaxes(np.swapaxes(image, 0, -1), 0, 1)
+            data = io.imread(file_path, plugin="tifffile", key=frame)
+        if len(data.shape) > 2:  # if image a stack
+            data = np.swapaxes(np.swapaxes(data, 0, -1), 0, 1)
 
         if type(gain_map) is not float:
             if data.shape[:2] != gain_map.shape:
@@ -587,13 +595,16 @@ class IO_Functions:
                 offset_map = 0.0
 
         if type(gain_map) is not float:
-            data = np.divide(
-                np.divide(
-                    np.subtract(data, offset_map[:, :, np.newaxis]),
-                    gain_map[:, :, np.newaxis],
-                ),
-                QE,
-            )
+            if len(data.shape) > 2:
+                data = np.divide(
+                    np.divide(
+                        np.subtract(data, offset_map[:, :, np.newaxis]),
+                        gain_map[:, :, np.newaxis],
+                    ),
+                    QE,
+                )
+            else:
+                data = np.divide(np.divide(np.subtract(data, offset_map), gain_map), QE)
         else:
             data = np.divide(np.divide(np.subtract(data, offset_map), gain_map), QE)
         return data

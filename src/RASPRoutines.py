@@ -1048,6 +1048,7 @@ class RASP_Routines:
         threshold,
         cell_string,
         protein_string,
+        cell_size_threshold=100,
         imtype=".tif",
         blur_degree=1,
     ):
@@ -1060,6 +1061,7 @@ class RASP_Routines:
             threshold (float): The photon threshold
             cell_string (str): string of cell to analyse
             protein_string (str): string of analysed protein
+            cell_size_threshold (float): cell size threshold
             imtype (str): image type
             blur_degree (int): blur degree for colocalisation analysis
 
@@ -1077,6 +1079,7 @@ class RASP_Routines:
             A_F.number_of_puncta_per_segmented_cell_with_threshold(
                 analysis_file,
                 threshold,
+                cell_size_threshold=cell_size_threshold,
                 blur_degree=blur_degree,
                 cell_string=cell_string,
                 protein_string=protein_string,
@@ -1089,6 +1092,7 @@ class RASP_Routines:
             A_F.number_of_puncta_per_segmented_cell_with_threshold(
                 analysis_file,
                 threshold,
+                cell_size_threshold=cell_size_threshold,
                 blur_degree=blur_degree,
                 cell_string=cell_string,
                 protein_string=protein_string,
@@ -1107,13 +1111,23 @@ class RASP_Routines:
         ):
             above_str = "n_puncta_in_cell_above_" + threshold_str
             below_str = "n_puncta_in_cell_below_" + threshold_str
+            above_coinc_str = "puncta_cell_likelihood_above_" + threshold_str
+            below_coinc_str = "puncta_cell_likelihood_below_" + threshold_str
+
             cell_punctum_analysis = cell_punctum_analysis_AT
             cell_punctum_analysis = cell_punctum_analysis.rename(
                 {"n_puncta_in_cell": above_str}
             )
+            cell_punctum_analysis = cell_punctum_analysis.rename(
+                {"puncta_cell_likelihood": above_coinc_str}
+            )
+            cell_punctum_analysis = cell_punctum_analysis.with_columns(
+                channelcol=cell_punctum_analysis_UT["puncta_cell_likelihood"]
+            ).rename({"channelcol": below_coinc_str})
             cell_punctum_analysis = cell_punctum_analysis.with_columns(
                 channelcol=cell_punctum_analysis_UT["n_puncta_in_cell"]
             ).rename({"channelcol": below_str})
+            
             ratio_brightdim = (
                 cell_punctum_analysis[above_str] / cell_punctum_analysis[below_str]
             )
@@ -1125,6 +1139,8 @@ class RASP_Routines:
                 "x_centre",
                 "y_centre",
                 "z",
+                below_coinc_str,
+                above_coinc_str,
                 below_str,
                 above_str,
                 "n_puncta_in_cell_ratio_aboveandbelow",

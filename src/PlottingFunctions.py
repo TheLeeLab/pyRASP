@@ -46,6 +46,41 @@ class Plotter:
         )
         return bins
 
+    def line_plot(self, axs, x, y, xlim=None, ylim=None,
+        color='k', lw=0.75, label='', xaxislabel='x axis', yaxislabel='y axis', ls='-'):
+        """ line_plot function
+        takes data and makes a line plot
+        
+        Args:
+            x (np.1darray): x data
+            y (np.1darray): y data
+            xlim is x limits; default is None (which computes max/min)
+            ylim is y limits; default is None (which computes max/min)
+            color is line colour; default is black
+            lw is line width (default 0.75)
+            label is label; default is nothing
+            xaxislabel is x axis label (default is 'x axis')
+            yaxislabel is y axis label (default is 'y axis')
+            
+        Returns:
+            axs is axis object """
+        if self.poster == True:
+            fontsz = 15
+        else:
+            fontsz = 8
+        
+        if xlim is None:
+            xlim = np.array([np.min(x), np.max(x)])
+        if ylim is None:
+            ylim = np.array([np.min(y), np.max(y)])
+        axs.plot(x, y, lw=lw, color=color, label=label, ls=ls)
+        axs.set_xlim(xlim)
+        axs.set_ylim(ylim)
+        axs.grid(True,which="both",ls="--",c='gray', lw=0.25, alpha=0.25)  
+        axs.set_xlabel(xaxislabel, fontsize=fontsz)
+        axs.set_ylabel(yaxislabel, fontsize=fontsz)    
+        return axs
+
     def one_column_plot(self, npanels=1, ratios=[1], height=None):
         """one_column_plot function
         takes data and makes a one-column width figure

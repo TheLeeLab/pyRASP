@@ -287,6 +287,78 @@ class Analysis_Functions:
         spot1_indices = np.ravel_multi_index(centroids1.T, image_size, order="F")
         spot2_indices = np.ravel_multi_index(centroids2.T, image_size, order="F")
         return spot1_indices, spot2_indices
+    
+    def calculate_spot_to_cell_numbers(
+        self, spot_indices, mask_indices, image_size, n_iter=100, blur_degree=1
+    ):
+        """
+        gets cell analysis likelihood, as well as reporting error
+        bounds on the likelihood ratio for one image
+
+        Args:
+            spot_indices (1D array): indices of spots
+            mask_indices (1D array): indices of pixels in mask
+            image_size (tuple): Image dimensions (height, width).
+            n_iter (int): default 100; number of iterations to start with
+            blur_degree (int): number of pixels to blur spot indices with
+                                (i.e. number of pixels surrounding centroid to
+                                consider part of spot). Default 1
+
+        Returns:
+            olig_cell_ratio (float): coincidence per cell, normalised to chance
+            raw_colocalisation (np.1darray): binary yes/no of coincidence per spot
+            n_iter (int): how many iterations it took to converge
+        """
+        original_n_spots = len(spot_indices)  # get number of spots
+
+        if original_n_spots == 0:
+            n_iter_rec = 0
+            coincidence = np.NAN
+            chance_coincidence = np.NAN
+            raw_colocalisation = np.full_like(spot_indices, np.NAN)
+            return coincidence, chance_coincidence, raw_colocalisation, n_iter_rec
+
+        if blur_degree > 0:
+            spot_indices = self.dilate_pixels(
+                spot_indices, image_size, width=blur_degree + 1, edge=blur_degree
+            )
+        n_iter_rec = n_iter
+        possible_indices = np.arange(
+            0, np.prod(image_size)
+        )  # get list of where is possible to exist in an image
+
+        raw_colocalisation = self.test_spot_spot_overlap(
+            spot_indices, mask_indices, original_n_spots, raw=True
+        )
+
+        n_olig_in_cell = np.sum(raw_colocalisation) # generate number of oligomers in cell
+
+        random_spot_locations = np.random.choice(
+            possible_indices, size=(n_iter, original_n_spots)
+        )  # get random spot locations
+        if blur_degree > 0:
+            random_spot_locations = self.dilate_pixel_matrix(
+                random_spot_locations,
+                image_size,
+                width=blur_degree + 1,
+                edge=blur_degree,
+            )
+        n_olig_in_cell_random = np.zeros([n_iter])  # generate CSR array to fill in
+        for i in np.arange(n_iter):
+            n_olig_in_cell_random[i] = (
+                np.sum(
+                    self.test_spot_spot_overlap(
+                        random_spot_locations[i, :],
+                        mask_indices,
+                        original_n_spots,
+                        raw=True,
+                    )
+                ))
+        if (n_olig_in_cell == 0) or (np.nanmean(n_olig_in_cell_random) == 0):
+            olig_cell_ratio = np.NAN
+        else:
+            olig_cell_ratio = np.divide(n_olig_in_cell, np.nanmean(n_olig_in_cell_random))
+        return olig_cell_ratio, n_olig_in_cell, n_iter_rec
 
     def calculate_spot_to_mask_coincidence(
         self, spot_indices, mask_indices, image_size, n_iter=100, blur_degree=1
@@ -2688,6 +2760,7 @@ class Analysis_Functions:
         self,
         analysis_file,
         threshold,
+        cell_size_threshold=100,
         blur_degree=1,
         cell_string="C0",
         protein_string="C1",
@@ -2701,6 +2774,7 @@ class Analysis_Functions:
         Args:
             analysis_file (pl.DataFrame): The analysis file location of puncta set 1.
             threshold (float): The photon threshold for puncta set 1.
+            cell_size_threshold (float): cell size threshold
             out_cell (boolean): exclude puncta that are inside cells
             pixel_size (float): size of pixels
             blur_degree (int): degree to blur spots
@@ -2758,6 +2832,15 @@ class Analysis_Functions:
                     pil_mask, areas, centroids = self.calculate_region_properties(
                         cell_mask[:, :, int(z) - 1]
                     )
+                    to_keep = np.ones(len(pil_mask))
+                    for c in np.arange(len(centroids)):
+                        if areas[c] < cell_size_threshold:
+                            to_keep[c] = 0
+                            centroids[c, :] = np.NAN
+                            areas[c] = np.NAN
+                    areas = areas[~np.isnan(areas)]
+                    centroids = centroids[~np.isnan(centroids)].reshape(len(areas), 2)
+                    pil_mask = pil_mask[np.asarray(to_keep, dtype=bool)]
                     x_m = centroids[:, 0]
                     y_m = centroids[:, 1]
                     filtered_subset = subset.filter(pl.col("z") == z)
@@ -2769,6 +2852,7 @@ class Analysis_Functions:
                     )
                     filename_tosave = np.full_like(x_m, file, dtype="object")
                     n_spots_in_object = np.zeros_like(x_m)
+                    n_cell_ratios = np.zeros_like(x_m)
                     z_tosave = np.full_like(x_m, z)
 
                     for k in np.arange(len(areas)):
@@ -2784,8 +2868,8 @@ class Analysis_Functions:
                             mask_indices = np.ravel_multi_index(
                                 coordinates_mask, image_size, order="F"
                             )
-                            na, na, raw_colocalisation, na = (
-                                self.calculate_spot_to_mask_coincidence(
+                            olig_cell_ratio, n_olig_in_cell, n_iter_rec = (
+                                self.calculate_spot_to_cell_numbers(
                                     spot_indices,
                                     mask_indices,
                                     image_size,
@@ -2793,13 +2877,15 @@ class Analysis_Functions:
                                     blur_degree=1,
                                 )
                             )
-                            n_spots_in_object[k] = np.sum(raw_colocalisation)
+                            n_cell_ratios[k] = olig_cell_ratio
+                            n_spots_in_object[k] = n_olig_in_cell
 
                     data = {
                         "area/pixels": areas,
                         "x_centre": x_m,
                         "y_centre": y_m,
                         "z": z_tosave,
+                        "puncta_cell_likelihood": n_cell_ratios,
                         "n_puncta_in_cell": n_spots_in_object,
                         "image_filename": filename_tosave,
                     }
@@ -3137,6 +3223,22 @@ class Analysis_Functions:
         return (plane_1_analysis, plane_2_analysis, spot_1_analysis, spot_2_analysis)
 
     def create_npuncta_cellmasks(self, cell_analysis, puncta, cell_mask, z_plane):
+        """
+        create_npuncta_cellmasks plots number of puncta in cell objects
+
+        Args:
+            cell_analysis (polars dataarray): cell analysis
+            puncta (polars dataarray): puncta analysis
+            cell_mask (np.2darray): cell mask object
+            z_plane (int): z_plane to analyse
+            coincidence (np.1darray): array of coincidence values
+            cell_size_threshold (float): area above which we determine that an object is a "cell"
+
+        Returns:
+            analysis (polars DataArray): analysis object
+
+        """
+
         from copy import copy
 
         cell_mask_toplot_AT = copy(cell_mask[:, :, z_plane - 1])
