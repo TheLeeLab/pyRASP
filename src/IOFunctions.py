@@ -11,6 +11,7 @@ import polars as pl
 import sys
 import denoisetools as ncs
 
+
 class IO_Functions:
     def __init__(self):
         self = self
@@ -553,8 +554,18 @@ class IO_Functions:
         return np.asarray(image, dtype="double")
 
     def read_tiff_tophotons(
-        self, file_path, QE=0.95, gain_map=1.0, offset_map=0.0, frame=None, error_correction=False,
-        NA=1.45, wavelength=0.6, pixelsize=0.11, alpha=0.2, R=8
+        self,
+        file_path,
+        QE=0.95,
+        gain_map=1.0,
+        offset_map=0.0,
+        frame=None,
+        error_correction=False,
+        NA=1.45,
+        wavelength=0.6,
+        pixelsize=0.11,
+        alpha=0.2,
+        R=8,
     ):
         """
         Read a TIFF file using the skimage library.
@@ -572,7 +583,7 @@ class IO_Functions:
             pixelsize (float): pixel size if error correcting
             alpha (float): weighting parameter for error correction (typically 0.2)
             iterationN (int): number of iterations for the error correction
-            
+
 
         Returns:
             image (numpy.ndarray): The image data from the TIFF file.

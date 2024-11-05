@@ -1127,7 +1127,7 @@ class RASP_Routines:
             cell_punctum_analysis = cell_punctum_analysis.with_columns(
                 channelcol=cell_punctum_analysis_UT["n_puncta_in_cell"]
             ).rename({"channelcol": below_str})
-            
+
             ratio_brightdim = (
                 cell_punctum_analysis[above_str] / cell_punctum_analysis[below_str]
             )
