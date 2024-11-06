@@ -473,6 +473,7 @@ class RASP_Routines:
         one_savefile=True,
         disp=True,
         analyse_clr=False,
+        folder_recursive=False,
         error_reduction=False,
     ):
         """
@@ -499,6 +500,7 @@ class RASP_Routines:
                 per image but amalgamates them into one file. Default True.
             disp (boolean): If true, prints when analysed an image stack. Default True.
             analyse_clr (boolean): If true, calculates the clr. If not, just coincidence. Default True.
+            folder_recursion (boolean): If true, recursively finds folders and analyses each separately.
             error_reduction (boolean): If true, reduces error on the oligomer image using Huang's code
 
         """
@@ -544,20 +546,137 @@ class RASP_Routines:
         )
 
         start = time.time()
-
-        for val in folders:
-            subfolder = os.path.abspath(val)
-            files = self.file_search(
-                subfolder, protein_string, imtype
-            )  # first get all files in any subfolders
+        
+        if folder_recursive==True:
+            for val in folders:
+                subfolder = os.path.abspath(val)
+                files = self.file_search(
+                    subfolder, protein_string, imtype
+                )  # first get all files in any subfolders
+                if cell_analysis == True:
+                    cell_files = self.file_search(
+                        subfolder, cell_string, imtype
+                    )  # get all files in any subfolders
+                # create analysis and analysis parameter directories
+                analysis_directory = os.path.abspath(subfolder) + "_analysis"
+                IO.make_directory(analysis_directory)
+    
+                for i in np.arange(len(files)):
+                    if error_reduction == False:
+                        img = IO.read_tiff_tophotons(
+                            os.path.join(folder, files[i]),
+                            QE=self.QE,
+                            gain_map=self.gain_map,
+                            offset_map=self.offset_map,
+                        )[:, :, im_start:]
+                    else:
+                        img = IO.read_tiff_tophotons(
+                            os.path.join(folder, files[i]),
+                            QE=self.QE,
+                            gain_map=self.gain_map,
+                            offset_map=self.offset_map,
+                            variance_map=self.variance_map,
+                            error_correction=True,
+                        )[:, :, im_start:]
+                    if cell_analysis == True:
+                        img_cell = IO.read_tiff_tophotons(
+                            os.path.join(folder, cell_files[i]),
+                            QE=self.QE,
+                            gain_map=self.gain_map,
+                            offset_map=self.offset_map,
+                        )[:, :, im_start:]
+                    z_test = len(img.shape) > 2
+    
+                    if z_test:  # if a z-stack
+                        z_planes = self.get_infocus_planes(img, k1)
+                        if cell_analysis == False:
+                            to_save, to_save_largeobjects, lo_mask = A_F.compute_spot_props(
+                                img,
+                                k1,
+                                k2,
+                                thres=thres,
+                                large_thres=large_thres,
+                                areathres=self.areathres,
+                                rdl=rdl,
+                                z=z_planes,
+                                d=self.d,
+                            )
+                        else:
+                            (
+                                to_save,
+                                to_save_largeobjects,
+                                lo_mask,
+                                to_save_cell,
+                                cell_mask,
+                            ) = A_F.compute_spot_and_cell_props(
+                                img,
+                                img_cell,
+                                k1,
+                                k2,
+                                prot_thres=thres,
+                                large_prot_thres=large_thres,
+                                areathres=self.areathres,
+                                rdl=rdl,
+                                z=z_planes,
+                                cell_threshold1=self.cell_threshold1,
+                                cell_threshold2=self.cell_threshold1,
+                                cell_sigma1=self.cell_sigma1,
+                                cell_sigma2=self.cell_sigma2,
+                                d=self.d,
+                                analyse_clr=analyse_clr,
+                            )
+    
+                        if cell_analysis == True:
+                            IO.save_analysis(
+                                to_save,
+                                to_save_largeobjects,
+                                analysis_directory,
+                                imtype,
+                                protein_string,
+                                cell_string,
+                                files,
+                                i,
+                                z_planes,
+                                lo_mask,
+                                cell_analysis=cell_analysis,
+                                cell_mask=cell_mask,
+                                to_save_cell=to_save_cell,
+                                one_savefile=one_savefile,
+                            )
+                        else:
+                            IO.save_analysis(
+                                to_save,
+                                to_save_largeobjects,
+                                analysis_directory,
+                                imtype,
+                                protein_string,
+                                cell_string,
+                                files,
+                                i,
+                                z_planes,
+                                lo_mask,
+                                cell_analysis=False,
+                                cell_mask=False,
+                                to_save_cell=False,
+                                one_savefile=one_savefile,
+                            )
+                    if disp == True:
+                        print(
+                            "Analysed image file {}/{}    Time elapsed: {:.3f} s".format(
+                                i + 1, len(files), time.time() - start
+                            ),
+                            end="\r",
+                            flush=True,
+                        )
+        else:
+            files = all_files
             if cell_analysis == True:
                 cell_files = self.file_search(
-                    subfolder, cell_string, imtype
+                    folder, cell_string, imtype
                 )  # get all files in any subfolders
             # create analysis and analysis parameter directories
-            analysis_directory = os.path.abspath(subfolder) + "_analysis"
+            analysis_directory = os.path.abspath(folder) + "_analysis"
             IO.make_directory(analysis_directory)
-
             for i in np.arange(len(files)):
                 if error_reduction == False:
                     img = IO.read_tiff_tophotons(

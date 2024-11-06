@@ -578,7 +578,7 @@ class IO_Functions:
         wavelength=0.6,
         pixelsize=0.11,
         alpha=0.2,
-        R=8,
+        R=40,
     ):
         """
         Read a TIFF file using the skimage library.
