@@ -546,8 +546,8 @@ class RASP_Routines:
         )
 
         start = time.time()
-        
-        if folder_recursive==True:
+
+        if folder_recursive == True:
             for val in folders:
                 subfolder = os.path.abspath(val)
                 files = self.file_search(
@@ -560,7 +560,7 @@ class RASP_Routines:
                 # create analysis and analysis parameter directories
                 analysis_directory = os.path.abspath(subfolder) + "_analysis"
                 IO.make_directory(analysis_directory)
-    
+
                 for i in np.arange(len(files)):
                     if error_reduction == False:
                         img = IO.read_tiff_tophotons(
@@ -586,20 +586,22 @@ class RASP_Routines:
                             offset_map=self.offset_map,
                         )[:, :, im_start:]
                     z_test = len(img.shape) > 2
-    
+
                     if z_test:  # if a z-stack
                         z_planes = self.get_infocus_planes(img, k1)
                         if cell_analysis == False:
-                            to_save, to_save_largeobjects, lo_mask = A_F.compute_spot_props(
-                                img,
-                                k1,
-                                k2,
-                                thres=thres,
-                                large_thres=large_thres,
-                                areathres=self.areathres,
-                                rdl=rdl,
-                                z=z_planes,
-                                d=self.d,
+                            to_save, to_save_largeobjects, lo_mask = (
+                                A_F.compute_spot_props(
+                                    img,
+                                    k1,
+                                    k2,
+                                    thres=thres,
+                                    large_thres=large_thres,
+                                    areathres=self.areathres,
+                                    rdl=rdl,
+                                    z=z_planes,
+                                    d=self.d,
+                                )
                             )
                         else:
                             (
@@ -625,7 +627,7 @@ class RASP_Routines:
                                 d=self.d,
                                 analyse_clr=analyse_clr,
                             )
-    
+
                         if cell_analysis == True:
                             IO.save_analysis(
                                 to_save,
