@@ -168,7 +168,7 @@ class RASP_Routines:
         return z_planes
 
     def calibrate_radiality(
-        self, folder, imtype=".tif", gsigma=1.4, rwave=2.0, accepted_ratio=1
+        self, folder, imtype=".tif", protein_string="C0", gsigma=1.4, rwave=2.0, accepted_ratio=1
     ):
         """
         Calibrates radility parameters. Given a folder of negative controls,
@@ -178,11 +178,12 @@ class RASP_Routines:
         Args:
             folder (string): Folder containing negative control tifs
             imtype (string): Type of images being analysed, default tif
+            protein_string (string): Type of images being analysed, default C0
             gsigma (float): gaussian blurring parameter (default 1.4)
             rwave (float): Ricker wavelent sigma (default 2.)
             accepted_ratio (float): Percentage accepted of false positives
         """
-        files_list = os.listdir(folder)
+        files_list = self.file_search(folder, protein_string, imtype)  # first get all files in any subfolders
         files = np.sort([e for e in files_list if imtype in e])
 
         k1, k2 = A_F.create_kernel(gsigma, rwave)  # create image processing kernels
