@@ -1223,7 +1223,7 @@ class RASP_Routines:
         if int(threshold) == threshold:
             threshold_str = str(int(threshold))
         else:
-            threshold_str = str(threshold).replace(".", "p")
+            threshold_str = str(np.around(threshold, 1)).replace(".", "p")
 
         cell_punctum_analysis_AT = (
             A_F.number_of_puncta_per_segmented_cell_with_threshold(
@@ -1259,43 +1259,50 @@ class RASP_Routines:
         if isinstance(cell_punctum_analysis_AT, pl.DataFrame) and isinstance(
             cell_punctum_analysis_UT, pl.DataFrame
         ):
-            above_str = "n_puncta_in_cell_above_" + threshold_str
-            below_str = "n_puncta_in_cell_below_" + threshold_str
-            above_coinc_str = "puncta_cell_likelihood_above_" + threshold_str
-            below_coinc_str = "puncta_cell_likelihood_below_" + threshold_str
-
+            cell_punctum_analysis_AT.write_csv(
+                savecell_string + "_abovephotonthreshold.csv"
+            )
+            cell_punctum_analysis_UT.write_csv(
+                savecell_string + "_belowphotonthreshold.csv"
+            )
             cell_punctum_analysis = cell_punctum_analysis_AT
-            cell_punctum_analysis = cell_punctum_analysis.rename(
-                {"n_puncta_in_cell": above_str}
-            )
-            cell_punctum_analysis = cell_punctum_analysis.rename(
-                {"puncta_cell_likelihood": above_coinc_str}
-            )
-            cell_punctum_analysis = cell_punctum_analysis.with_columns(
-                channelcol=cell_punctum_analysis_UT["puncta_cell_likelihood"]
-            ).rename({"channelcol": below_coinc_str})
-            cell_punctum_analysis = cell_punctum_analysis.with_columns(
-                channelcol=cell_punctum_analysis_UT["n_puncta_in_cell"]
-            ).rename({"channelcol": below_str})
+            # above_str = "n_puncta_in_cell_above_" + threshold_str
+            # below_str = "n_puncta_in_cell_below_" + threshold_str
+            # above_coinc_str = "puncta_cell_likelihood_above_" + threshold_str
+            # below_coinc_str = "puncta_cell_likelihood_below_" + threshold_str
 
-            ratio_brightdim = (
-                cell_punctum_analysis[above_str] / cell_punctum_analysis[below_str]
-            )
-            cell_punctum_analysis = cell_punctum_analysis.with_columns(
-                channelcol=ratio_brightdim
-            ).rename({"channelcol": "n_puncta_in_cell_ratio_aboveandbelow"})
-            cell_punctum_analysis = cell_punctum_analysis[
-                "area/pixels",
-                "x_centre",
-                "y_centre",
-                below_coinc_str,
-                above_coinc_str,
-                below_str,
-                above_str,
-                "n_puncta_in_cell_ratio_aboveandbelow",
-                "image_filename",
-            ]
-            cell_punctum_analysis.write_csv(savecell_string + "_photonthreshold.csv")
+            # cell_punctum_analysis = cell_punctum_analysis_AT
+            # cell_punctum_analysis = cell_punctum_analysis.rename(
+            #     {"n_puncta_in_cell": above_str}
+            # )
+            # cell_punctum_analysis = cell_punctum_analysis.rename(
+            #     {"puncta_cell_likelihood": above_coinc_str}
+            # )
+            # cell_punctum_analysis = cell_punctum_analysis.with_columns(
+            #     channelcol=cell_punctum_analysis_UT["puncta_cell_likelihood"]
+            # ).rename({"channelcol": below_coinc_str})
+            # cell_punctum_analysis = cell_punctum_analysis.with_columns(
+            #     channelcol=cell_punctum_analysis_UT["n_puncta_in_cell"]
+            # ).rename({"channelcol": below_str})
+
+            # ratio_brightdim = (
+            #     cell_punctum_analysis[above_str] / cell_punctum_analysis[below_str]
+            # )
+            # cell_punctum_analysis = cell_punctum_analysis.with_columns(
+            #     channelcol=ratio_brightdim
+            # ).rename({"channelcol": "n_puncta_in_cell_ratio_aboveandbelow"})
+            # cell_punctum_analysis = cell_punctum_analysis[
+            #     "area/pixels",
+            #     "x_centre",
+            #     "y_centre",
+            #     below_coinc_str,
+            #     above_coinc_str,
+            #     below_str,
+            #     above_str,
+            #     "n_puncta_in_cell_ratio_aboveandbelow",
+            #     "image_filename",
+            # ]
+            # cell_punctum_analysis.write_csv(savecell_string + "_photonthreshold.csv")
         else:
             if isinstance(cell_punctum_analysis_AT, pl.DataFrame):
                 cell_punctum_analysis_AT.write_csv(
