@@ -2815,7 +2815,7 @@ class Analysis_Functions:
 
         analysis_directory = os.path.split(analysis_file)[0]
         start = time.time()
-
+        cell_punctum_analysis = None
         if len(analysis_data) > 0:
             files = np.unique(analysis_data["image_filename"].to_numpy())
 
@@ -2881,20 +2881,21 @@ class Analysis_Functions:
                         n_cell_ratios[k] = olig_cell_ratio
                         n_spots_in_object[k] = n_olig_in_cell
 
-                data = {
-                    "area/pixels": areas,
-                    "x_centre": x_m,
-                    "y_centre": y_m,
-                    "puncta_cell_likelihood": n_cell_ratios,
-                    "n_puncta_in_cell": n_spots_in_object,
-                    "image_filename": filename_tosave,
-                }
-                if i == 0:
-                    cell_punctum_analysis = pl.DataFrame(data)
-                else:
-                    cell_punctum_analysis = pl.concat(
-                        [cell_punctum_analysis, pl.DataFrame(data)], rechunk=True
-                    )
+                if len(areas) > 0:
+                    data = {
+                        "area/pixels": areas,
+                        "x_centre": x_m,
+                        "y_centre": y_m,
+                        "puncta_cell_likelihood": n_cell_ratios,
+                        "n_puncta_in_cell": n_spots_in_object,
+                        "image_filename": filename_tosave,
+                    }
+                    if isinstance(cell_punctum_analysis, type(None)):
+                        cell_punctum_analysis = pl.DataFrame(data)
+                    else:
+                        cell_punctum_analysis = pl.concat(
+                            [cell_punctum_analysis, pl.DataFrame(data)], rechunk=True
+                        )
 
                 print(
                     "Computing "
