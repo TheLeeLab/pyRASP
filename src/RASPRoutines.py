@@ -1246,10 +1246,10 @@ class RASP_Routines:
                 + lc_str
                 + "_photonthreshold_"
                 + threshold_str
-                + "_photons_",
+                + "_photons",
             )
-            above_string = savecell_string + "_above.csv"
-            below_string = savecell_string + "_below.csv"
+            above_string = savecell_string + "_abovethreshold.csv"
+            below_string = savecell_string + "_belowthreshold.csv"
         else:
             if int(upper_cell_size_threshold) == upper_cell_size_threshold:
                 uc_str = str(int(upper_cell_size_threshold))
