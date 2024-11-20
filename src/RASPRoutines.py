@@ -1269,12 +1269,12 @@ class RASP_Routines:
             )
             above_string = savecell_string + "_above.csv"
             below_string = savecell_string + "_below.csv"
-        
+
         if replace_files == False:
             if os.path.isfile(above_string) or os.path.isfile(below_string):
                 print("Analysis already complete; exiting.")
                 return
-        
+
         cell_punctum_analysis_AT = (
             A_F.number_of_puncta_per_segmented_cell_with_threshold(
                 analysis_file,
@@ -1308,12 +1308,8 @@ class RASP_Routines:
         if isinstance(cell_punctum_analysis_AT, pl.DataFrame) and isinstance(
             cell_punctum_analysis_UT, pl.DataFrame
         ):
-            cell_punctum_analysis_AT.write_csv(
-                above_string
-            )
-            cell_punctum_analysis_UT.write_csv(
-                below_string
-            )
+            cell_punctum_analysis_AT.write_csv(above_string)
+            cell_punctum_analysis_UT.write_csv(below_string)
             cell_punctum_analysis = cell_punctum_analysis_AT
             # above_str = "n_puncta_in_cell_above_" + threshold_str
             # below_str = "n_puncta_in_cell_below_" + threshold_str
