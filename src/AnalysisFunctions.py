@@ -18,6 +18,7 @@ import pathos
 from pathos.pools import ThreadPool as Pool
 from rdfpy import rdf
 import time
+from copy import copy
 
 import os
 import sys
@@ -2774,12 +2775,14 @@ class Analysis_Functions:
         self,
         analysis_file,
         threshold,
-        cell_size_threshold=100,
+        lower_cell_size_threshold=100,
+        upper_cell_size_threshold=np.inf,
         blur_degree=1,
         cell_string="C0",
         protein_string="C1",
         imtype=".tif",
         aboveT=1,
+        z_project_first=True,
     ):
         """
         Does analysis of number of oligomers in a mask area per "segmented"
@@ -2788,7 +2791,8 @@ class Analysis_Functions:
         Args:
             analysis_file (pl.DataFrame): The analysis file location of puncta set 1.
             threshold (float): The photon threshold for puncta set 1.
-            cell_size_threshold (float): cell size threshold
+            lower_cell_size_threshold (float): lower cell size threshold
+            upper_cell_size_threshold (float): upper cell size threshold
             out_cell (boolean): exclude puncta that are inside cells
             pixel_size (float): size of pixels
             blur_degree (int): degree to blur spots
@@ -2796,6 +2800,8 @@ class Analysis_Functions:
             protein_string (string): will use this to find corresponding files
             imtype (string): image type previously analysed
             aboveT (int): do the calculation above or below threshold
+            z_project_first (boolean): if True (default), does a z projection before
+                                    thresholding cell size. If false, does the opposite.
 
         Returns:
             cell_punctum_analysis (pl.DataFrame): polars datarray of the cell analysis
@@ -2820,32 +2826,25 @@ class Analysis_Functions:
             files = np.unique(analysis_data["image_filename"].to_numpy())
 
             for i, file in enumerate(files):
-                cell_mask = np.sum(
-                    IO.read_tiff(
-                        os.path.join(
-                            analysis_directory,
-                            os.path.split(file.split(imtype)[0])[-1].split(
-                                protein_string
-                            )[0]
-                            + str(cell_string)
-                            + "_cellMask.tiff",
-                        )
-                    ),
-                    axis=-1,
+                cell_mask = IO.read_tiff(
+                    os.path.join(
+                        analysis_directory,
+                        os.path.split(file.split(imtype)[0])[-1].split(protein_string)[
+                            0
+                        ]
+                        + str(cell_string)
+                        + "_cellMask.tiff",
+                    )
                 )
-                cell_mask[cell_mask > 1] = 1
                 subset = analysis_data.filter(pl.col("image_filename") == file)
+                cell_mask, pil_mask, centroids, areas = self.threshold_cell_areas(
+                    cell_mask,
+                    lower_cell_size_threshold,
+                    upper_cell_size_threshold=upper_cell_size_threshold,
+                    z_project=z_project_first,
+                )
                 image_size = cell_mask.shape
-                pil_mask, areas, centroids = self.calculate_region_properties(cell_mask)
-                to_keep = np.ones(len(pil_mask))
-                for c in np.arange(len(centroids)):
-                    if areas[c] < cell_size_threshold:
-                        to_keep[c] = 0
-                        centroids[c, :] = np.NAN
-                        areas[c] = np.NAN
-                areas = areas[~np.isnan(areas)]
-                centroids = centroids[~np.isnan(centroids)].reshape(len(areas), 2)
-                pil_mask = pil_mask[np.asarray(to_keep, dtype=bool)]
+
                 x_m = centroids[:, 0]
                 y_m = centroids[:, 1]
                 x = subset["x"].to_numpy()
@@ -3223,8 +3222,66 @@ class Analysis_Functions:
                 )
         return (plane_1_analysis, plane_2_analysis, spot_1_analysis, spot_2_analysis)
 
+    def threshold_cell_areas(
+        self,
+        cell_mask,
+        lower_cell_size_threshold=100,
+        upper_cell_size_threshold=np.inf,
+        z_project=True,
+    ):
+        """
+        removes small and/or large objects from a cell mask
+
+        Args:
+            cell_mask (np.2darray): cell mask object
+            lower_cell_size_threshold (float): how big of an area do you take as lower threshold
+            upper_cell_size_threshold (float): how big of an area do you take as lower threshold
+            z_project (boolean): if True, z-projects cell
+
+        Returns:
+            cell_mask_new (np.2darray): cell mask with some objects removed
+            pil (dict): pixel image locations of mask
+            centroids (np.2darray): centroids of individual objects
+            areas (np.1darray): areas of individual cells
+        """
+        if (z_project == True) and (len(cell_mask.shape) > 2):
+            cell_mask = np.sum(cell_mask, axis=-1)
+            cell_mask[cell_mask > 1] = 1
+
+        cell_mask_new = copy(cell_mask)
+        if len(cell_mask.shape) > 2:
+            for plane in np.arange(cell_mask.shape[-1]):
+                pil, areas, centroids = self.calculate_region_properties(
+                    cell_mask_new[:, :, plane]
+                )
+                for c in np.arange(len(centroids)):
+                    if (areas[c] < lower_cell_size_threshold) or (
+                        areas[c] >= upper_cell_size_threshold
+                    ):
+                        cell_mask_new[pil[c][:, 0], pil[c][:, 1], plane] = 0
+            cell_mask_new = np.sum(cell_mask_new, axis=-1)
+            cell_mask_new[cell_mask_new > 1] = 1
+            pil, areas, centroids = self.calculate_region_properties(cell_mask_new)
+        else:
+            pil, areas, centroids = self.calculate_region_properties(cell_mask_new)
+            to_keep = np.ones(len(pil))
+            for c in np.arange(len(centroids)):
+                if (areas[c] < lower_cell_size_threshold) or (
+                    areas[c] >= upper_cell_size_threshold
+                ):
+                    to_keep[c] = 0
+                    centroids[c, :] = np.NAN
+                    areas[c] = np.NAN
+                    cell_mask_new[pil[c][:, 0], pil[c][:, 1]] = 0
+        return cell_mask_new, pil, centroids, areas
+
     def create_npuncta_cellmasks(
-        self, cell_analysis, puncta, cell_mask, cell_size_threshold=100
+        self,
+        cell_analysis,
+        puncta,
+        cell_mask,
+        lower_cell_size_threshold=100,
+        upper_cell_size_threshold=np.inf,
     ):
         """
         create_npuncta_cellmasks plots number of puncta in cell objects
@@ -3233,28 +3290,23 @@ class Analysis_Functions:
             cell_analysis (polars dataarray): cell analysis
             puncta (polars dataarray): puncta analysis
             cell_mask (np.2darray): cell mask object
+            lower_cell_size_threshold (float): how big of an area do you take as lower threshold
+            upper_cell_size_threshold (float): how big of an area do you take as lower threshold
 
         Returns:
             analysis (polars DataArray): analysis object
 
         """
+        new_cell_mask, pil, centroids, areas = self.threshold_cell_areas(
+            cell_mask,
+            lower_cell_size_threshold,
+            upper_cell_size_threshold=upper_cell_size_threshold,
+            z_project=False,
+        )
 
-        from copy import copy
-
-        cell_mask_toplot_AT = copy(cell_mask)
-        cell_mask_toplot_UT = copy(cell_mask)
-        cell_mask_toplot_R = copy(cell_mask)
-        pil, areas, centroids = self.calculate_region_properties(cell_mask_toplot_AT)
-        to_keep = np.ones(len(pil))
-        for c in np.arange(len(centroids)):
-            if areas[c] < cell_size_threshold:
-                to_keep[c] = 0
-                centroids[c, :] = np.NAN
-                areas[c] = np.NAN
-                cell_mask[pil[c][:, 0], pil[c][:, 1]] = 0
-        areas = areas[~np.isnan(areas)]
-        centroids = centroids[~np.isnan(centroids)].reshape(len(areas), 2)
-        pil = pil[np.asarray(to_keep, dtype=bool)]
+        cell_mask_toplot_AT = copy(new_cell_mask)
+        cell_mask_toplot_UT = copy(new_cell_mask)
+        cell_mask_toplot_R = copy(new_cell_mask)
 
         analysis = copy(cell_analysis)
 

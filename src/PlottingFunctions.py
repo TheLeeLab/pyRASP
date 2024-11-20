@@ -93,7 +93,7 @@ class Plotter:
         axs.set_ylabel(yaxislabel, fontsize=fontsz)
         return axs
 
-    def one_column_plot(self, npanels=1, ratios=[1], height=None):
+    def one_column_plot(self, npanels=1, ratios=[1], height=None, width=None):
         """one_column_plot function
         takes data and makes a one-column width figure
 
@@ -102,7 +102,7 @@ class Plotter:
             npanels (int): number of panels
             ratios (list): list of heights of same length as nrows
             height (float): overridden height of figure
-
+            width (float): overriden width of figure
         Returns:
             fig (figure): figure object
             ax (axes): axes object"""
@@ -123,8 +123,11 @@ class Plotter:
             lw = 0.5
 
         xsize = 3.33  # 3.33 inches for one-column figure
-        if height is not None:
+        if (height is not None) and (width is not None):
             ysize = np.min([height, 8.25])  # maximum size in y can be 8.25
+            xsize = np.min([width, 3.3])  # maximum size in y can be 8.25
+        elif (height is not None) and (width is None):
+            ysize = np.min([8.25, height])  # maximum size in y can be 8.25
         else:
             ysize = np.min([3.5 * npanels, 8.25])  # maximum size in y can be 8.25
 

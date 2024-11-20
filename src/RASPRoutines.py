@@ -1198,9 +1198,12 @@ class RASP_Routines:
         threshold,
         cell_string,
         protein_string,
-        cell_size_threshold=1000,
+        lower_cell_size_threshold=2000,
+        upper_cell_size_threshold=np.inf,
         imtype=".tif",
         blur_degree=1,
+        z_project_first=True,
+        replace_files=False,
     ):
         """
         Redo colocalisation analayses of spots above a photon threshold in an
@@ -1211,9 +1214,14 @@ class RASP_Routines:
             threshold (float): The photon threshold
             cell_string (str): string of cell to analyse
             protein_string (str): string of analysed protein
-            cell_size_threshold (float): cell size threshold
+            lower_cell_size_threshold (float): lower cell size threshold
+            upper_cell_size_threshold (float): upper cell size threshold
             imtype (str): image type
             blur_degree (int): blur degree for colocalisation analysis
+            z_project_first (boolean): if True (default), does a z projection before
+                                    thresholding cell size. If false, does the opposite.
+            replace_files (boolean): if False, looks for files first and if it's already analysed, does nothing
+
 
         Returns:
             cell_punctum_analysis_AT (pl.DataFrame): dataframe of cell analysis above threshold
@@ -1225,16 +1233,60 @@ class RASP_Routines:
         else:
             threshold_str = str(np.around(threshold, 1)).replace(".", "p")
 
+        if int(lower_cell_size_threshold) == lower_cell_size_threshold:
+            lc_str = str(int(lower_cell_size_threshold))
+        else:
+            lc_str = str(np.around(lower_cell_size_threshold, 1)).replace(".", "p")
+
+        if np.isinf(upper_cell_size_threshold):
+            savecell_string = os.path.join(
+                os.path.split(analysis_file)[0],
+                "single_cell_coincidence_"
+                + "mincellsize_"
+                + lc_str
+                + "_photonthreshold_"
+                + threshold_str
+                + "_photons_",
+            )
+            above_string = savecell_string + "_above.csv"
+            below_string = savecell_string + "_below.csv"
+        else:
+            if int(upper_cell_size_threshold) == upper_cell_size_threshold:
+                uc_str = str(int(upper_cell_size_threshold))
+            else:
+                uc_str = str(np.around(upper_cell_size_threshold, 1)).replace(".", "p")
+
+            savecell_string = os.path.join(
+                os.path.split(analysis_file)[0],
+                "single_cell_coincidence_"
+                + "mincellsize_"
+                + lc_str
+                + "_maxcellsize_"
+                + uc_str
+                + "_photonthreshold_"
+                + threshold_str
+                + "_photons_",
+            )
+            above_string = savecell_string + "_above.csv"
+            below_string = savecell_string + "_below.csv"
+        
+        if replace_files == False:
+            if os.path.isfile(above_string) or os.path.isfile(below_string):
+                print("Analysis already complete; exiting.")
+                return
+        
         cell_punctum_analysis_AT = (
             A_F.number_of_puncta_per_segmented_cell_with_threshold(
                 analysis_file,
                 threshold,
-                cell_size_threshold=cell_size_threshold,
+                lower_cell_size_threshold=lower_cell_size_threshold,
+                upper_cell_size_threshold=upper_cell_size_threshold,
                 blur_degree=blur_degree,
                 cell_string=cell_string,
                 protein_string=protein_string,
                 imtype=imtype,
                 aboveT=1,
+                z_project_first=z_project_first,
             )
         )
 
@@ -1242,28 +1294,25 @@ class RASP_Routines:
             A_F.number_of_puncta_per_segmented_cell_with_threshold(
                 analysis_file,
                 threshold,
-                cell_size_threshold=cell_size_threshold,
+                lower_cell_size_threshold=lower_cell_size_threshold,
+                upper_cell_size_threshold=upper_cell_size_threshold,
                 blur_degree=blur_degree,
                 cell_string=cell_string,
                 protein_string=protein_string,
                 imtype=imtype,
                 aboveT=0,
+                z_project_first=z_project_first,
             )
-        )
-
-        savecell_string = os.path.join(
-            os.path.split(analysis_file)[0],
-            "single_cell_coincidence_" + threshold_str,
         )
 
         if isinstance(cell_punctum_analysis_AT, pl.DataFrame) and isinstance(
             cell_punctum_analysis_UT, pl.DataFrame
         ):
             cell_punctum_analysis_AT.write_csv(
-                savecell_string + "_abovephotonthreshold.csv"
+                above_string
             )
             cell_punctum_analysis_UT.write_csv(
-                savecell_string + "_belowphotonthreshold.csv"
+                below_string
             )
             cell_punctum_analysis = cell_punctum_analysis_AT
             # above_str = "n_puncta_in_cell_above_" + threshold_str
@@ -1305,15 +1354,10 @@ class RASP_Routines:
             # cell_punctum_analysis.write_csv(savecell_string + "_photonthreshold.csv")
         else:
             if isinstance(cell_punctum_analysis_AT, pl.DataFrame):
-                cell_punctum_analysis_AT.write_csv(
-                    savecell_string + "_abovephotonthreshold.csv"
-                )
+                cell_punctum_analysis_AT.write_csv(above_string)
                 cell_punctum_analysis = cell_punctum_analysis_AT
             if isinstance(cell_punctum_analysis_UT, pl.DataFrame):
-                cell_punctum_analysis_UT.write_csv(
-                    savecell_string + "_belowphotonthreshold.csv"
-                )
-                cell_punctum_analysis = cell_punctum_analysis_UT
+                cell_punctum_analysis_UT.write_csv(below_string)
         return cell_punctum_analysis
 
     def colocalise_with_threshold(
