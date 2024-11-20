@@ -2895,23 +2895,6 @@ class Analysis_Functions:
                         cell_punctum_analysis = pl.concat(
                             [cell_punctum_analysis, pl.DataFrame(data)]
                         )
-                del (
-                    cell_mask,
-                    pil_mask,
-                    centroids,
-                    areas,
-                    subset,
-                    x_m,
-                    x,
-                    y_m,
-                    y,
-                    centroids_puncta,
-                    spot_indices,
-                    filename_tosave,
-                    n_spots_in_object,
-                    n_cell_ratios,
-                    filename_tosave,
-                )
                 print(
                     "Computing "
                     + typestr
@@ -3240,7 +3223,7 @@ class Analysis_Functions:
 
     def threshold_cell_areas(
         self,
-        cell_mask,
+        cell_mask_raw,
         lower_cell_size_threshold=100,
         upper_cell_size_threshold=np.inf,
         z_project=True,
@@ -3260,9 +3243,11 @@ class Analysis_Functions:
             centroids (np.2darray): centroids of individual objects
             areas (np.1darray): areas of individual cells
         """
-        if (z_project == True) and (len(cell_mask.shape) > 2):
-            cell_mask = np.sum(cell_mask, axis=-1)
+        if (z_project == True) and (len(cell_mask_raw.shape) > 2):
+            cell_mask = np.sum(cell_mask_raw, axis=-1)
             cell_mask[cell_mask > 1] = 1
+        else:
+            cell_mask = copy(cell_mask_raw)
 
         cell_mask_new = copy(cell_mask)
         if len(cell_mask.shape) > 2:
