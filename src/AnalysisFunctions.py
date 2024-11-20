@@ -2921,7 +2921,7 @@ class Analysis_Functions:
                     end="\r",
                     flush=True,
                 )
-
+            cell_punctum_analysis = cell_punctum_analysis.rechunk()
             return cell_punctum_analysis
         else:
             return np.NAN
