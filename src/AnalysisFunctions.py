@@ -2861,6 +2861,7 @@ class Analysis_Functions:
                     xm = coords[:, 0]
                     ym = coords[:, 1]
                     if (np.any(xm > image_size[0])) or (np.any(ym > image_size[1])):
+                        print("here")
                         n_cell_ratios[k] = np.NAN
                         n_spots_in_object[k] = np.NAN
                     else:
