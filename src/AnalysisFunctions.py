@@ -341,22 +341,21 @@ class Analysis_Functions:
         n_olig_in_cell = np.sum(
             raw_colocalisation
         )  # generate number of oligomers in cell
-
-        random_spot_locations = np.random.choice(
-            possible_indices, size=(n_iter, original_n_spots)
-        )  # get random spot locations
-        if blur_degree > 0:
-            random_spot_locations = self.dilate_pixel_matrix(
-                random_spot_locations,
-                image_size,
-                width=blur_degree + 1,
-                edge=blur_degree,
-            )
         if analytical_solution == True:
             n_olig_in_cell_random = original_n_spots * (
                 len(mask_indices.ravel()) / len(possible_indices)
             )
         else:
+            random_spot_locations = np.random.choice(
+                possible_indices, size=(n_iter, original_n_spots)
+            )  # get random spot locations
+            if blur_degree > 0:
+                random_spot_locations = self.dilate_pixel_matrix(
+                    random_spot_locations,
+                    image_size,
+                    width=blur_degree + 1,
+                    edge=blur_degree,
+                )
             n_olig_in_cell_random = np.zeros([n_iter])  # generate CSR array to fill in
             for i in np.arange(n_iter):
                 n_olig_in_cell_random[i] = np.sum(
@@ -2826,7 +2825,7 @@ class Analysis_Functions:
             files = np.unique(analysis_data["image_filename"].to_numpy())
 
             for i, file in enumerate(files):
-                cell_mask = IO.read_tiff(
+                raw_cell_mask = IO.read_tiff(
                     os.path.join(
                         analysis_directory,
                         os.path.split(file.split(imtype)[0])[-1].split(protein_string)[
@@ -2838,7 +2837,7 @@ class Analysis_Functions:
                 )
                 subset = analysis_data.filter(pl.col("image_filename") == file)
                 cell_mask, pil_mask, centroids, areas = self.threshold_cell_areas(
-                    cell_mask,
+                    raw_cell_mask,
                     lower_cell_size_threshold,
                     upper_cell_size_threshold=upper_cell_size_threshold,
                     z_project=z_project_first,
@@ -2862,7 +2861,8 @@ class Analysis_Functions:
                     xm = coords[:, 0]
                     ym = coords[:, 1]
                     if (np.any(xm > image_size[0])) or (np.any(ym > image_size[1])):
-                        n_spots_in_object[k] = 0
+                        n_cell_ratios[k] = np.NAN
+                        n_spots_in_object[k] = np.NAN
                     else:
                         coordinates_mask = np.asarray(np.vstack([xm, ym]), dtype=int)
                         mask_indices = np.ravel_multi_index(
@@ -2893,9 +2893,25 @@ class Analysis_Functions:
                         cell_punctum_analysis = pl.DataFrame(data)
                     else:
                         cell_punctum_analysis = pl.concat(
-                            [cell_punctum_analysis, pl.DataFrame(data)], rechunk=True
+                            [cell_punctum_analysis, pl.DataFrame(data)]
                         )
-
+                del (
+                    cell_mask,
+                    pil_mask,
+                    centroids,
+                    areas,
+                    subset,
+                    x_m,
+                    x,
+                    y_m,
+                    y,
+                    centroids_puncta,
+                    spot_indices,
+                    filename_tosave,
+                    n_spots_in_object,
+                    n_cell_ratios,
+                    filename_tosave,
+                )
                 print(
                     "Computing "
                     + typestr
@@ -3261,7 +3277,6 @@ class Analysis_Functions:
                         cell_mask_new[pil[c][:, 0], pil[c][:, 1], plane] = 0
             cell_mask_new = np.sum(cell_mask_new, axis=-1)
             cell_mask_new[cell_mask_new > 1] = 1
-            pil, areas, centroids = self.calculate_region_properties(cell_mask_new)
         else:
             pil, areas, centroids = self.calculate_region_properties(cell_mask_new)
             to_keep = np.ones(len(pil))
@@ -3273,6 +3288,7 @@ class Analysis_Functions:
                     centroids[c, :] = np.NAN
                     areas[c] = np.NAN
                     cell_mask_new[pil[c][:, 0], pil[c][:, 1]] = 0
+        pil, areas, centroids = self.calculate_region_properties(cell_mask_new)
         return cell_mask_new, pil, centroids, areas
 
     def create_npuncta_cellmasks(
