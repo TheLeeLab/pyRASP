@@ -1887,28 +1887,6 @@ class Analysis_Functions:
 
         return to_save, to_save_largeobjects, lo_mask
 
-    @staticmethod
-    @jit(nopython=True)
-    def bincalculator(data):
-        """bincalculator function
-        reads in data and generates bins according to Freedman-Diaconis rule
-
-        Args:
-            data (np.1darray): data to calculate bins
-
-        Returns:
-            bins (np.1darray): bins for histogram according to Freedman-Diaconis rule"""
-        N = len(data)
-        sigma = np.std(data)
-
-        binwidth = np.multiply(np.multiply(np.power(N, np.divide(-1, 3)), sigma), 3.5)
-        bins = np.linspace(
-            np.min(data),
-            np.max(data),
-            int((np.max(data) - np.min(data)) / binwidth) + 1,
-        )
-        return bins
-
     def Gauss2DFitting(self, image, pixel_index_list, expanded_area=5):
         """
         Gets HWHM of PSFs from fitting Gaussians to spots (from pixel_index_list)
@@ -2007,6 +1985,47 @@ class Analysis_Functions:
         nd1 = data[data <= (1.5 * IQR) + q2]
         newdata = nd1[nd1 >= q1 - (1.5 * IQR)]
         return newdata
+
+    def rejectoutliers_value(self, data, q1=None, q2=None, IQR=None):
+        """rejectoutliers_value function
+        # rejects outliers from data, does iqr method (i.e. anything below
+        lower quartile (25 percent) or above upper quartile (75 percent)
+        is rejected). If given q1, q2, and IQR, uses directly.
+
+        Args:
+            data (pl.dataarray): polars dataarray
+            q1 (float): if float, uses directly
+            q2 (float): if float, uses directly
+            IQR (float): if float, uses directly
+
+        Returns:
+            newdata (np.1darray): data matrix"""
+        if (
+            isinstance(q1, type(None))
+            and isinstance(q2, type(None))
+            and isinstance(IQR, type(None))
+        ):
+            from scipy.stats import iqr
+
+            IQR = iqr(data["sum_intensity_in_photons"].to_numpy())
+            q1, q2 = np.percentile(
+                data["sum_intensity_in_photons"].to_numpy(), q=(25, 75)
+            )
+
+            upper_limit = (1.5 * IQR) + q2
+            lower_limit = q1 - (1.5 * IQR)
+            newdata = data.filter(
+                (pl.col("sum_intensity_in_photons") >= lower_limit)
+                & (pl.col("sum_intensity_in_photons") <= upper_limit)
+            )
+        else:
+            upper_limit = (1.5 * IQR) + q2
+            lower_limit = q1 - (1.5 * IQR)
+            newdata = data.filter(
+                (pl.col("sum_intensity_in_photons") >= lower_limit)
+                & (pl.col("sum_intensity_in_photons") <= upper_limit)
+            )
+        return newdata, q1, q2, IQR
 
     def rejectoutliers_ind(self, data):
         """rejectoutliers function
@@ -2782,6 +2801,9 @@ class Analysis_Functions:
         imtype=".tif",
         aboveT=1,
         z_project_first=True,
+        q1=None,
+        q2=None,
+        IQR=None,
     ):
         """
         Does analysis of number of oligomers in a mask area per "segmented"
@@ -2801,12 +2823,24 @@ class Analysis_Functions:
             aboveT (int): do the calculation above or below threshold
             z_project_first (boolean): if True (default), does a z projection before
                                     thresholding cell size. If false, does the opposite.
+            q1 (float): if float, adds in IQR filter
+            q2 (float): if float, adds in IQR filter
+            IQR (Float): if float, adds in IQR filter
 
         Returns:
             cell_punctum_analysis (pl.DataFrame): polars datarray of the cell analysis
         """
 
         analysis_data = pl.read_csv(analysis_file)
+        if (
+            ~isinstance(q1, type(None))
+            and ~isinstance(q2, type(None))
+            and ~isinstance(IQR, type(None))
+        ):
+            analysis_data, _, _, _ = self.rejectoutliers_value(
+                analysis_data, q1, q2, IQR
+            )
+
         if aboveT == 1:
             analysis_data = analysis_data.filter(
                 pl.col("sum_intensity_in_photons") > threshold
@@ -2848,6 +2882,11 @@ class Analysis_Functions:
                 y_m = centroids[:, 1]
                 x = subset["x"].to_numpy()
                 y = subset["y"].to_numpy()
+                bounds_x = (x < image_size[0]) & (x >= 0)
+                bounds_y = (y < image_size[1]) & (y >= 0)
+                bounds = bounds_x * bounds_y
+                x = x[bounds]
+                y = y[bounds]
                 centroids_puncta = np.asarray(np.vstack([x, y]), dtype=int)
                 spot_indices = np.unique(
                     np.ravel_multi_index(centroids_puncta, image_size, order="F")
@@ -2861,7 +2900,6 @@ class Analysis_Functions:
                     xm = coords[:, 0]
                     ym = coords[:, 1]
                     if (np.any(xm > image_size[0])) or (np.any(ym > image_size[1])):
-                        print("here")
                         n_cell_ratios[k] = np.NAN
                         n_spots_in_object[k] = np.NAN
                     else:
@@ -3233,7 +3271,7 @@ class Analysis_Functions:
         removes small and/or large objects from a cell mask
 
         Args:
-            cell_mask (np.2darray): cell mask object
+            cell_mask_raw (np.ndarray): cell mask object
             lower_cell_size_threshold (float): how big of an area do you take as lower threshold
             upper_cell_size_threshold (float): how big of an area do you take as lower threshold
             z_project (boolean): if True, z-projects cell
@@ -3277,55 +3315,65 @@ class Analysis_Functions:
         pil, areas, centroids = self.calculate_region_properties(cell_mask_new)
         return cell_mask_new, pil, centroids, areas
 
-    def create_npuncta_cellmasks(
+    def create_labelled_cellmasks(
         self,
         cell_analysis,
         puncta,
         cell_mask,
         lower_cell_size_threshold=100,
         upper_cell_size_threshold=np.inf,
+        z_project=True,
+        parameter="n_puncta_in_cell",
     ):
         """
-        create_npuncta_cellmasks plots number of puncta in cell objects
+        create_labelled_cellmasks plots values of specified parameter in cell objects
 
         Args:
             cell_analysis (polars dataarray): cell analysis
             puncta (polars dataarray): puncta analysis
             cell_mask (np.2darray): cell mask object
             lower_cell_size_threshold (float): how big of an area do you take as lower threshold
-            upper_cell_size_threshold (float): how big of an area do you take as lower threshold
+            upper_cell_size_threshold (float): how big of an area do you take as upper threshold
+            z_project (boolean): project z first or not for cell mask
+            parameter (string): parameter to plot
 
         Returns:
-            analysis (polars DataArray): analysis object
+            cell_mask_toplot_analysis (np.2darray): cell mask of analysed quantity
+            new_cell_mask (np.2darray): thresholded cell mask
 
         """
         new_cell_mask, pil, centroids, areas = self.threshold_cell_areas(
             cell_mask,
             lower_cell_size_threshold,
             upper_cell_size_threshold=upper_cell_size_threshold,
-            z_project=False,
+            z_project=z_project,
         )
 
-        cell_mask_toplot_AT = copy(new_cell_mask)
-        cell_mask_toplot_UT = copy(new_cell_mask)
-        cell_mask_toplot_R = copy(new_cell_mask)
+        cell_mask_toplot_analysis = copy(new_cell_mask)
 
         analysis = copy(cell_analysis)
 
         for i, mask in enumerate(pil):
-            cell_mask_toplot_AT[mask[:, 0], mask[:, 1]] = analysis[i, 5]
-            cell_mask_toplot_UT[mask[:, 0], mask[:, 1]] = analysis[i, 4]
-            if np.isfinite(analysis[i, 6]):
-                val = analysis[i, 6]
-            else:
-                val = 0.0
-            cell_mask_toplot_R[mask[:, 0], mask[:, 1]] = val
+            centroid = centroids[i]
+            index_to_use = np.argmin(
+                np.sqrt(
+                    np.square(
+                        centroid
+                        - np.vstack(
+                            [
+                                analysis["x_centre"].to_numpy(),
+                                analysis["y_centre"].to_numpy(),
+                            ]
+                        )
+                    )
+                )
+            )
+            cell_mask_toplot_analysis[mask[:, 0], mask[:, 1]] = analysis[
+                parameter
+            ].to_numpy()[index_to_use]
         return (
-            analysis,
-            cell_mask_toplot_AT,
-            cell_mask_toplot_UT,
-            cell_mask_toplot_R,
-            cell_mask,
+            cell_mask_toplot_analysis,
+            new_cell_mask,
         )
 
     def make_datarray_cell(

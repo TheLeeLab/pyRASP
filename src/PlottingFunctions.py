@@ -26,25 +26,128 @@ class Plotter:
         self = self
         return
 
-    def bincalculator(self, data):
-        """bincalculator function
-        reads in data and generates bins according to Freedman-Diaconis rule
+    def one_column_plot(self, npanels=1, ratios=None, height=None, width=None):
+        """
+        Creates a one-column width figure with specified configurations.
 
         Args:
-            data (np.1darray): data to calculate bins
+            npanels (int): Number of panels (rows).
+            ratios (list): List of height ratios for the panels.
+            height (float): Override for figure height.
+            width (float): Override for figure width.
 
         Returns:
-            bins (np.1darray): bins for histogram according to Freedman-Diaconis rule"""
-        N = len(data)
-        sigma = np.std(data)
+            fig (Figure): Figure object.
+            axs (Axes or array of Axes): Axes object(s).
+        """
+        # Validate ratios
+        ratios = ratios or [1] * npanels
+        if len(ratios) != npanels:
+            raise ValueError("Mismatch between number of panels and ratios length")
 
-        binwidth = np.multiply(np.multiply(np.power(N, np.divide(-1, 3)), sigma), 3.5)
-        bins = np.linspace(
-            np.min(data),
-            np.max(data),
-            int((np.max(data) - np.min(data)) / binwidth) + 1,
+        # Configure font size and line width
+        fontsz = 12 if self.poster else 7
+        lw = 1 if self.poster else 0.5
+
+        # Set default sizes
+        xsize = 3.33  # Default one-column width in inches
+        ysize = height or npanels * 3.5  # Default height proportional to panels
+        if width is not None:
+            xsize = min(width, 3.33)
+        if height is not None:
+            ysize = min(height, 8.25)  # Max allowable height is 8.25 inches
+        else:
+            ysize = min(npanels * 3.5, 8.25)
+
+        # Apply global plotting configurations
+        plt.rcParams.update(
+            {
+                "figure.figsize": [xsize, ysize],
+                "font.size": fontsz,
+                "svg.fonttype": "none",
+                "axes.linewidth": lw,
+            }
         )
-        return bins
+        matplotlib.rcParams.update({"pdf.fonttype": 42, "ps.fonttype": 42})
+
+        # Create figure and axes
+        fig, axs = plt.subplots(npanels, 1, gridspec_kw={"height_ratios": ratios})
+
+        # Ensure axs is iterable
+        axs = np.atleast_1d(axs)
+
+        # Configure tick parameters for each axis
+        for ax in axs:
+            ax.xaxis.set_tick_params(width=lw, length=lw * 4)
+            ax.yaxis.set_tick_params(width=lw, length=lw * 4)
+            ax.tick_params(axis="both", pad=1.2)
+
+        return fig, axs
+
+    def two_column_plot(
+        self,
+        nrows=1,
+        ncolumns=1,
+        heightratio=None,
+        widthratio=None,
+        height=0,
+        big=False,
+    ):
+        """
+        Creates a two-column width figure with specified configurations.
+
+        Args:
+            nrows (int): Number of rows.
+            ncolumns (int): Number of columns.
+            heightratio (list): List of heights, length must match nrows.
+            widthratio (list): List of widths, length must match ncolumns.
+            height (float): Overridden height of the figure.
+            big (bool): If True, uses larger font sizes.
+
+        Returns:
+            fig (Figure): Figure object.
+            axs (Axes or array of Axes): Axes object(s).
+        """
+        # Validate ratios
+        heightratio = heightratio or [1] * nrows
+        widthratio = widthratio or [1] * ncolumns
+        if len(heightratio) != nrows or len(widthratio) != ncolumns:
+            raise ValueError("Mismatch between ratios and number of rows/columns")
+
+        # Font size and line width configurations
+        fontsz = 12 if self.poster else 7
+        lw = 1
+        xsize = 5 * ncolumns if big else 6.69  # Adjust column size
+        ysize = height if height > 0 else (5 * nrows if big else 3 * nrows)
+
+        # Apply global plotting configurations
+        plt.rcParams.update(
+            {
+                "figure.figsize": [xsize, ysize],
+                "font.size": fontsz,
+                "svg.fonttype": "none",
+                "axes.linewidth": lw,
+            }
+        )
+        matplotlib.rcParams.update({"pdf.fonttype": 42, "ps.fonttype": 42})
+
+        # Create figure and axes
+        fig, axs = plt.subplots(
+            nrows,
+            ncolumns,
+            gridspec_kw={"height_ratios": heightratio, "width_ratios": widthratio},
+        )
+
+        # Ensure axs is always iterable
+        axs = np.array(axs).reshape(-1) if isinstance(axs, np.ndarray) else [axs]
+
+        # Configure tick parameters for each axis
+        for ax in axs:
+            ax.xaxis.set_tick_params(width=lw, length=lw * 4)
+            ax.yaxis.set_tick_params(width=lw, length=lw * 4)
+            ax.tick_params(axis="both", pad=1.2)
+
+        return fig, axs
 
     def line_plot(
         self,
@@ -60,181 +163,185 @@ class Plotter:
         yaxislabel="y axis",
         ls="-",
     ):
-        """line_plot function
-        takes data and makes a line plot
+        """
+        Creates a line plot with specified parameters.
 
         Args:
-            x (np.1darray): x data
-            y (np.1darray): y data
-            xlim is x limits; default is None (which computes max/min)
-            ylim is y limits; default is None (which computes max/min)
-            color is line colour; default is black
-            lw is line width (default 0.75)
-            label is label; default is nothing
-            xaxislabel is x axis label (default is 'x axis')
-            yaxislabel is y axis label (default is 'y axis')
+            axs (Axes): Matplotlib axis object to plot on.
+            x (array-like): x data.
+            y (array-like): y data.
+            xlim (tuple, optional): x-axis limits (min, max). Defaults to computed range.
+            ylim (tuple, optional): y-axis limits (min, max). Defaults to computed range.
+            color (str): Line color. Defaults to 'k' (black).
+            lw (float): Line width. Defaults to 0.75.
+            label (str): Plot label. Defaults to ''.
+            xaxislabel (str): Label for the x-axis. Defaults to 'x axis'.
+            yaxislabel (str): Label for the y-axis. Defaults to 'y axis'.
+            ls (str): Line style. Defaults to '-' (solid line).
 
         Returns:
-            axs is axis object"""
-        if self.poster == True:
-            fontsz = 15
-        else:
-            fontsz = 8
+            Axes: Updated axis object.
+        """
+        # Determine font size based on mode
+        fontsz = 15 if self.poster else 8
 
-        if xlim is None:
-            xlim = np.array([np.min(x), np.max(x)])
-        if ylim is None:
-            ylim = np.array([np.min(y), np.max(y)])
+        # Set default limits if not provided
+        xlim = xlim or (np.min(x), np.max(x))
+        ylim = ylim or (np.min(y), np.max(y))
+
+        # Plot the line
         axs.plot(x, y, lw=lw, color=color, label=label, ls=ls)
+
+        # Configure axis limits and labels
         axs.set_xlim(xlim)
         axs.set_ylim(ylim)
-        axs.grid(True, which="both", ls="--", c="gray", lw=0.25, alpha=0.25)
         axs.set_xlabel(xaxislabel, fontsize=fontsz)
         axs.set_ylabel(yaxislabel, fontsize=fontsz)
+
+        # Add grid
+        axs.grid(True, which="both", ls="--", color="gray", lw=0.25, alpha=0.25)
+
         return axs
 
-    def one_column_plot(self, npanels=1, ratios=[1], height=None, width=None):
-        """one_column_plot function
-        takes data and makes a one-column width figure
-
-        Args:
-            nrows (int): number of rows
-            npanels (int): number of panels
-            ratios (list): list of heights of same length as nrows
-            height (float): overridden height of figure
-            width (float): overriden width of figure
-        Returns:
-            fig (figure): figure object
-            ax (axes): axes object"""
-
-        # first, check everything matches
-        try:
-            if len(ratios) != npanels:
-                raise Exception("Number of ratios incorrect")
-        except Exception as error:
-            print("Caught this error: " + repr(error))
-            return
-
-        if self.poster == True:
-            fontsz = 12
-            lw = 1
-        else:
-            fontsz = 7
-            lw = 0.5
-
-        xsize = 3.33  # 3.33 inches for one-column figure
-        if (height is not None) and (width is not None):
-            ysize = np.min([height, 8.25])  # maximum size in y can be 8.25
-            xsize = np.min([width, 3.3])  # maximum size in y can be 8.25
-        elif (height is not None) and (width is None):
-            ysize = np.min([8.25, height])  # maximum size in y can be 8.25
-        else:
-            ysize = np.min([3.5 * npanels, 8.25])  # maximum size in y can be 8.25
-
-        plt.rcParams["figure.figsize"] = [xsize, ysize]
-        plt.rcParams["font.size"] = fontsz
-        plt.rcParams["svg.fonttype"] = "none"
-        matplotlib.rcParams["pdf.fonttype"] = 42
-        matplotlib.rcParams["ps.fonttype"] = 42
-        plt.rcParams["axes.linewidth"] = lw  # set the value globally
-
-        fig, axs = plt.subplots(
-            npanels, 1, height_ratios=ratios
-        )  # create number of panels
-
-        # clean up axes, tick parameters
-        if npanels == 1:
-            axs.xaxis.set_tick_params(width=lw, length=lw * 4)
-            axs.yaxis.set_tick_params(width=lw, length=lw * 4)
-            axs.tick_params(axis="both", pad=1.2)
-        else:
-            for i in np.arange(npanels):
-                axs[i].xaxis.set_tick_params(width=lw, length=lw * 4)
-                axs[i].yaxis.set_tick_params(width=lw, length=lw * 4)
-                axs[i].tick_params(axis="both", pad=1.2)
-        return fig, axs
-
-    def two_column_plot(
-        self, nrows=1, ncolumns=1, heightratio=[1], widthratio=[1], height=0, big=False
+    def cell_punctum_analysis_plot(
+        self,
+        folder_tosave,
+        cell_punctum_analysis_file,
+        spot_analysis_file,
+        lower_pcl,
+        upper_pcl=np.inf,
+        z_project=True,
+        protein_string="C1",
+        cell_string="C0",
     ):
-        """two_column_plot function
-        takes data and makes a two-column width figure
+        """
+        Plots cells in a specified puncta_cell_likelihood range using analysis data.
 
         Args:
-            nrows (int): number of rows
-            ncolumns (int): number of columns
-            heightratio (list): list of heights of same length as nrows
-            widthratio (list): list of widths of same length as ncolumns
-            height (float): overridden height of figure
-            big (boolean): if big is True, uses larger font sizes
+            folder_tosave (str): Directory to save output figures.
+            cell_punctum_analysis_file (str): Path to cell punctum analysis file.
+            spot_analysis_file (str): Path to spot analysis file.
+            lower_pcl (float): Lower bound for puncta_cell_likelihood.
+            upper_pcl (float): Upper bound for puncta_cell_likelihood.
+            z_project (bool): Whether to z-project the cell mask.
+            protein_string (str): Protein identifier in file names.
+            cell_string (str): Cell identifier in file names.
+        """
+        import os
+        import polars as pl
+        import IOFunctions, AnalysisFunctions
 
-        Returns:
-            fig (figure): figure object
-            ax (axes): axes object"""
+        # Helper function for formatting likelihood ranges
+        def format_pcl_limit(pcl):
+            if pcl == np.inf:
+                return "none"
+            return (
+                str(int(pcl))
+                if pcl.is_integer()
+                else str(np.around(pcl)).replace(".", "p")
+            )
 
-        # first, check everything matches
-        try:
-            if len(heightratio) != nrows:
-                raise Exception("Number of height ratios incorrect")
-            if len(widthratio) != ncolumns:
-                raise Exception("Number of width ratios incorrect")
-        except Exception as error:
-            print("Caught this error: " + repr(error))
-            return
+        # Parse lower and upper puncta cell likelihoods
+        lower_strtosave = format_pcl_limit(lower_pcl)
+        upper_strtosave = format_pcl_limit(upper_pcl)
 
-        if self.poster == True:
-            fontsz = 12
-            lw = 1
-        else:
-            fontsz = 7
-            lw = 1
+        # Extract cell size thresholds from file name
+        def parse_cell_size_thresholds(filename, key, default=np.inf):
+            if f"_{key}_" in filename:
+                value = filename.split(f"_{key}_")[-1].split("_")[0].replace("p", ".")
+                return float(value)
+            return default
 
-        if big == True:
-            xsize = 5 * ncolumns
-        else:
-            xsize = 6.69  # 3.33 inches for one-column figure
+        lower_cell_size_threshold = parse_cell_size_thresholds(
+            cell_punctum_analysis_file, "mincellsize", 0.0
+        )
+        upper_cell_size_threshold = parse_cell_size_thresholds(
+            cell_punctum_analysis_file, "maxcellsize", np.inf
+        )
 
-        if height == 0:
-            if big == True:
-                ysize = 5 * nrows
-            else:
-                ysize = 3 * nrows
-        else:
-            ysize = height
+        # Initialize IO and analysis functions
+        IO = IOFunctions.IO_Functions()
+        A_F = AnalysisFunctions.Analysis_Functions()
 
-        plt.rcParams["figure.figsize"] = [xsize, ysize]
-        plt.rcParams["font.size"] = fontsz
-        plt.rcParams["svg.fonttype"] = "none"
-        matplotlib.rcParams["pdf.fonttype"] = 42
-        matplotlib.rcParams["ps.fonttype"] = 42
-        plt.rcParams["axes.linewidth"] = lw  # set the value globally
+        # Load data
+        puncta_analysis = pl.read_csv(spot_analysis_file)
+        cell_punctum_analysis = pl.read_csv(cell_punctum_analysis_file)
 
-        fig, axs = plt.subplots(
-            nrows, ncolumns, height_ratios=heightratio, width_ratios=widthratio
-        )  # create number of panels
+        # Filter data based on puncta_cell_likelihood
+        filtered_cells = cell_punctum_analysis.filter(
+            (pl.col("puncta_cell_likelihood") > lower_pcl)
+            & (pl.col("puncta_cell_likelihood") < upper_pcl)
+        )
 
-        # clean up axes, tick parameters
-        if nrows * ncolumns == 1:
-            axs.xaxis.set_tick_params(width=lw, length=lw * 4)
-            axs.yaxis.set_tick_params(width=lw, length=lw * 4)
-            axs.tick_params(axis="both", pad=1.2)
-        elif nrows * ncolumns == 2:
-            for i in np.arange(2):
-                axs[i].xaxis.set_tick_params(width=lw, length=lw * 4)
-                axs[i].yaxis.set_tick_params(width=lw, length=lw * 4)
-                axs[i].tick_params(axis="both", pad=1.2)
-        elif nrows * ncolumns == len(widthratio):
-            for i in np.arange(len(widthratio)):
-                axs[i].xaxis.set_tick_params(width=lw, length=lw * 4)
-                axs[i].yaxis.set_tick_params(width=lw, length=lw * 4)
-                axs[i].tick_params(axis="both", pad=1.2)
-        else:
-            for i in np.arange(nrows):
-                for j in np.arange(ncolumns):
-                    axs[i, j].xaxis.set_tick_params(width=0.5, length=lw * 4)
-                    axs[i, j].yaxis.set_tick_params(width=0.5, length=lw * 4)
-                    axs[i, j].tick_params(axis="both", pad=1.2)
-        return fig, axs
+        # Process each unique file
+        for file in filtered_cells["image_filename"].unique():
+            cell_analysis = filtered_cells.filter(pl.col("image_filename") == file)
+            puncta = puncta_analysis.filter(pl.col("image_filename") == file)
+
+            # Derive file paths
+            file_dir, file_name = os.path.split(file)
+            analysis_dir = os.path.join(
+                "/", os.path.join(*file_dir.split("/")[:-1]), "_analysis"
+            )
+            cell_mask_path = os.path.join(
+                analysis_dir,
+                f"{file_name.split('.')[0].split(protein_string)[0]}{cell_string}_cellMask.tiff",
+            )
+            raw_cell_path = os.path.join(
+                file.split(protein_string)[0] + f"{cell_string}.tiff"
+            )
+
+            # Read and preprocess data
+            cell_mask = IO.read_tiff(cell_mask_path)
+            raw_cell_zproject = np.sum(IO.read_tiff(raw_cell_path), axis=-1)
+
+            # Create labeled cell masks
+            cell_mask_toplot_analysis, thresholded_cell_mask = (
+                A_F.create_labelled_cellmasks(
+                    cell_analysis,
+                    puncta,
+                    cell_mask,
+                    lower_cell_size_threshold=lower_cell_size_threshold,
+                    upper_cell_size_threshold=upper_cell_size_threshold,
+                    z_project=z_project,
+                    parameter="puncta_cell_likelihood",
+                )
+            )
+
+            # Plot data
+            fig, axs = self.two_column_plot(ncolumns=3, widthratio=[1, 1, 1])
+
+            self.image_plot(
+                axs=axs[0],
+                data=raw_cell_zproject,
+                cbarlabel="Intensity",
+                mask=cell_mask,
+                maskcolor="red",
+            )
+            self.image_scatter_plot(
+                axs=axs[1],
+                xdata=puncta["x"],
+                ydata=puncta["y"],
+                data=thresholded_cell_mask,
+                cbarlabel="Cell Mask",
+                s=0.01,
+                lws=0.25,
+            )
+            self.image_plot(
+                axs[axs[2]],
+                data=cell_mask_toplot_analysis,
+                cbarlabel="Puncta-to-Cell Likelihood",
+            )
+
+            # Save figure
+            save_filename = os.path.join(
+                folder_tosave,
+                f"{file_name.split(protein_string)[0]}_lower_likelihood_limit_{lower_strtosave}_"
+                f"upper_likelihood_limit_{upper_strtosave}_cell_likelihood_figure.svg",
+            )
+            plt.tight_layout()
+            plt.savefig(save_filename, dpi=600, format="svg")
+            plt.close("all")
 
     def histogram_plot(
         self,
@@ -245,37 +352,36 @@ class Plotter:
         ylim=None,
         histcolor="gray",
         xaxislabel="x axis",
-        alpha=1,
+        alpha=1.0,
         histtype="bar",
         density=True,
         label="",
     ):
-        """histogram_plot function
-        takes data and makes a histogram
+        """
+        Creates a histogram on the provided axis.
 
         Args:
-            axs (axis): axis object
-            data (np.1darray): data array
-            bins (np.1darray): bin array
-            xlim (boolean or list of two floats): default is None (which computes min/max of x), otherwise provide a min/max
-            ylim (boolean or list of two floats): default is None (which computes min/max of y), otherwise provide a min/max
-            histcolor (string): histogram colour (default is gray)
-            xaxislabel (string): x axis label (default is 'x axis')
-            alpha (float): histogram transparency (default 1)
-            histtype (string): histogram type, default bar
-            density (boolean): if to plot as pdf, default True
-            label (string): label for histogram
+            axs (Axes): Matplotlib axis object.
+            data (np.ndarray): Data array for the histogram.
+            bins (np.ndarray or int): Bin edges or number of bins.
+            xlim (list[float], optional): X-axis limits [min, max]. Defaults to data min/max.
+            ylim (list[float], optional): Y-axis limits [min, max]. Defaults to None.
+            histcolor (str): Histogram color. Default is 'gray'.
+            xaxislabel (str): Label for the X-axis. Default is 'x axis'.
+            alpha (float): Transparency of the histogram. Default is 1.0.
+            histtype (str): Type of histogram (e.g., 'bar', 'step'). Default is 'bar'.
+            density (bool): Normalize to probability density. Default is True.
+            label (str): Label for the histogram legend. Default is ''.
 
         Returns:
-            axs (axis): axis object"""
-        if self.poster == True:
-            fontsz = 15
-        else:
-            fontsz = 8
+            axs (Axes): The modified axis object.
+        """
+        fontsz = 15 if self.poster else 8
 
-        if xlim is None:
-            xlim = np.array([np.min(data), np.max(data)])
+        # Set xlim if not provided
+        xlim = xlim or [np.min(data), np.max(data)]
 
+        # Plot the histogram
         axs.hist(
             data,
             bins=bins,
@@ -285,15 +391,25 @@ class Plotter:
             histtype=histtype,
             label=label,
         )
-        axs.grid(True, which="both", ls="--", c="gray", lw=0.25, alpha=0.25)
-        if density == True:
-            axs.set_ylabel("probability density", fontsize=fontsz)
-        else:
-            axs.set_ylabel("frequency", fontsize=fontsz)
+
+        # Configure grid and limits
+        axs.grid(
+            visible=True,
+            which="both",
+            linestyle="--",
+            color="gray",
+            linewidth=0.25,
+            alpha=0.25,
+        )
         axs.set_xlim(xlim)
-        if ylim is not None:
+        if ylim:
             axs.set_ylim(ylim)
+
+        # Set axis labels
+        ylabel = "probability density" if density else "frequency"
+        axs.set_ylabel(ylabel, fontsize=fontsz)
         axs.set_xlabel(xaxislabel, fontsize=fontsz)
+
         return axs
 
     def scatter_plot(
@@ -328,15 +444,12 @@ class Plotter:
             yaxislabel is y axis label (default is 'y axis')
         Returns:
             axs is axis object"""
-        if self.poster == True:
-            fontsz = 15
-        else:
-            fontsz = 7.0
+        fontsz = 15 if self.poster else 8
 
-        if xlim is None:
-            xlim = np.array([np.min(x), np.max(x)])
-        if ylim is None:
-            ylim = np.array([np.min(y), np.max(y)])
+        # Set xlim, ylim if not provided
+        xlim = xlim or [np.min(x), np.max(x)]
+        ylim = ylim or [np.min(y), np.max(y)]
+
         axs.scatter(
             x,
             y,
@@ -392,15 +505,11 @@ class Plotter:
         Returns:
             axs (axis): axis object"""
 
-        if self.poster == True:
-            fontsz = 15
-        else:
-            fontsz = 8
+        fontsz = 15 if self.poster else 8
 
-        if vmin is None:
-            vmin = np.percentile(data.ravel(), 0.1)
-        if vmax is None:
-            vmax = np.percentile(data.ravel(), 99.9)
+        # Set xlim, ylim if not provided
+        vmin = vmin or np.percentile(data.ravel(), 0.1)
+        vmax = vmax or np.percentile(data.ravel(), 99.9)
 
         from mpl_toolkits.axes_grid1.anchored_artists import AnchoredSizeBar
 
@@ -482,15 +591,11 @@ class Plotter:
         Returns:
             axs (axis): axis object"""
 
-        if self.poster == True:
-            fontsz = 15
-        else:
-            fontsz = 8
+        fontsz = 15 if self.poster else 8
 
-        if vmin is None:
-            vmin = np.percentile(data.ravel(), 0.1)
-        if vmax is None:
-            vmax = np.percentile(data.ravel(), 99.9)
+        # Set xlim, ylim if not provided
+        vmin = vmin or np.percentile(data.ravel(), 0.1)
+        vmax = vmax or np.percentile(data.ravel(), 99.9)
 
         from mpl_toolkits.axes_grid1.anchored_artists import AnchoredSizeBar
 

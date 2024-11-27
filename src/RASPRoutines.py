@@ -20,6 +20,10 @@ import AnalysisFunctions
 
 A_F = AnalysisFunctions.Analysis_Functions()
 
+import Image_Analysis_Functions
+
+IA_F = Image_Analysis_Functions.ImageAnalysis_Functions()
+
 
 class RASP_Routines:
     def __init__(
@@ -35,121 +39,124 @@ class RASP_Routines:
         defaultcameraparams=True,
     ):
         """
-        Initialises class.
-
-        Args:
-            defaultarea (boolean): If True, uses area default for analysis later
-            defaultd (boolean): If True, uses default pixel radius for analysis later
-            defaultrad (boolean): If True, uses radiality default for analysis later
-            defaultflat (boolean): If True, uses flatness default for analysis later
-            defaultdfocus (boolean): If True, uses differential infocus default for analysis later
-            defaultintfocus (boolean): If True, uses integral infocus default for analysis later
-            defaultcameraparams (boolean): If True, uses camera parameters in folder for analysis later
+        Initialises class with default parameters for analysis.
         """
-        self = self
-        if defaultfolder == None:
-            self.defaultfolder = os.path.join(
-                os.path.split(module_dir)[0], "default_analysis_parameters"
+        self.defaultfolder = defaultfolder or os.path.join(
+            os.path.split(module_dir)[0], "default_analysis_parameters"
+        )
+
+        # Initialise parameters
+        if defaultarea:
+            self.areathres = self._load_json_value(
+                "areathres.json", "areathres", default=30.0, cast=float
             )
-        else:
-            self.defaultfolder = defaultfolder
-        if defaultarea == True:
-            if os.path.isfile(os.path.join(self.defaultfolder, "areathres.json")):
-                data = IO.load_json(os.path.join(self.defaultfolder, "areathres.json"))
-                self.areathres = float(data["areathres"])
-            else:
-                self.areathres = 30.0
 
-        if defaultd == True:
-            if os.path.isfile(os.path.join(self.defaultfolder, "areathres.json")):
-                data = IO.load_json(os.path.join(self.defaultfolder, "areathres.json"))
-                self.d = int(data["d"])
-            else:
-                self.d = int(2.0)
+        if defaultd:
+            self.d = self._load_json_value("areathres.json", "d", default=2, cast=int)
 
-        if defaultrad == True:
-            if os.path.isfile(os.path.join(self.defaultfolder, "rad_neg.json")):
-                data = IO.load_json(os.path.join(self.defaultfolder, "rad_neg.json"))
-                self.integratedGrad = float(data["integratedGrad"])
-            else:
-                self.integratedGrad = 0.0
+        if defaultrad:
+            self.integratedGrad = self._load_json_value(
+                "rad_neg.json", "integratedGrad", default=0.0, cast=float
+            )
 
-        if defaultflat == True:
-            if os.path.isfile(os.path.join(self.defaultfolder, "rad_neg.json")):
-                data = IO.load_json(os.path.join(self.defaultfolder, "rad_neg.json"))
-                self.flatness = float(data["flatness"])
-            else:
-                self.flatness = 1.0
+        if defaultflat:
+            self.flatness = self._load_json_value(
+                "rad_neg.json", "flatness", default=1.0, cast=float
+            )
 
-        if defaultdfocus == True:
-            if os.path.isfile(os.path.join(self.defaultfolder, "infocus.json")):
-                data = IO.load_json(os.path.join(self.defaultfolder, "infocus.json"))
-                self.focus_score_diff = float(data["focus_score_diff"])
-            else:
-                self.focus_score_diff = 0.2
+        if defaultdfocus:
+            self.focus_score_diff = self._load_json_value(
+                "infocus.json", "focus_score_diff", default=0.2, cast=float
+            )
 
-        if defaultintfocus == True:
-            if os.path.isfile(os.path.join(self.defaultfolder, "infocus.json")):
-                data = IO.load_json(os.path.join(self.defaultfolder, "infocus.json"))
-                self.focus_score_int = float(data["focus_score_int"])
-            else:
-                self.focus_score_int = 390.0
+        if defaultintfocus:
+            self.focus_score_int = self._load_json_value(
+                "infocus.json", "focus_score_int", default=390.0, cast=float
+            )
 
-        if defaultcellparams == True:
-            if os.path.isfile(
-                os.path.join(self.defaultfolder, "default_cell_params.json")
-            ):
-                data = IO.load_json(
-                    os.path.join(self.defaultfolder, "default_cell_params.json")
-                )
-                self.cell_sigma1 = float(data["sigma1"])
-                self.cell_sigma2 = float(data["sigma2"])
-                self.cell_threshold1 = float(data["threshold1"])
-                self.cell_threshold2 = float(data["threshold1"])
-            else:
-                self.cell_sigma1 = 2.0
-                self.cell_sigma2 = 40.0
-                self.cell_threshold1 = 200.0
-                self.cell_threshold2 = 200.0
+        if defaultcellparams:
+            self._initialize_cell_params()
 
-        if defaultcameraparams == True:
-            if os.path.isfile(os.path.join(self.defaultfolder, "camera_params.json")):
-                data = IO.load_json(
-                    os.path.join(self.defaultfolder, "camera_params.json")
-                )
-                self.QE = float(data["QE"])
-            else:
-                self.QE = 0.95
+        if defaultcameraparams:
+            self._initialize_camera_params()
 
-            if os.path.isfile(os.path.join(self.defaultfolder, "gain_map.tif")):
-                self.gain_map = IO.read_tiff(
-                    os.path.join(self.defaultfolder, "gain_map.tif")
-                )
-            else:
-                self.gain_map = 1.0
+    def _load_json_value(self, filename, key, default=None, cast=None):
+        """
+        Loads a value from a JSON file if it exists, otherwise returns a default.
+        """
+        file_path = os.path.join(self.defaultfolder, filename)
+        if os.path.isfile(file_path):
+            try:
+                with open(file_path, "r") as f:
+                    data = IO.load_json(f)
+                    return cast(data[key]) if cast else data[key]
+            except (KeyError, ValueError, TypeError):
+                pass
+        return default
 
-            if os.path.isfile(os.path.join(self.defaultfolder, "variance_map.tif")):
-                self.variance_map = IO.read_tiff(
-                    os.path.join(self.defaultfolder, "variance_map.tif")
-                )
-            else:
-                self.variance_map = 1.0
-
-            if os.path.isfile(os.path.join(self.defaultfolder, "offset_map.tif")):
-                self.offset_map = IO.read_tiff(
-                    os.path.join(self.defaultfolder, "offset_map.tif")
-                )
-            else:
-                self.offset_map = 0.0
-
-            if type(self.gain_map) is not float and type(self.offset_map) is not float:
-                if self.gain_map.shape != self.offset_map.shape:
-                    print(
-                        "Gain and Offset maps are not the same shapes. Defaulting to default gain (1) and offset (0) parameters."
-                    )
-                    self.gain_map = 1.0
-                    self.offset_map = 0.0
+    def _initialize_cell_params(self):
+        """
+        Loads or sets default cell parameters.
+        """
+        default_values = {
+            "sigma1": 2.0,
+            "sigma2": 40.0,
+            "threshold1": 200.0,
+            "threshold2": 200.0,
+        }
+        data = self._load_json("default_cell_params.json", default_values)
+        self.cell_sigma1 = data["sigma1"]
+        self.cell_sigma2 = data["sigma2"]
+        self.cell_threshold1 = data["threshold1"]
+        self.cell_threshold2 = data["threshold2"]
         return
+
+    def _initialize_camera_params(self):
+        """
+        Loads or sets default camera parameters.
+        """
+        self.QE = self._load_json_value(
+            "camera_params.json", "QE", default=0.95, cast=float
+        )
+        self.gain_map = self._load_tiff_or_default("gain_map.tif", default=1.0)
+        self.variance_map = self._load_tiff_or_default("variance_map.tif", default=1.0)
+        self.offset_map = self._load_tiff_or_default("offset_map.tif", default=0.0)
+
+        # Validate shapes of gain_map and offset_map
+        if not isinstance(self.gain_map, float) and not isinstance(
+            self.offset_map, float
+        ):
+            if self.gain_map.shape != self.offset_map.shape:
+                print(
+                    "Gain and Offset maps have different shapes. Resetting to default values."
+                )
+                self.gain_map, self.offset_map = 1.0, 0.0
+        return
+
+    def _load_json(self, filename, default):
+        """
+        Loads a JSON file and returns the data, or returns a default dictionary.
+        """
+        file_path = os.path.join(self.defaultfolder, filename)
+        if os.path.isfile(file_path):
+            try:
+                with open(file_path, "r") as f:
+                    return IO.load_json(f)
+            except (ValueError, TypeError):
+                pass
+        return default
+
+    def _load_tiff_or_default(self, filename, default):
+        """
+        Loads a TIFF file if it exists, otherwise returns a default value.
+        """
+        file_path = os.path.join(self.defaultfolder, filename)
+        if os.path.isfile(file_path):
+            try:
+                return IO.read_tiff(file_path)
+            except Exception as e:
+                print(f"Error reading {filename}: {e}")
+        return default
 
     def get_infocus_planes(self, image, kernel):
         """
@@ -310,8 +317,8 @@ class RASP_Routines:
             nrows=1, ncolumns=2, heightratio=[1], widthratio=[1, 1]
         )
 
-        bins_r1 = A_F.bincalculator(r1_neg)
-        bins_r2 = A_F.bincalculator(r2_neg)
+        bins_r1 = np.histogram_bin_edges(r1_neg, bins="fd")
+        bins_r2 = np.histogram_bin_edges(r2_neg, bins="fd")
         axs[0] = plots.histogram_plot(axs[0], r1_neg, bins=bins_r1, alpha=0.5)
         axs[1] = plots.histogram_plot(axs[1], r2_neg, bins=bins_r2, alpha=0.5)
 
@@ -335,51 +342,70 @@ class RASP_Routines:
 
         return
 
+    # TODO: fix
     def calibrate_area(
         self, folder, imtype=".tif", gsigma=1.4, rwave=2.0, large_thres=10000.0
     ):
         """
-        Calibrates area threshold. Given a folder of bead images,
-        analyses them and saves the radiality parameter to the .json file, as
-        well as writing it to the current class radiality and flatness values
+        Calibrates area threshold. Analyzes bead images in a folder and saves
+        the radiality parameter and class radiality/flatness values.
 
         Args:
-            folder (string): Folder containing bead (bright) control tifs
-            imtype (string): Type of images being analysed, default tif
-            gisgma (float): gaussian blurring parameter (default 1.4)
-            rwave (float): Ricker wavelent sigma (default 2.)
+            folder (string): Folder containing bead (bright) control tifs.
+            imtype (string): Type of images being analyzed, default .tif.
+            gsigma (float): Gaussian blurring parameter (default 1.4).
+            rwave (float): Ricker wavelet sigma (default 2.0).
         """
-        files_list = os.listdir(folder)
-        files = np.sort([e for e in files_list if imtype in e])
 
-        k1, k2 = A_F.create_kernel(gsigma, rwave)  # create image processing kernels
-        accepted_ratio = 95.0
-        # perc. of CDF we'll use
-        areathres = 1000.0  # arbitrarily high area threshold for this calibration
-        thres = 0.05  # threshold is 0.05
-        rdl = [self.flatness, self.integratedGrad, 0.0]
-
-        start = time.time()
-
-        for i in np.arange(len(files)):
-            file_path = os.path.join(folder, files[i])
-            image = IO.read_tiff(file_path)
-            if len(image.shape) < 3:
-                dl_mask, centroids, radiality, large_mask = A_F.compute_image_props(
+        def process_image(
+            image, k1, k2, thres, large_thres, areathres, rdl, z_planes=None
+        ):
+            """
+            Processes an image (2D or 3D), calculates region properties, and HWHM.
+            """
+            if z_planes is None:  # 2D image
+                dl_mask, _, _, _ = A_F.compute_image_props(
                     image, k1, k2, thres, large_thres, areathres, rdl, self.d
                 )
-                pixel_index_list, areas, centroids = A_F.calculate_region_properties(
-                    dl_mask
+                pixel_indices, areas, _ = A_F.calculate_region_properties(dl_mask)
+                return areas, A_F.Gauss2DFitting(image, pixel_indices)
+            else:  # 3D image
+                all_areas, all_HWHM = [], []
+                for z in z_planes:
+                    dl_mask, _, _, _ = A_F.compute_image_props(
+                        image[:, :, z],
+                        k1,
+                        k2,
+                        thres,
+                        large_thres,
+                        areathres,
+                        rdl,
+                        self.d,
+                    )
+                    pixel_indices, areas, _ = A_F.calculate_region_properties(dl_mask)
+                    all_areas.extend(areas)
+                    all_HWHM.extend(A_F.Gauss2DFitting(image[:, :, z], pixel_indices))
+                return all_areas, all_HWHM
+
+        # Initialize variables and kernels
+        files = sorted(f for f in os.listdir(folder) if imtype in f)
+        k1, k2 = A_F.create_kernel(gsigma, rwave)
+        accepted_ratio = 95.0
+        thres, areathres, rdl = 0.05, 1000.0, [self.flatness, self.integratedGrad, 0.0]
+
+        all_areas, all_HWHM = [], []
+        start_time = time.time()
+
+        # Process each file
+        for i, file_name in enumerate(files):
+            file_path = os.path.join(folder, file_name)
+            image = IO.read_tiff(file_path)
+            if image.ndim < 3:
+                areas, HWHM = process_image(
+                    image, k1, k2, thres, large_thres, areathres, rdl
                 )
-                HWHMarray = A_F.Gauss2DFitting(image, pixel_index_list)
-                if i == 0:
-                    a_neg = areas
-                    HWHM = HWHMarray
-                else:
-                    a_neg = np.hstack([a_neg, areas])
-                    HWHM = np.hstack([HWHM, HWHMarray])
             else:
-                dl_mask, centroids, radiality, large_mask = A_F.compute_image_props(
+                areas, HWHM = process_image(
                     image,
                     k1,
                     k2,
@@ -387,78 +413,59 @@ class RASP_Routines:
                     large_thres,
                     areathres,
                     rdl,
-                    self.d,
-                    z_planes=np.arange(image.shape[2]),
+                    z_planes=range(image.shape[2]),
                 )
-                for j in np.arange(image.shape[2]):
-                    pixel_index_list, areas, centroids = (
-                        A_F.calculate_region_properties(dl_mask[:, :, j])
-                    )
-                    HWHMarray = A_F.Gauss2DFitting(image[:, :, j], pixel_index_list)
-                    if (i == 0) and (j == 0):
-                        a_neg = areas
-                        HWHM = HWHMarray
-                    else:
-                        a_neg = np.hstack([a_neg, areas])
-                        HWHM = np.hstack([HWHM, HWHMarray])
+            all_areas.extend(areas)
+            all_HWHM.extend(HWHM)
+
             print(
-                "Analysed image file {}/{}    Time elapsed: {:.3f} s".format(
-                    i + 1, len(files), time.time() - start
-                ),
+                f"Processed file {i + 1}/{len(files)} | Time elapsed: {time.time() - start_time:.2f}s",
                 end="\r",
                 flush=True,
             )
 
-        HWHM = A_F.rejectoutliers(HWHM)
-        area_thresh = int(np.ceil(np.percentile(a_neg, accepted_ratio)))
-        pixel_d = int(np.round(np.mean(HWHM)))
+        # Final calculations
+        all_HWHM = A_F.rejectoutliers(np.asarray(all_HWHM))
+        area_thresh = int(np.ceil(np.percentile(all_areas, accepted_ratio)))
+        pixel_d = int(np.round(np.mean(all_HWHM)))
 
+        # Save parameters
         to_save = {"areathres": area_thresh, "d": pixel_d}
-
         IO.make_directory(self.defaultfolder)
         IO.save_as_json(to_save, os.path.join(self.defaultfolder, "areathres.json"))
         self.areathres = area_thresh
         self.d = pixel_d
 
         print(
-            "Area threshold using beads"
-            + " images in "
-            + str(folder)
-            + ". New area threshold is "
-            + str(np.around(area_thresh, 2))
-            + " new radiality radius calibrated and is "
-            + str(int(self.d))
-            + ". Parameters saved in "
-            + str(self.defaultfolder)
-            + "."
+            f"Calibration complete. Area threshold: {area_thresh}, Radiality radius: {pixel_d}. "
+            f"Parameters saved to {self.defaultfolder}."
         )
 
-        import PlottingFunctions
-
-        plots = PlottingFunctions.Plotter()
+        # Plot results
         import matplotlib.pyplot as plt
+        from PlottingFunctions import Plotter
 
-        fig, axs = plots.two_column_plot(
-            nrows=1, ncolumns=2, heightratio=[1], widthratio=[1, 1]
-        )
+        plots = Plotter()
+        fig, axs = plots.two_column_plot(nrows=1, ncolumns=2)
 
-        axs[0].ecdf(a_neg, color="k")
-        xlim0, xlim1 = axs[0].get_xlim()[0], axs[0].get_xlim()[1]
+        axs[0].ecdf(all_areas, color="k")
         axs[0].hlines(
-            accepted_ratio / 100.0, xlim0, xlim1, color="k", label="threshold", ls="--"
+            accepted_ratio / 100.0,
+            *axs[0].get_xlim(),
+            color="k",
+            ls="--",
+            label="Threshold",
         )
         axs[0].set_ylim([0, 1])
-        axs[0].set_xlim([xlim0, xlim1])
-        axs[0].set_xlabel("puncta area (pixel)")
-        axs[0].set_ylabel("probability ")
+        axs[0].set_xlabel("Puncta area (pixels)")
+        axs[0].set_ylabel("Probability")
         axs[0].legend(loc="lower right", frameon=False)
 
-        axs[1] = plots.histogram_plot(axs[1], HWHM, bins=A_F.bincalculator(HWHM))
-        ylim0, ylim1 = axs[1].get_ylim()[0], axs[1].get_ylim()[1]
+        axs[1] = plots.histogram_plot(axs[1], all_HWHM, bins="fd")
         axs[1].vlines(
-            np.mean(HWHM), ylim0, ylim1, color="k", label="threshold", ls="--"
+            np.mean(all_HWHM), *axs[1].get_ylim(), color="k", ls="--", label="Mean HWHM"
         )
-        axs[1].set_xlabel("HWHM (pixel)")
+        axs[1].set_xlabel("HWHM (pixels)")
         axs[1].legend(loc="best", frameon=False)
 
         plt.tight_layout()
@@ -1204,6 +1211,9 @@ class RASP_Routines:
         blur_degree=1,
         z_project_first=True,
         replace_files=False,
+        q1=None,
+        q2=None,
+        IQR=None,
     ):
         """
         Redo colocalisation analayses of spots above a photon threshold in an
@@ -1221,6 +1231,9 @@ class RASP_Routines:
             z_project_first (boolean): if True (default), does a z projection before
                                     thresholding cell size. If false, does the opposite.
             replace_files (boolean): if False, looks for files first and if it's already analysed, does nothing
+            q1 (float): if float, adds in IQR filter
+            q2 (float): if float, adds in IQR filter
+            IQR (Float): if float, adds in IQR filter
 
 
         Returns:
@@ -1232,6 +1245,13 @@ class RASP_Routines:
             threshold_str = str(int(threshold))
         else:
             threshold_str = str(np.around(threshold, 1)).replace(".", "p")
+
+        if (
+            ~isinstance(q1, type(None))
+            and ~isinstance(q2, type(None))
+            and ~isinstance(IQR, type(None))
+        ):
+            threshold_str = threshold_str + "_outliersremoved"
 
         if int(lower_cell_size_threshold) == lower_cell_size_threshold:
             lc_str = str(int(lower_cell_size_threshold))
@@ -1265,10 +1285,10 @@ class RASP_Routines:
                 + uc_str
                 + "_photonthreshold_"
                 + threshold_str
-                + "_photons_",
+                + "_photons",
             )
-            above_string = savecell_string + "_above.csv"
-            below_string = savecell_string + "_below.csv"
+            above_string = savecell_string + "_abovethreshold.csv"
+            below_string = savecell_string + "_belowthreshold.csv"
 
         if replace_files == False:
             if os.path.isfile(above_string) or os.path.isfile(below_string):
@@ -1287,6 +1307,9 @@ class RASP_Routines:
                 imtype=imtype,
                 aboveT=1,
                 z_project_first=z_project_first,
+                q1=q1,
+                q2=q2,
+                IQR=IQR,
             )
         )
 
@@ -1302,6 +1325,9 @@ class RASP_Routines:
                 imtype=imtype,
                 aboveT=0,
                 z_project_first=z_project_first,
+                q1=q1,
+                q2=q2,
+                IQR=IQR,
             )
         )
 
@@ -1311,43 +1337,6 @@ class RASP_Routines:
             cell_punctum_analysis_AT.write_csv(above_string)
             cell_punctum_analysis_UT.write_csv(below_string)
             cell_punctum_analysis = cell_punctum_analysis_AT
-            # above_str = "n_puncta_in_cell_above_" + threshold_str
-            # below_str = "n_puncta_in_cell_below_" + threshold_str
-            # above_coinc_str = "puncta_cell_likelihood_above_" + threshold_str
-            # below_coinc_str = "puncta_cell_likelihood_below_" + threshold_str
-
-            # cell_punctum_analysis = cell_punctum_analysis_AT
-            # cell_punctum_analysis = cell_punctum_analysis.rename(
-            #     {"n_puncta_in_cell": above_str}
-            # )
-            # cell_punctum_analysis = cell_punctum_analysis.rename(
-            #     {"puncta_cell_likelihood": above_coinc_str}
-            # )
-            # cell_punctum_analysis = cell_punctum_analysis.with_columns(
-            #     channelcol=cell_punctum_analysis_UT["puncta_cell_likelihood"]
-            # ).rename({"channelcol": below_coinc_str})
-            # cell_punctum_analysis = cell_punctum_analysis.with_columns(
-            #     channelcol=cell_punctum_analysis_UT["n_puncta_in_cell"]
-            # ).rename({"channelcol": below_str})
-
-            # ratio_brightdim = (
-            #     cell_punctum_analysis[above_str] / cell_punctum_analysis[below_str]
-            # )
-            # cell_punctum_analysis = cell_punctum_analysis.with_columns(
-            #     channelcol=ratio_brightdim
-            # ).rename({"channelcol": "n_puncta_in_cell_ratio_aboveandbelow"})
-            # cell_punctum_analysis = cell_punctum_analysis[
-            #     "area/pixels",
-            #     "x_centre",
-            #     "y_centre",
-            #     below_coinc_str,
-            #     above_coinc_str,
-            #     below_str,
-            #     above_str,
-            #     "n_puncta_in_cell_ratio_aboveandbelow",
-            #     "image_filename",
-            # ]
-            # cell_punctum_analysis.write_csv(savecell_string + "_photonthreshold.csv")
         else:
             if isinstance(cell_punctum_analysis_AT, pl.DataFrame):
                 cell_punctum_analysis_AT.write_csv(above_string)
