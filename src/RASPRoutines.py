@@ -170,7 +170,7 @@ class RASP_Routines:
             z_planes (np.1darray): z_plane range that is in focus
         """
 
-        na, na, na, focus_score, na = A_F.calculate_gradient_field(image, kernel)
+        na, na, na, focus_score, na = IA_F.calculate_gradient_field(image, kernel)
         z_planes = A_F.infocus_indices(focus_score, self.focus_score_diff)
         return z_planes
 
@@ -199,7 +199,7 @@ class RASP_Routines:
             [f for f in self.file_search(folder, protein_string, imtype) if imtype in f]
         )
 
-        k1, k2 = A_F.create_kernel(gsigma, rwave)
+        k1, k2 = IA_F.create_kernel(gsigma, rwave)
         thres = 0.05
         rdl = [np.inf, 0.0, 0.0]
 
@@ -360,7 +360,7 @@ class RASP_Routines:
 
         # Initialize variables and kernels
         files = sorted(f for f in os.listdir(folder) if imtype in f)
-        k1, k2 = A_F.create_kernel(gsigma, rwave)
+        k1, k2 = IA_F.create_kernel(gsigma, rwave)
         accepted_ratio = 95.0
         thres, areathres, rdl = 0.05, 1000.0, [self.flatness, self.integratedGrad, 0.0]
 
@@ -497,7 +497,7 @@ class RASP_Routines:
             [os.path.split(i)[0] for i in all_files]
         )  # get unique folders in this
 
-        k1, k2 = A_F.create_kernel(gsigma, rwave)  # create image processing kernels
+        k1, k2 = IA_F.create_kernel(gsigma, rwave)  # create image processing kernels
         rdl = [self.flatness, self.integratedGrad, 0.0]
 
         to_save = {
@@ -737,7 +737,7 @@ class RASP_Routines:
             protein_file, QE=self.QE, gain_map=self.gain_map, offset_map=self.offset_map
         )
 
-        k1, k2 = A_F.create_kernel(gsigma, rwave)  # create image processing kernels
+        k1, k2 = IA_F.create_kernel(gsigma, rwave)  # create image processing kernels
         rdl = [self.flatness, self.integratedGrad, 0.0]
 
         if cell_file is not None:

@@ -2066,16 +2066,8 @@ class Analysis_Functions:
                         np.vstack([x_2_coords, y_2_coords]), dtype=int
                     ).T
 
-                    spot_1_indices = (
-                        self.generate_spot_indices(
-                            centroids1, image_size
-                        )
-                    )
-                    spot_2_indices = (
-                        self.generate_spot_indices(
-                            centroids2, image_size
-                        )
-                    )
+                    spot_1_indices = self.generate_spot_indices(centroids1, image_size)
+                    spot_2_indices = self.generate_spot_indices(centroids2, image_size)
                     (
                         temp_1_pl[j, 0],
                         temp_1_pl[j, 1],
@@ -2138,21 +2130,21 @@ class Analysis_Functions:
         return (plane_1_analysis, plane_2_analysis, spot_1_analysis, spot_2_analysis)
 
     def threshold_cell_areas(
-            self,
-            cell_mask_raw,
-            lower_cell_size_threshold=100,
-            upper_cell_size_threshold=np.inf,
-            z_project=True,
-        ):
+        self,
+        cell_mask_raw,
+        lower_cell_size_threshold=100,
+        upper_cell_size_threshold=np.inf,
+        z_project=True,
+    ):
         """
         Removes small and/or large objects from a cell mask.
-        
+
         Args:
             cell_mask_raw (np.ndarray): Cell mask object
             lower_cell_size_threshold (float): Lower size threshold
             upper_cell_size_threshold (float): Upper size threshold
             z_project (bool): If True, z-projects cell mask
-        
+
         Returns:
             tuple: Processed cell mask, pixel image locations, centroids, areas
         """
@@ -2167,9 +2159,11 @@ class Analysis_Functions:
             cell_mask_new = cell_mask.copy()
             for plane in range(cell_mask.shape[-1]):
                 plane_mask = cell_mask_new[:, :, plane]
-                pil, areas, centroids = self.calculate_region_properties(plane_mask)    
+                pil, areas, centroids = self.calculate_region_properties(plane_mask)
                 # Vectorized filtering
-                mask = (areas >= lower_cell_size_threshold) & (areas < upper_cell_size_threshold)
+                mask = (areas >= lower_cell_size_threshold) & (
+                    areas < upper_cell_size_threshold
+                )
                 # Update mask
                 for c in np.where(~mask)[0]:
                     cell_mask_new[pil[c][:, 0], pil[c][:, 1], plane] = 0
@@ -2180,14 +2174,16 @@ class Analysis_Functions:
             cell_mask_new = cell_mask.copy()
             pil, areas, centroids = self.calculate_region_properties(cell_mask_new)
             # Vectorized filtering
-            mask = (areas >= lower_cell_size_threshold) & (areas < upper_cell_size_threshold)
+            mask = (areas >= lower_cell_size_threshold) & (
+                areas < upper_cell_size_threshold
+            )
             # Update mask
             for c in np.where(~mask)[0]:
                 cell_mask_new[pil[c][:, 0], pil[c][:, 1]] = 0
         # Final region properties calculation
         pil, areas, centroids = self.calculate_region_properties(cell_mask_new)
         return cell_mask_new, pil, centroids, areas
-    
+
     def create_labelled_cellmasks(
         self,
         cell_analysis,

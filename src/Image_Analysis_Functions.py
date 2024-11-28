@@ -264,9 +264,7 @@ class ImageAnalysis_Functions:
         ricker_kernel = self.ricker_wavelet(wavelet_sigma)
         return gaussian_kernel, ricker_kernel
 
-    @staticmethod
-    @jit(nopython=True)
-    def create_gaussian_kernel(sigmas, size):
+    def create_gaussian_kernel(self, sigmas, size):
         """
         Create a 2D Gaussian kernel.
 
@@ -283,9 +281,7 @@ class ImageAnalysis_Functions:
         kernel = np.divide(kernel, np.nansum(kernel))
         return kernel
 
-    @staticmethod
-    @jit(nopython=True)
-    def ricker_wavelet(sigma):
+    def ricker_wavelet(self, sigma):
         """
         Create a 2D Ricker wavelet.
 
@@ -299,9 +295,10 @@ class ImageAnalysis_Functions:
             2.0, np.multiply(np.sqrt(np.multiply(3.0, sigma)), np.power(np.pi, 0.25))
         )
         length = int(np.ceil(np.multiply(4, sigma)))
-        x = np.arange(-length, length + 1)
-        y = np.arange(-length, length + 1)
-        X, Y = np.meshgrid(x, y)
+
+        x = np.linspace(-length, length, 2 * length + 1)
+        X, Y = np.meshgrid(x, x)
+
         sigma_sq = np.square(sigma)
         common_term = np.add(
             np.divide(np.square(X), np.multiply(2.0, sigma_sq)),
@@ -512,8 +509,6 @@ class ImageAnalysis_Functions:
                     image.shape, pixel_index_list[idx1]
                 )
                 large_mask = binary_fill_holes(large_mask)
-
-            # add in pixel threshold?
 
         return large_mask.astype(bool)
 
@@ -748,51 +743,44 @@ class ImageAnalysis_Functions:
             "zi",
             "zf",
         ]
-        columns_large = [
-            "x",
-            "y",
-            "z",
-            "area",
-            "sum_intensity_in_photons",
-            "mean_intensity_in_photons",
-            "zi",
-            "zf",
-        ]
+        columns_large = columns[:-2] + ["area", "mean_intensity_in_photons"]
+
         if not isinstance(z, int):
             z_planes = np.arange(z[0], z[1])
-            if image_cell is not None:
-                cell_mask = np.zeros_like(image_cell, dtype=bool)
+            cell_mask = (
+                np.zeros_like(image_cell, dtype=bool)
+                if image_cell is not None
+                else None
+            )
             lo_mask = np.zeros_like(image, dtype=bool)
 
-            centroids = {}  # do this so can parallelise
-            estimated_intensity = {}
-            estimated_background = {}
-            estimated_background_perpixel = {}
-            areas_large = {}
-            centroids_large = {}
-            meanintensities_large = {}
-            sumintensities_large = {}
+            results = {
+                key: {}
+                for key in [
+                    "centroids",
+                    "estimated_intensity",
+                    "estimated_background",
+                    "estimated_background_perpixel",
+                    "areas_large",
+                    "centroids_large",
+                    "meanintensities_large",
+                    "sumintensities_large",
+                ]
+            }
 
             def analyse_zplanes(zp):
                 img_z = image[:, :, zp]
-                if image_cell is not None:
-                    img_cell_z = image_cell[:, :, zp]
-                (
-                    centroids[zp],
-                    estimated_intensity[zp],
-                    estimated_background[zp],
-                    estimated_background_perpixel[zp],
-                    areas_large[zp],
-                    centroids_large[zp],
-                    meanintensities_large[zp],
-                    sumintensities_large[zp],
-                    lo_mask[:, :, zp],
-                ) = self.default_spotanalysis_routine(
+                results_zp = self.default_spotanalysis_routine(
                     img_z, k1, k2, prot_thres, large_prot_thres, areathres, rdl, d
                 )
+                for key, val in zip(results.keys(), results_zp[:-1]):
+                    results[key][zp] = val
+
+                lo_mask[:, :, zp] = results_zp[-1]
+
                 if image_cell is not None:
                     cell_mask[:, :, zp] = self.detect_large_features(
-                        img_cell_z,
+                        image_cell[:, :, zp],
                         cell_threshold1,
                         cell_threshold2,
                         cell_sigma1,
@@ -800,29 +788,25 @@ class ImageAnalysis_Functions:
                     )
 
             pool = Pool(nodes=cpu_number)
-            pool.restart()
             pool.map(analyse_zplanes, z_planes)
             pool.close()
-            pool.terminate()
 
             to_save = HF.make_datarray_spot(
-                centroids,
-                estimated_intensity,
-                estimated_background,
-                estimated_background_perpixel,
+                results["centroids"],
+                results["estimated_intensity"],
+                results["estimated_background"],
+                results["estimated_background_perpixel"],
                 columns,
                 z_planes,
             )
-
             to_save_largeobjects = HF.make_datarray_largeobjects(
-                areas_large,
-                centroids_large,
-                sumintensities_large,
-                meanintensities_large,
+                results["areas_large"],
+                results["centroids_large"],
+                results["sumintensities_large"],
+                results["meanintensities_large"],
                 columns_large,
                 z_planes,
             )
-
         else:
             (
                 centroids,
@@ -837,14 +821,17 @@ class ImageAnalysis_Functions:
             ) = self.default_spotanalysis_routine(
                 image, k1, k2, prot_thres, large_prot_thres, areathres, rdl, d
             )
-            if image_cell is not None:
-                cell_mask = self.detect_large_features(
+            cell_mask = (
+                self.detect_large_features(
                     image_cell,
                     cell_threshold1,
                     cell_threshold2,
                     cell_sigma1,
                     cell_sigma2,
                 )
+                if image_cell is not None
+                else None
+            )
 
             to_save = HF.make_datarray_spot(
                 centroids,
@@ -853,7 +840,6 @@ class ImageAnalysis_Functions:
                 estimated_background_perpixel,
                 columns[:-2],
             )
-
             to_save_largeobjects = HF.make_datarray_largeobjects(
                 areas_large,
                 centroids_large,
@@ -862,6 +848,4 @@ class ImageAnalysis_Functions:
                 columns_large[:-2],
             )
 
-        if image_cell is None:
-            cell_mask = None
         return to_save, to_save_largeobjects, lo_mask, cell_mask
