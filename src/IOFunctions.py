@@ -285,7 +285,6 @@ class IO_Functions:
         lo_mask=[0],
         cell_analysis=False,
         cell_mask=False,
-        to_save_cell=False,
         one_savefile=True,
     ):
         """
@@ -334,16 +333,6 @@ class IO_Functions:
             )
 
             if cell_analysis == True:
-                to_save_cell.write_csv(
-                    os.path.join(
-                        analysis_directory,
-                        os.path.split(files[i])[-1]
-                        .split(imtype)[0]
-                        .split(protein_string)[0]
-                        + str(cell_string)
-                        + "_cell_analysis.csv",
-                    ),
-                )
                 self.write_tiff(
                     cell_mask,
                     os.path.join(
@@ -401,14 +390,6 @@ class IO_Functions:
             )
 
             if cell_analysis == True:
-                to_save_cell = to_save_cell.with_columns(
-                    image_filename=np.full_like(
-                        to_save_cell["z"].to_numpy(), files[i], dtype="object"
-                    )
-                )
-                savename_cell = os.path.join(
-                    analysis_directory, "cell_colocalisation_analysis.csv"
-                )
                 self.write_tiff(
                     cell_mask,
                     os.path.join(
@@ -447,13 +428,6 @@ class IO_Functions:
                             n_largeobjects.write_csv(f, include_header=False)
                     else:
                         n_largeobjects.write_csv(savename_nlargeobjects)
-                if cell_analysis == True:
-                    if to_save_cell.shape[0] > 0:
-                        if os.path.isfile(savename_cell):
-                            with open(savename_cell, mode="ab") as f:
-                                to_save_cell.write_csv(f, include_header=False)
-                        else:
-                            to_save_cell.write_csv(savename_cell)
             else:
                 if to_save.shape[0] > 0:
                     to_save.write_csv(savename)
@@ -463,9 +437,6 @@ class IO_Functions:
                     n_spots.write_csv(savename_spot)
                 if n_largeobjects.shape[0] > 0:
                     n_largeobjects.write_csv(savename_nlargeobjects)
-                if cell_analysis == True:
-                    if to_save_cell.shape[0] > 0:
-                        to_save_cell.write_csv(savename_cell)
         return
 
     def save_analysis_params(

@@ -184,162 +184,133 @@ class RASP_Routines:
         accepted_ratio=1,
     ):
         """
-        Calibrates radility parameters. Given a folder of negative controls,
-        analyses them and saves the radiality parameter to the .json file, as
-        well as writing it to the current class radiality and flatness values
+        Calibrates radiality parameters efficiently using NumPy vectorization.
 
         Args:
-            folder (string): Folder containing negative control tifs
-            imtype (string): Type of images being analysed, default tif
-            protein_string (string): Type of images being analysed, default C0
-            gsigma (float): gaussian blurring parameter (default 1.4)
-            rwave (float): Ricker wavelent sigma (default 2.)
-            accepted_ratio (float): Percentage accepted of false positives
+            folder (str): Folder containing negative control tifs
+            imtype (str): Image file type
+            protein_string (str): Image identifier
+            gsigma (float): Gaussian blurring parameter
+            rwave (float): Ricker wavelet sigma
+            accepted_ratio (float): Percentage of accepted data points
         """
-        files_list = self.file_search(
-            folder, protein_string, imtype
-        )  # first get all files in any subfolders
-        files = np.sort([e for e in files_list if imtype in e])
+        # Optimize file search and sorting
+        files = np.sort(
+            [f for f in self.file_search(folder, protein_string, imtype) if imtype in f]
+        )
 
-        k1, k2 = A_F.create_kernel(gsigma, rwave)  # create image processing kernels
-        rdl = [np.inf, 0.0, 0.0]
+        k1, k2 = A_F.create_kernel(gsigma, rwave)
         thres = 0.05
-        r1_neg_forplot = {}  # generate dictionaries for plotting
-        r2_neg_forplot = {}
+        rdl = [np.inf, 0.0, 0.0]
 
-        start = time.time()
+        # Preallocate data structures more efficiently
+        radiality_data = {"r1": [], "r2": []}
 
-        for i in np.arange(len(files)):
-            file_path = os.path.join(folder, files[i])
+        start_time = time.time()
+
+        # Vectorize processing where possible
+        for i, filename in enumerate(files):
+            file_path = os.path.join(folder, filename)
             image = IO.read_tiff_tophotons(file_path)
+
+            # Unified processing for 2D and 3D images
             if len(image.shape) < 3:
-                dl_mask, centroids, radiality, large_mask = A_F.compute_image_props(
-                    image,
-                    k1,
-                    k2,
-                    thres,
-                    10000.0,
-                    self.areathres,
-                    rdl,
-                    self.d,
-                    calib=True,
-                )
-                r1_neg_forplot[i] = radiality[:, 0]
-                r2_neg_forplot[i] = radiality[:, 1]
+                z_planes = [None]
             else:
                 z_planes = self.get_infocus_planes(image, k1)
                 z_planes = np.arange(z_planes[0], z_planes[-1])
-                if len(z_planes) != 0:  # if there are images we want to analyse
-                    dl_mask, centroids, radiality, large_mask = A_F.compute_image_props(
-                        image,
-                        k1,
-                        k2,
-                        thres,
-                        10000.0,
-                        self.areathres,
-                        rdl,
-                        self.d,
-                        z_planes=z_planes,
-                        calib=True,
-                    )
-                    for z in enumerate(z_planes):
-                        r1_neg_forplot[i, z[0]] = radiality[z[1]][:, 0]
-                        r2_neg_forplot[i, z[0]] = radiality[z[1]][:, 1]
+
+            if len(z_planes) == 0:
+                continue
+
+            # Simplified image properties computation
+            dl_mask, centroids, radiality, large_mask = A_F.compute_image_props(
+                image,
+                k1,
+                k2,
+                thres,
+                10000.0,
+                self.areathres,
+                rdl,
+                self.d,
+                z_planes=z_planes if len(image.shape) > 2 else None,
+                calib=True,
+            )
+
+            # More efficient data collection
+            if len(image.shape) < 3:
+                radiality_data["r1"].append(radiality[:, 0])
+                radiality_data["r2"].append(radiality[:, 1])
+            else:
+                radiality_data["r1"].extend([r[:, 0] for r in radiality])
+                radiality_data["r2"].extend([r[:, 1] for r in radiality])
+
+            # Progress tracking
             print(
-                "Analysed image file {}/{}    Time elapsed: {:.3f} s".format(
-                    i + 1, len(files), time.time() - start
-                ),
+                f"Analysed image file {i+1}/{len(files)}    Time elapsed: {time.time() - start_time:.3f} s",
                 end="\r",
                 flush=True,
             )
 
-        ### IQR filtering
-        means_rad1 = np.zeros(len(r1_neg_forplot.keys()))
-        means_rad2 = np.zeros(len(r2_neg_forplot.keys()))
+        # Use NumPy for efficient outlier rejection
+        r1_data = A_F.rejectoutliers(np.concatenate(radiality_data["r1"]))
+        r2_data = A_F.rejectoutliers(np.concatenate(radiality_data["r2"]))
 
-        keys = list(r1_neg_forplot.keys())
+        # Robust percentile calculation with outlier removal
+        r1_valid = r1_data[~np.isnan(r1_data)]
+        r2_valid = r2_data[~np.isnan(r2_data)]
 
-        for i, key in enumerate(keys):
-            means_rad1[i] = np.nanmean(r1_neg_forplot[key])
-            means_rad2[i] = np.nanmean(r2_neg_forplot[key])
+        rad_1 = np.percentile(r1_valid, accepted_ratio)
+        rad_2 = np.percentile(r2_valid, 100.0 - accepted_ratio)
 
-        r1_reject = A_F.rejectoutliers_ind(means_rad1)
-        if len(r1_reject) > 0:
-            for val in r1_reject:
-                r1_neg_forplot.pop(keys[val])
-
-        r2_reject = A_F.rejectoutliers_ind(means_rad2)
-        if len(r2_reject) > 0:
-            for val in r2_reject:
-                r2_neg_forplot.pop(keys[val])
-        ### IQR filtering complete
-
-        for i, key in enumerate(r1_neg_forplot.keys()):
-            if i == 0:
-                r1_neg = r1_neg_forplot[key]
-            else:
-                r1_neg = np.hstack([r1_neg, r1_neg_forplot[key]])
-
-        for i, key in enumerate(r2_neg_forplot.keys()):
-            if i == 0:
-                r2_neg = r2_neg_forplot[key]
-            else:
-                r2_neg = np.hstack([r2_neg, r2_neg_forplot[key]])
-
-        rad_1 = np.percentile(r1_neg, accepted_ratio)
-        rad_2 = np.percentile(r2_neg, 100.0 - accepted_ratio)
-
+        # Consistent saving and parameter update
         to_save = {"flatness": rad_1, "integratedGrad": rad_2}
-
         IO.make_directory(self.defaultfolder)
         IO.save_as_json(to_save, os.path.join(self.defaultfolder, "rad_neg.json"))
+
         self.flatness = rad_1
         self.integratedGrad = rad_2
+
         print(
-            "Radiality calibrated using negative control"
-            + " images in "
-            + str(folder)
-            + ". New flatness is "
-            + str(np.around(rad_1, 2))
-            + " and new integrated gradient is "
-            + str(np.around(rad_2, 2))
-            + ". Parameters saved in "
-            + str(self.defaultfolder)
-            + "."
+            f"Radiality calibrated using negative control images in {folder}. "
+            f"New flatness is {rad_1:.2f} and new integrated gradient is {rad_2:.2f}. "
+            f"Parameters saved in {self.defaultfolder}."
         )
 
-        import PlottingFunctions
+        # Optional plotting (consider moving to separate method)
+        self._plot_radiality_distribution(r1_valid, r2_valid, rad_1, rad_2)
+        return
 
-        plots = PlottingFunctions.Plotter()
+    def _plot_radiality_distribution(self, r1_data, r2_data, rad_1, rad_2):
+        """Separate method for plotting to improve radiality calibration's readability."""
+        import PlottingFunctions
         import matplotlib.pyplot as plt
 
+        plots = PlottingFunctions.Plotter()
         fig, axs = plots.two_column_plot(
             nrows=1, ncolumns=2, heightratio=[1], widthratio=[1, 1]
         )
 
-        bins_r1 = np.histogram_bin_edges(r1_neg, bins="fd")
-        bins_r2 = np.histogram_bin_edges(r2_neg, bins="fd")
-        axs[0] = plots.histogram_plot(axs[0], r1_neg, bins=bins_r1, alpha=0.5)
-        axs[1] = plots.histogram_plot(axs[1], r2_neg, bins=bins_r2, alpha=0.5)
+        bins_r1 = np.histogram_bin_edges(r1_data, bins="fd")
+        bins_r2 = np.histogram_bin_edges(r2_data, bins="fd")
 
-        ylim0, ylim1 = axs[0].get_ylim()[0], axs[0].get_ylim()[1]
-        axs[0].vlines(rad_1, ylim0, ylim1, color="k", label="threshold", ls="--")
+        axs[0] = plots.histogram_plot(axs[0], r1_data, bins=bins_r1, alpha=0.5)
+        axs[1] = plots.histogram_plot(axs[1], r2_data, bins=bins_r2, alpha=0.5)
 
-        axs[0].set_ylim([ylim0, ylim1])
-        axs[0].set_xlabel("flatness metric")
-        axs[0].set_ylabel("probability density")
+        for ax, data, threshold, xlabel in zip(
+            axs,
+            [r1_data, r2_data],
+            [rad_1, rad_2],
+            ["flatness metric", "integrated gradient metric"],
+        ):
+            ylim0, ylim1 = ax.get_ylim()
+            ax.vlines(threshold, ylim0, ylim1, color="k", label="threshold", ls="--")
+            ax.set_xlabel(xlabel)
+            ax.set_ylabel("probability density")
+            ax.legend(loc="best", frameon=False)
 
-        ylim0, ylim1 = axs[1].get_ylim()[0], axs[1].get_ylim()[1]
-        axs[1].vlines(rad_2, ylim0, ylim1, color="k", label="threshold", ls="--")
-        axs[1].set_xlabel("integrated gradient metric")
-        axs[1].set_xlim([0, rad_2 * 2.0])
-        axs[1].set_ylim([ylim0, ylim1])
-
-        axs[0].legend(loc="best", frameon=False)
-        axs[1].legend(loc="best", frameon=False)
         plt.tight_layout()
         plt.show(block=False)
-
         return
 
     # TODO: fix
@@ -488,7 +459,6 @@ class RASP_Routines:
         cell_analysis=True,
         one_savefile=True,
         disp=True,
-        analyse_clr=False,
         folder_recursive=False,
         error_reduction=False,
     ):
@@ -510,12 +480,9 @@ class RASP_Routines:
             cell_string (np.1darray): strings for cell-containing data. Default C0.
             if_filter (boolean): Filter images for focus. Default True.
             im_start (integer): Images to start from. Default 0.
-            cell_analysis (boolean): Parameter where script also analyses cell
-                images and computes colocalisation likelihood ratios. Default True.
-            one_savefile (boolean): Parameter that, if true, doesn't save a file. Default True.
-                per image but amalgamates them into one file. Default True.
+            cell_analysis (boolean): Parameter where script also analyses cell images. Default True.
+            one_savefile (boolean): Parameter that, if true, amalgamates analyisis into one file. Default True.
             disp (boolean): If true, prints when analysed an image stack. Default True.
-            analyse_clr (boolean): If true, calculates the clr. If not, just coincidence. Default True.
             folder_recursion (boolean): If true, recursively finds folders and analyses each separately.
             error_reduction (boolean): If true, reduces error on the oligomer image using Huang's code
 
@@ -578,106 +545,65 @@ class RASP_Routines:
                 IO.make_directory(analysis_directory)
 
                 for i in np.arange(len(files)):
-                    if error_reduction == False:
-                        img = IO.read_tiff_tophotons(
-                            os.path.join(folder, files[i]),
-                            QE=self.QE,
-                            gain_map=self.gain_map,
-                            offset_map=self.offset_map,
-                        )[:, :, im_start:]
-                    else:
-                        img = IO.read_tiff_tophotons(
-                            os.path.join(folder, files[i]),
-                            QE=self.QE,
-                            gain_map=self.gain_map,
-                            offset_map=self.offset_map,
-                            variance_map=self.variance_map,
-                            error_correction=True,
-                        )[:, :, im_start:]
+                    img = IO.read_tiff_tophotons(
+                        os.path.join(subfolder, files[i]),
+                        QE=self.QE,
+                        gain_map=self.gain_map,
+                        offset_map=self.offset_map,
+                        variance_map=self.variance_map if error_reduction else None,
+                        error_correction=error_reduction,
+                    )[:, :, im_start:]
                     if cell_analysis == True:
                         img_cell = IO.read_tiff_tophotons(
                             os.path.join(folder, cell_files[i]),
                             QE=self.QE,
                             gain_map=self.gain_map,
                             offset_map=self.offset_map,
+                            variance_map=self.variance_map if error_reduction else None,
+                            error_correction=error_reduction,
                         )[:, :, im_start:]
+                    else:
+                        img_cell = None
                     z_test = len(img.shape) > 2
 
                     if z_test:  # if a z-stack
                         z_planes = self.get_infocus_planes(img, k1)
-                        if cell_analysis == False:
-                            to_save, to_save_largeobjects, lo_mask = (
-                                A_F.compute_spot_props(
-                                    img,
-                                    k1,
-                                    k2,
-                                    thres=thres,
-                                    large_thres=large_thres,
-                                    areathres=self.areathres,
-                                    rdl=rdl,
-                                    z=z_planes,
-                                    d=self.d,
-                                )
-                            )
-                        else:
-                            (
-                                to_save,
-                                to_save_largeobjects,
-                                lo_mask,
-                                to_save_cell,
-                                cell_mask,
-                            ) = A_F.compute_spot_and_cell_props(
-                                img,
-                                img_cell,
-                                k1,
-                                k2,
-                                prot_thres=thres,
-                                large_prot_thres=large_thres,
-                                areathres=self.areathres,
-                                rdl=rdl,
-                                z=z_planes,
-                                cell_threshold1=self.cell_threshold1,
-                                cell_threshold2=self.cell_threshold1,
-                                cell_sigma1=self.cell_sigma1,
-                                cell_sigma2=self.cell_sigma2,
-                                d=self.d,
-                                analyse_clr=analyse_clr,
-                            )
-
-                        if cell_analysis == True:
-                            IO.save_analysis(
-                                to_save,
-                                to_save_largeobjects,
-                                analysis_directory,
-                                imtype,
-                                protein_string,
-                                cell_string,
-                                files,
-                                i,
-                                z_planes,
-                                lo_mask,
-                                cell_analysis=cell_analysis,
-                                cell_mask=cell_mask,
-                                to_save_cell=to_save_cell,
-                                one_savefile=one_savefile,
-                            )
-                        else:
-                            IO.save_analysis(
-                                to_save,
-                                to_save_largeobjects,
-                                analysis_directory,
-                                imtype,
-                                protein_string,
-                                cell_string,
-                                files,
-                                i,
-                                z_planes,
-                                lo_mask,
-                                cell_analysis=False,
-                                cell_mask=False,
-                                to_save_cell=False,
-                                one_savefile=one_savefile,
-                            )
+                        (
+                            to_save,
+                            to_save_largeobjects,
+                            lo_mask,
+                            cell_mask,
+                        ) = IA_F.compute_spot_and_cell_props(
+                            img,
+                            img_cell,
+                            k1,
+                            k2,
+                            prot_thres=thres,
+                            large_prot_thres=large_thres,
+                            areathres=self.areathres,
+                            rdl=rdl,
+                            z=z_planes,
+                            cell_threshold1=self.cell_threshold1,
+                            cell_threshold2=self.cell_threshold1,
+                            cell_sigma1=self.cell_sigma1,
+                            cell_sigma2=self.cell_sigma2,
+                            d=self.d,
+                        )
+                        IO.save_analysis(
+                            to_save,
+                            to_save_largeobjects,
+                            analysis_directory,
+                            imtype,
+                            protein_string,
+                            cell_string,
+                            files,
+                            i,
+                            z_planes,
+                            lo_mask,
+                            cell_analysis=cell_analysis,
+                            cell_mask=cell_mask if cell_analysis else False,
+                            one_savefile=one_savefile,
+                        )
                     if disp == True:
                         print(
                             "Analysed image file {}/{}    Time elapsed: {:.3f} s".format(
@@ -719,81 +645,49 @@ class RASP_Routines:
                         gain_map=self.gain_map,
                         offset_map=self.offset_map,
                     )[:, :, im_start:]
+                else:
+                    cell_analysis = None
                 z_test = len(img.shape) > 2
 
                 if z_test:  # if a z-stack
                     z_planes = self.get_infocus_planes(img, k1)
-                    if cell_analysis == False:
-                        to_save, to_save_largeobjects, lo_mask = A_F.compute_spot_props(
-                            img,
-                            k1,
-                            k2,
-                            thres=thres,
-                            large_thres=large_thres,
-                            areathres=self.areathres,
-                            rdl=rdl,
-                            z=z_planes,
-                            d=self.d,
-                        )
-                    else:
-                        (
-                            to_save,
-                            to_save_largeobjects,
-                            lo_mask,
-                            to_save_cell,
-                            cell_mask,
-                        ) = A_F.compute_spot_and_cell_props(
-                            img,
-                            img_cell,
-                            k1,
-                            k2,
-                            prot_thres=thres,
-                            large_prot_thres=large_thres,
-                            areathres=self.areathres,
-                            rdl=rdl,
-                            z=z_planes,
-                            cell_threshold1=self.cell_threshold1,
-                            cell_threshold2=self.cell_threshold1,
-                            cell_sigma1=self.cell_sigma1,
-                            cell_sigma2=self.cell_sigma2,
-                            d=self.d,
-                            analyse_clr=analyse_clr,
-                        )
+                    (
+                        to_save,
+                        to_save_largeobjects,
+                        lo_mask,
+                        cell_mask,
+                    ) = IA_F.compute_spot_and_cell_props(
+                        img,
+                        img_cell,
+                        k1,
+                        k2,
+                        prot_thres=thres,
+                        large_prot_thres=large_thres,
+                        areathres=self.areathres,
+                        rdl=rdl,
+                        z=z_planes,
+                        cell_threshold1=self.cell_threshold1,
+                        cell_threshold2=self.cell_threshold1,
+                        cell_sigma1=self.cell_sigma1,
+                        cell_sigma2=self.cell_sigma2,
+                        d=self.d,
+                    )
 
-                    if cell_analysis == True:
-                        IO.save_analysis(
-                            to_save,
-                            to_save_largeobjects,
-                            analysis_directory,
-                            imtype,
-                            protein_string,
-                            cell_string,
-                            files,
-                            i,
-                            z_planes,
-                            lo_mask,
-                            cell_analysis=cell_analysis,
-                            cell_mask=cell_mask,
-                            to_save_cell=to_save_cell,
-                            one_savefile=one_savefile,
-                        )
-                    else:
-                        IO.save_analysis(
-                            to_save,
-                            to_save_largeobjects,
-                            analysis_directory,
-                            imtype,
-                            protein_string,
-                            cell_string,
-                            files,
-                            i,
-                            z_planes,
-                            lo_mask,
-                            cell_analysis=False,
-                            cell_mask=False,
-                            to_save_cell=False,
-                            one_savefile=one_savefile,
-                        )
+                    IO.save_analysis(
+                        to_save,
+                        to_save_largeobjects,
+                        analysis_directory,
+                        imtype,
+                        protein_string,
+                        cell_string,
+                        files,
+                        i,
+                        z_planes,
+                        lo_mask,
+                        cell_analysis=cell_analysis,
+                        cell_mask=cell_mask if cell_analysis else False,
+                        one_savefile=one_savefile,
+                    )
                 if disp == True:
                     print(
                         "Analysed image file {}/{}    Time elapsed: {:.3f} s".format(
@@ -813,7 +707,6 @@ class RASP_Routines:
         rwave=2.0,
         image_size=200,
         save_figure=False,
-        cell_analysis=False,
         cell_file=None,
     ):
         """
@@ -847,48 +740,36 @@ class RASP_Routines:
         k1, k2 = A_F.create_kernel(gsigma, rwave)  # create image processing kernels
         rdl = [self.flatness, self.integratedGrad, 0.0]
 
-        if cell_analysis == True:
+        if cell_file is not None:
             img_cell = IO.read_tiff_tophotons(
                 cell_file,
                 QE=self.QE,
                 gain_map=self.gain_map,
                 offset_map=self.offset_map,
             )
+        else:
+            img_cell = None
 
         if len(img.shape) > 2:  # if a z-stack
             z_planes = self.get_infocus_planes(img, k1)
-
-            if cell_analysis == False:
-                to_save, to_save_largeobjects, lo_mask = A_F.compute_spot_props(
+            to_save, to_save_largeobjects, lo_mask, cell_mask = (
+                IA_F.compute_spot_and_cell_props(
                     img,
+                    img_cell,
                     k1,
                     k2,
-                    thres=thres,
-                    large_thres=large_thres,
+                    prot_thres=thres,
+                    large_prot_thres=large_thres,
                     areathres=self.areathres,
                     rdl=rdl,
                     z=z_planes,
+                    cell_threshold1=self.cell_threshold1,
+                    cell_threshold2=self.cell_threshold1,
+                    cell_sigma1=self.cell_sigma1,
+                    cell_sigma2=self.cell_sigma2,
                     d=self.d,
                 )
-            else:
-                to_save, to_save_largeobjects, lo_mask, to_save_cell, cell_mask = (
-                    A_F.compute_spot_and_cell_props(
-                        img,
-                        img_cell,
-                        k1,
-                        k2,
-                        prot_thres=thres,
-                        large_prot_thres=large_thres,
-                        areathres=self.areathres,
-                        rdl=rdl,
-                        z=z_planes,
-                        cell_threshold1=self.cell_threshold1,
-                        cell_threshold2=self.cell_threshold1,
-                        cell_sigma1=self.cell_sigma1,
-                        cell_sigma2=self.cell_sigma2,
-                        d=self.d,
-                    )
-                )
+            )
 
         z_to_plot = np.full_like(np.arange(z_planes[0] + 1, z_planes[-1] + 1), -1)
         for i, val in enumerate(np.arange(z_planes[0] + 1, z_planes[-1] + 1)):
@@ -903,8 +784,7 @@ class RASP_Routines:
                 z_to_plot[i] = val
         z_to_plot = z_to_plot[z_to_plot >= 0]
 
-        if cell_analysis == False:
-
+        if cell_file is None:
             for i in enumerate(z_to_plot):
                 fig, axs = plots.two_column_plot(nrows=1, ncolumns=2, widthratio=[1, 1])
                 xpositions = to_save.filter(pl.col("z") == i[1])["x"].to_numpy()

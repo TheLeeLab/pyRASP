@@ -110,151 +110,9 @@ class Analysis_Functions:
         n_spots = pl.DataFrame(data=data, schema=columns)
         return n_spots
 
-    def calculate_gradient_field(self, image, kernel):
+    def generate_mask_indices(self, mask, image_size):
         """
-        Calculate the gradient field of an image and compute focus-related measures.
-
-        Args:
-            image (numpy.ndarray): The input image.
-            kernel (numpy.ndarray): The kernel for low-pass filtering.
-
-        Returns:
-            filtered_image (numpy.ndarray): Image after low-pass filtering.
-            gradient_x (numpy.ndarray): X-gradient of the filtered image.
-            gradient_y (numpy.ndarray): Y-gradient of the filtered image.
-            focus_score (numpy.ndarray): Focus score of the image.
-            concentration_factor (numpy.ndarray): Concentration factor of the image.
-        """
-        # Initialize variables
-        filtered_image = np.zeros_like(image)
-        gradient_x = np.zeros_like(image)
-        gradient_y = np.zeros_like(image)
-
-        # Low-pass filtering using convolution
-        if len(image.shape) > 2:
-            for channel in np.arange(image.shape[2]):
-                image_padded = np.pad(
-                    image[:, :, channel],
-                    (
-                        (kernel.shape[0] // 2, kernel.shape[0] // 2),
-                        (kernel.shape[1] // 2, kernel.shape[1] // 2),
-                    ),
-                    mode="edge",
-                )
-                filtered_image[:, :, channel] = fftconvolve(
-                    image_padded, kernel, mode="valid"
-                )
-        else:
-            image_padded = np.pad(
-                image,
-                (
-                    (kernel.shape[0] // 2, kernel.shape[0] // 2),
-                    (kernel.shape[1] // 2, kernel.shape[1] // 2),
-                ),
-                mode="edge",
-            )
-            filtered_image[:, :] = fftconvolve(image_padded, kernel, mode="valid")
-        # Gradient calculation
-        if len(image.shape) > 2:
-            gradient_x[:, :-1, :] = np.diff(
-                filtered_image, axis=1
-            )  # x gradient (right to left)
-            gradient_y[:-1, :, :] = np.diff(
-                filtered_image, axis=0
-            )  # y gradient (bottom to top)
-        else:
-            gradient_x[:, :-1] = np.diff(
-                filtered_image, axis=1
-            )  # x gradient (right to left)
-            gradient_y[:-1, :] = np.diff(
-                filtered_image, axis=0
-            )  # y gradient (bottom to top)
-
-        gradient_magnitude = np.sqrt(
-            np.add(np.square(gradient_x), np.square(gradient_y))
-        )
-        sum_gradient = np.sum(gradient_magnitude, axis=(0, 1))
-        concentration_factor = np.divide(sum_gradient, np.max(sum_gradient))
-        focus_score = np.log(sum_gradient)
-
-        return filtered_image, gradient_x, gradient_y, focus_score, concentration_factor
-
-    def calculate_radiality(self, pil_small, img, gradient_x, gradient_y, d=2):
-        """
-        Calculate radiality measures based on pixel neighborhoods and gradients.
-
-        Args:
-            pil_small (list): List of pixel indices.
-            img (numpy.ndarray): The input image.
-            gradient_x (numpy.ndarray): X-gradient of the image.
-            gradient_y (numpy.ndarray): Y-gradient of the image.
-            d (integer): pixel ring size
-
-        Returns:
-            radiality (numpy.ndarray): Radiality measures.
-        """
-        xy = np.zeros([len(pil_small), 2])
-        r0 = np.zeros(len(pil_small))
-        for index in np.arange(len(pil_small)):
-            pil_t = pil_small[index]
-            r0[index], mi = np.max(img[pil_t[:, 0], pil_t[:, 1]]), np.argmax(
-                img[pil_t[:, 0], pil_t[:, 1]]
-            )
-            xy[index, :] = pil_t[mi]
-
-        xy_default = (
-            np.asarray(
-                np.unravel_index(
-                    np.unique(
-                        np.ravel_multi_index(
-                            np.asarray(draw.circle_perimeter(5, 5, d)),
-                            img.shape,
-                            order="F",
-                        )
-                    ),
-                    img.shape,
-                    order="F",
-                )
-            ).T
-            - 5
-        )
-
-        x = np.asarray(
-            np.tile(xy_default[:, 0], (len(pil_small), 1)).T + xy[:, 0], dtype=int
-        ).T
-
-        y = np.asarray(
-            np.tile(xy_default[:, 1], (len(pil_small), 1)).T + xy[:, 1], dtype=int
-        ).T
-
-        g2 = np.sqrt(np.add(np.square(gradient_x[x, y]), np.square(gradient_y[x, y])))
-
-        flatness = np.mean(np.divide(img[x, y].T, r0), axis=0)
-        integrated_grad = np.sum(g2, axis=1)
-        radiality = np.vstack([flatness, integrated_grad]).T
-
-        return radiality
-
-    def generate_largeaggregate_indices(self, mask, image_size):
-        """
-        makes large aggregate xy coordinates
-
-        Args:
-            mask (2D array): boolean matrix
-            image_size (tuple): Image dimensions (height, width).
-
-        Returns:
-            mask_indices (1D array): indices of mask
-        """
-        mask_coords = np.transpose((mask > 0).nonzero())
-        mask_indices = np.ravel_multi_index(
-            [mask_coords[:, 0], mask_coords[:, 1]], image_size, order="F"
-        )
-        return mask_indices
-
-    def generate_mask_and_spot_indices(self, mask, centroids, image_size):
-        """
-        makes mask and spot indices from xy coordinates
+        makes mask indices from xy coordinates
 
         Args:
             mask (2D array): boolean matrix
@@ -269,12 +127,11 @@ class Analysis_Functions:
         mask_indices = np.ravel_multi_index(
             [mask_coords[:, 0], mask_coords[:, 1]], image_size, order="F"
         )
-        spot_indices = np.ravel_multi_index(centroids.T, image_size, order="F")
-        return mask_indices, spot_indices
+        return mask_indices
 
-    def generate_spot_and_spot_indices(self, centroids1, centroids2, image_size):
+    def generate_spot_indices(self, centroids, image_size):
         """
-        makes mask and spot indices from xy coordinates
+        makes spot indices from xy coordinates
 
         Args:
             centroids1 (2D array): xy centroid coordinates
@@ -285,9 +142,8 @@ class Analysis_Functions:
             spot1_indices (1D array): indices of spots1
             spot2_indices (1D array): indices of spots2
         """
-        spot1_indices = np.ravel_multi_index(centroids1.T, image_size, order="F")
-        spot2_indices = np.ravel_multi_index(centroids2.T, image_size, order="F")
-        return spot1_indices, spot2_indices
+        spot_indices = np.ravel_multi_index(centroids.T, image_size, order="F")
+        return spot_indices
 
     def calculate_spot_to_cell_numbers(
         self,
@@ -797,88 +653,6 @@ class Analysis_Functions:
                 n_iter_rec,
             )
 
-    def default_spotanalysis_routine(
-        self,
-        image,
-        k1,
-        k2,
-        thres=0.05,
-        large_thres=100.0,
-        areathres=30.0,
-        rdl=[50.0, 0.0, 0.0],
-        d=2,
-    ):
-        """
-        Daisy-chains analyses to get
-        basic image properties (centroids, radiality)
-        from a single image
-
-        Args:
-            image (array): image as numpy array
-            k1 (array): gaussian blur kernel
-            k2 (array): ricker wavelet kernel
-            thres (float): percentage threshold
-            areathres (float): area threshold
-            rdl (array): radiality thresholds
-
-        Returns:
-            centroids (2D array): centroid positions per oligomer
-            estimated_intensity (numpy.ndarray): Estimated sum intensity per oligomer.
-            estimated_background (numpy.ndarray): Estimated mean background per oligomer.
-            estimated_background_perpixel (numpy.ndarray): Estimated mean background per pixel.
-            areas_large (np.1darray): 1d array of areas of large objects
-            centroids_large (np.2darray): centroids of large objects
-            meanintensities_large (np.1darray): mean intensities of large objects
-            sumintensities_large (np.1darray): sum intensities of large objects
-            lo_mask (list of np.2darray): pixels where large objects found
-
-        """
-        large_mask = self.detect_large_features(image, large_thres)
-        pil_large, areas_large, centroids_large = self.calculate_region_properties(
-            large_mask
-        )
-        to_keep = np.where(areas_large > areathres)[0]
-        pil_large = pil_large[to_keep]
-        areas_large = areas_large[to_keep]
-        centroids_large = centroids_large[to_keep, :]
-        meanintensities_large = np.zeros_like(areas_large)
-        sumintensities_large = np.zeros_like(areas_large)
-        for i in np.arange(len(centroids_large)):
-            sumintensities_large[i] = np.sum(
-                image[pil_large[i][:, 0], pil_large[i][:, 1]]
-            )
-
-        lo_mask = np.zeros_like(large_mask, dtype=bool)
-        for i in np.arange(len(centroids_large)):
-            lo_mask[pil_large[i][:, 0], pil_large[i][:, 1]] = True
-        meanintensities_large = np.divide(sumintensities_large, areas_large)
-        img2, Gx, Gy, focusScore, cfactor = self.calculate_gradient_field(image, k1)
-        dl_mask, centroids, radiality, idxs = self.small_feature_kernel(
-            image, large_mask, img2, Gx, Gy, k2, thres, areathres, rdl, d
-        )
-        estimated_intensity, estimated_background, estimated_background_perpixel = (
-            self.estimate_intensity(image, centroids)
-        )
-        to_keep = ~np.isnan(estimated_intensity)
-        estimated_intensity = estimated_intensity[to_keep]
-        estimated_background = estimated_background[to_keep]
-        estimated_background_perpixel = estimated_background_perpixel[to_keep]
-        centroids = centroids[to_keep, :]
-
-        to_return = [
-            centroids,
-            estimated_intensity,
-            estimated_background,
-            estimated_background_perpixel,
-            areas_large,
-            centroids_large,
-            meanintensities_large,
-            sumintensities_large,
-            lo_mask,
-        ]
-
-        return to_return
-
     @staticmethod
     @jit(nopython=True)
     def calculate_mask_fill(mask_indices, image_size):
@@ -1070,72 +844,6 @@ class Analysis_Functions:
         else:
             return dilated_indices.ravel()
 
-    def create_kernel(self, background_sigma, wavelet_sigma):
-        """
-        Create Gaussian and Ricker wavelet kernels.
-
-        Args:
-            background_sigma (float): Standard deviation for Gaussian kernel.
-            wavelet_sigma (float): Standard deviation for Ricker wavelet.
-
-        Returns:
-            gaussian_kernel (numpy.ndarray): Gaussian kernel for background suppression.
-            ricker_kernel (numpy.ndarray): Ricker wavelet for feature enhancement.
-        """
-        gaussian_kernel = self.create_gaussian_kernel(
-            (background_sigma, background_sigma),
-            (
-                2 * int(np.ceil(2 * background_sigma)) + 1,
-                2 * int(np.ceil(2 * background_sigma)) + 1,
-            ),
-        )
-        ricker_kernel = self.ricker_wavelet(wavelet_sigma)
-        return gaussian_kernel, ricker_kernel
-
-    def create_gaussian_kernel(self, sigmas, size):
-        """
-        Create a 2D Gaussian kernel.
-
-        Args:
-            sigmas (tuple): Standard deviations in X and Y directions.
-            size (tuple): Size of the kernel.
-
-        Returns:
-            kernel (numpy.ndarray): 2D Gaussian kernel.
-        """
-        kernel_x = gauss(size[0], sigmas[0])[:, np.newaxis]
-        kernel_y = gauss(size[1], sigmas[1])
-        kernel = np.multiply(kernel_x, kernel_y)
-        kernel = np.divide(kernel, np.nansum(kernel))
-        return kernel
-
-    def ricker_wavelet(self, sigma):
-        """
-        Create a 2D Ricker wavelet.
-
-        Args:
-            sigma (float): Standard deviation for the wavelet.
-
-        Returns:
-            wavelet (numpy.ndarray): 2D Ricker wavelet.
-        """
-        amplitude = np.divide(
-            2.0, np.multiply(np.sqrt(np.multiply(3.0, sigma)), np.power(np.pi, 0.25))
-        )
-        length = int(np.ceil(np.multiply(4, sigma)))
-        x = np.arange(-length, length + 1)
-        y = np.arange(-length, length + 1)
-        X, Y = np.meshgrid(x, y)
-        sigma_sq = np.square(sigma)
-        common_term = np.add(
-            np.divide(np.square(X), np.multiply(2.0, sigma_sq)),
-            np.divide(np.square(Y), np.multiply(2.0, sigma_sq)),
-        )
-        wavelet = np.multiply(
-            amplitude, np.multiply(np.subtract(1, common_term), np.exp(-common_term))
-        )
-        return wavelet
-
     def create_filled_region(self, image_size, indices_to_keep):
         """
         Fill a region in a boolean matrix based on specified indices.
@@ -1288,59 +996,6 @@ class Analysis_Functions:
 
         return x_inner, y_inner, x_outer, y_outer
 
-    def detect_large_features(
-        self, image, threshold1, threshold2=0, sigma1=2.0, sigma2=60.0
-    ):
-        """
-        Detects large features in an image based on a given threshold.
-
-        Args:
-            image (numpy.ndarray): Original image.
-            threshold1 (float): Threshold for determining features. Only this is
-                used for the determination of large protein aggregates.
-            threshold2 (float): Threshold for determining cell features. If above
-                0, gets used and cellular features are detected.
-            sigma1 (float): first gaussian blur width
-            sigma2 (float): second gaussian blur width
-
-        Returns:
-            large_mask (numpy.ndarray): Binary mask for the large features.
-        """
-        # Apply Gaussian filters with different sigmas and subtract to enhance features
-        enhanced_image = gaussian(image, sigma=sigma1, truncate=2.0) - gaussian(
-            image, sigma=sigma2, truncate=2.0
-        )
-
-        # Create a binary mask for large features based on the threshold
-        large_mask = enhanced_image > threshold1
-
-        if threshold2 > 0:
-            large_mask = binary_opening(large_mask, structure=ski.morphology.disk(1))
-            large_mask = binary_closing(large_mask, structure=ski.morphology.disk(5))
-            pixel_index_list, *rest = self.calculate_region_properties(large_mask)
-            idx1 = np.zeros_like(pixel_index_list, dtype=bool)
-            imcopy = np.copy(image)
-
-            for i in np.arange(len(pixel_index_list)):
-                idx1[i] = 1 * (
-                    np.sum(
-                        imcopy[pixel_index_list[i][:, 0], pixel_index_list[i][:, 1]]
-                        > threshold2
-                    )
-                    / len(pixel_index_list[i][:, 0])
-                    > 0.1
-                )
-
-            if len(idx1) > 0:
-                large_mask = self.create_filled_region(
-                    image.shape, pixel_index_list[idx1]
-                )
-                large_mask = binary_fill_holes(large_mask)
-
-            # add in pixel threshold?
-
-        return large_mask.astype(bool)
-
     def calculate_region_properties(self, binary_mask):
         """
         Calculate properties for labeled regions in a binary mask.
@@ -1367,525 +1022,6 @@ class Analysis_Functions:
         areas = props["area"]
         pixel_index_list = props["coords"]
         return pixel_index_list, areas, centroids
-
-    def small_feature_kernel(
-        self, img, large_mask, img2, Gx, Gy, k2, thres, area_thres, rdl, d=2
-    ):
-        """
-        Find small features in an image and determine diffraction-limited (dl) and non-diffraction-limited (ndl) features.
-
-        Args:
-            img (numpy.ndarray): Original image.
-            large_mask (numpy.ndarray): Binary mask for large features.
-            img2 (numpy.ndarray): Smoothed image for background suppression.
-            Gx (numpy.ndarray): Gradient image in x-direction.
-            Gy (numpy.ndarray): Gradient image in y-direction.
-            k2 (numpy.ndarray): The kernel for blob feature enhancement.
-            thres (float): Converting real-valued image into a binary mask.
-            area_thres (float): The maximum area in pixels a diffraction-limited object can be.
-            rdl (list): Radiality threshold [min_radiality, max_radiality, area].
-            d (integer): pixel radius
-
-        Returns:
-            dl_mask (numpy.ndarray): Binary mask for diffraction-limited (dl) features.
-            centroids (numpy.ndarray): Centroids for dl features.
-            radiality (numpy.ndarray): Radiality value for all features (before the filtering based on the radiality).
-            idxs (numpy.ndarray): Indices for objects that satisfy the decision boundary.
-        """
-        img1 = np.maximum(np.subtract(img, img2), 0)
-        pad_size = np.subtract(np.asarray(k2.shape), 1) // 2
-        img1 = fftconvolve(np.pad(img1, pad_size, mode="edge"), k2, mode="valid")
-
-        BW = np.zeros_like(img1, dtype=bool)
-        if thres < 1:
-            thres = np.percentile(img1.ravel(), 100 * (1 - thres))
-        BW[img1 > thres] = 1
-        BW = np.logical_or(BW, large_mask)
-        BW = binary_opening(BW, structure=ski.morphology.disk(1))
-
-        imsz = img.shape
-        pixel_idx_list, areas, centroids = self.calculate_region_properties(BW)
-
-        border_value = int(np.multiply(d, 5))
-        idxb = np.logical_and(
-            centroids[:, 0] > border_value, centroids[:, 0] < imsz[1] - border_value
-        )
-        idxb = np.logical_and(
-            idxb,
-            np.logical_and(
-                centroids[:, 1] > border_value,
-                centroids[:, 1] < imsz[0] - (border_value - 1),
-            ),
-        )
-        idxs = np.logical_and(areas < area_thres, idxb)
-
-        pil_small = pixel_idx_list[idxs]
-        centroids = centroids[idxs]
-        radiality = self.calculate_radiality(pil_small, img2, Gx, Gy, d)
-
-        idxs = np.logical_and(radiality[:, 0] <= rdl[0], radiality[:, 1] >= rdl[1])
-        centroids = np.floor(centroids[idxs])
-        centroids = np.asarray(centroids)
-        if len(pil_small[idxs]) > 1:
-            dl_mask = self.create_filled_region(imsz, pil_small[idxs])
-        else:
-            dl_mask = np.full_like(img, False)
-        return dl_mask, centroids, radiality, idxs
-
-    def compute_spot_and_cell_props(
-        self,
-        image,
-        image_cell,
-        k1,
-        k2,
-        prot_thres=0.05,
-        large_prot_thres=100.0,
-        areathres=30.0,
-        rdl=[50.0, 0.0, 0.0],
-        z=0,
-        cell_threshold1=200.0,
-        cell_threshold2=200,
-        cell_sigma1=2.0,
-        cell_sigma2=40.0,
-        d=2,
-        analyse_clr=True,
-    ):
-        """
-        Gets basic image properties (centroids, radiality)
-        from a single image and compare to a cell mask from another image channel
-
-        Args:
-            image (array): image of protein stain as numpy array
-            image_cell (array): image of cell stain as numpy array
-            k1 (array): gaussian blur kernel
-            k2 (array): ricker wavelet kernel
-            prot_thres (float): percentage threshold for protein
-            large_prot_thres (float): Protein threshold intensity
-            areathres (float): area threshold
-            rdl (array): radiality thresholds
-            z (array): z planes to image, default 0
-            cell_threshold1 (float): 1st cell intensity threshold
-            cell_threshold2 (float): 2nd cell intensity threshold
-            cell_sigma1 (float): cell blur value 1
-            cell_sigma2 (float): cell blur value 2
-            d (integer): pixel radius value
-            analyse_clr (boolean): analyse clr yes/no
-
-        Returns:
-            to_save (pl.DataFrame): spot properties ready to save
-            to_save_largeobjects (pl.DataFrame): large object properties ready to save
-            lo_mask (np.ndarray): lo masks
-            to_save_cell (pl.DataFrame): cell properties ready to save
-            cell_mask (np.ndarray): cell mask
-        """
-
-        columns = [
-            "x",
-            "y",
-            "z",
-            "sum_intensity_in_photons",
-            "bg_per_punctum",
-            "bg_per_pixel",
-            "incell",
-            "zi",
-            "zf",
-        ]
-        columns_large = [
-            "x",
-            "y",
-            "z",
-            "area",
-            "sum_intensity_in_photons",
-            "mean_intensity_in_photons",
-            "incell",
-            "zi",
-            "zf",
-        ]
-        if analyse_clr == True:
-            columns_cell = [
-                "colocalisation_likelihood_ratio",
-                "std",
-                "CSR",
-                "expected_spots",
-                "coincidence",
-                "chance_coincidence",
-                "coincidence_largeobj",
-                "chance_coincidence_largeobj",
-                "n_iterations",
-                "z",
-            ]
-        else:
-            columns_cell = [
-                "coincidence",
-                "chance_coincidence",
-                "coincidence_largeobj",
-                "chance_coincidence_largeobj",
-                "n_iterations",
-                "z",
-            ]
-
-        if not isinstance(z, int):
-            z_planes = np.arange(z[0], z[1])
-            cell_mask = np.zeros_like(image_cell, dtype=bool)
-            lo_mask = np.zeros_like(image, dtype=bool)
-            (
-                clr,
-                norm_std,
-                norm_CSR,
-                expected_spots,
-                coincidence,
-                chance_coincidence,
-                raw_colocalisation,
-                n_iter,
-                coincidence_large,
-                chance_coincidence_large,
-                raw_coloc_large,
-            ) = self.gen_CSRmats(image_cell.shape[2])
-
-            centroids = {}  # do this so can parallelise
-            raw_colocalisation = {}
-            estimated_intensity = {}
-            estimated_background = {}
-            estimated_background_perpixel = {}
-            areas_large = {}
-            centroids_large = {}
-            meanintensities_large = {}
-            sumintensities_large = {}
-
-            def analyse_zplanes(zp):
-                img_z = image[:, :, zp]
-                img_cell_z = image_cell[:, :, zp]
-                (
-                    centroids[zp],
-                    estimated_intensity[zp],
-                    estimated_background[zp],
-                    estimated_background_perpixel[zp],
-                    areas_large[zp],
-                    centroids_large[zp],
-                    meanintensities_large[zp],
-                    sumintensities_large[zp],
-                    lo_mask[:, :, zp],
-                ) = self.default_spotanalysis_routine(
-                    img_z, k1, k2, prot_thres, large_prot_thres, areathres, rdl, d
-                )
-
-                cell_mask[:, :, zp] = self.detect_large_features(
-                    img_cell_z,
-                    cell_threshold1,
-                    cell_threshold2,
-                    cell_sigma1,
-                    cell_sigma2,
-                )
-
-                image_size = img_z.shape
-                mask_indices, spot_indices = self.generate_mask_and_spot_indices(
-                    cell_mask[:, :, zp],
-                    np.asarray(centroids[zp], dtype=int),
-                    image_size,
-                )
-
-                if analyse_clr == True:
-                    (
-                        clr[zp],
-                        norm_std[zp],
-                        norm_CSR[zp],
-                        expected_spots[zp],
-                        coincidence[zp],
-                        chance_coincidence[zp],
-                        raw_colocalisation[zp],
-                        n_iter[zp],
-                    ) = self.calculate_spot_colocalisation_likelihood_ratio(
-                        spot_indices, mask_indices, image_size
-                    )
-                else:
-                    (
-                        coincidence[zp],
-                        chance_coincidence[zp],
-                        raw_colocalisation[zp],
-                        n_iter[zp],
-                    ) = self.calculate_spot_to_mask_coincidence(
-                        spot_indices, mask_indices, image_size
-                    )
-
-                large_aggregate_indices = self.generate_largeaggregate_indices(
-                    lo_mask[:, :, zp], image_size
-                )
-
-                (
-                    coincidence_large[zp],
-                    chance_coincidence_large[zp],
-                    raw_coloc_large[zp],
-                ) = self.calculate_largeobj_coincidence(
-                    large_aggregate_indices,
-                    mask_indices,
-                    len(areas_large[zp]),
-                    image_size,
-                )
-
-            pool = Pool(nodes=cpu_number)
-            pool.restart()
-            pool.map(analyse_zplanes, z_planes)
-            pool.close()
-            pool.terminate()
-
-            to_save = self.make_datarray_spot(
-                centroids,
-                estimated_intensity,
-                estimated_background,
-                estimated_background_perpixel,
-                raw_colocalisation,
-                columns,
-                z_planes,
-            )
-
-            to_save_largeobjects = self.make_datarray_largeobjects(
-                areas_large,
-                centroids_large,
-                sumintensities_large,
-                meanintensities_large,
-                raw_coloc_large,
-                columns_large,
-                z_planes,
-            )
-
-            to_save_cell = self.make_datarray_cell(
-                clr,
-                norm_std,
-                norm_CSR,
-                expected_spots,
-                coincidence,
-                chance_coincidence,
-                coincidence_large,
-                chance_coincidence_large,
-                n_iter,
-                columns_cell,
-                z_planes,
-                analyse_clr,
-            )
-
-        else:
-            (
-                centroids,
-                estimated_intensity,
-                estimated_background,
-                estimated_background_perpixel,
-                areas_large,
-                centroids_large,
-                meanintensities_large,
-                sumintensities_large,
-                lo_mask,
-            ) = self.default_spotanalysis_routine(
-                image, k1, k2, prot_thres, large_prot_thres, areathres, rdl, d
-            )
-
-            cell_mask = self.detect_large_features(
-                image_cell, cell_threshold1, cell_threshold2, cell_sigma1, cell_sigma2
-            )
-
-            image_size = image.shape
-            mask_indices, spot_indices = self.generate_mask_and_spot_indices(
-                cell_mask, centroids, image_size
-            )
-
-            if analyse_clr == True:
-                (
-                    clr,
-                    norm_std,
-                    norm_CSR,
-                    expected_spots,
-                    coincidence,
-                    chance_coincidence,
-                    raw_localisation,
-                    n_iter,
-                ) = self.calculate_spot_colocalisation_likelihood_ratio(
-                    spot_indices, mask_indices, image_size
-                )
-            else:
-                coincidence, chance_coincidence, raw_localisation, n_iter = (
-                    self.calculate_spot_to_mask_coincidence(
-                        spot_indices, mask_indices, image_size
-                    )
-                )
-
-            large_aggregate_indices = self.generate_largeaggregate_indices(
-                lo_mask, image_size
-            )
-            coincidence_large, chance_coincidence_large, raw_coloc_large = (
-                self.calculate_largeobj_coincidence(
-                    large_aggregate_indices, mask_indices, len(areas_large), image_size
-                )
-            )
-
-            to_save = self.make_datarray_spot(
-                centroids,
-                estimated_intensity,
-                estimated_background,
-                estimated_background_perpixel,
-                raw_localisation,
-                columns[:-2],
-            )
-
-            to_save_largeobjects = self.make_datarray_largeobjects(
-                areas_large,
-                centroids_large,
-                sumintensities_large,
-                meanintensities_large,
-                raw_coloc_large,
-                columns_large[:-2],
-            )
-
-            to_save_cell = self.make_datarray_cell(
-                clr,
-                norm_std,
-                norm_CSR,
-                expected_spots,
-                coincidence,
-                chance_coincidence,
-                coincidence_large,
-                chance_coincidence_large,
-                n_iter,
-                columns_cell[:-1],
-                analyse_clr,
-            )
-        return to_save, to_save_largeobjects, lo_mask, to_save_cell, cell_mask
-
-    def compute_spot_props(
-        self,
-        image,
-        k1,
-        k2,
-        thres=0.05,
-        large_thres=100.0,
-        areathres=30.0,
-        rdl=[50.0, 0.0, 0.0],
-        z=0,
-        d=2,
-    ):
-        """
-        Gets basic image properties (centroids, radiality)
-        from a single image
-
-        Args:
-            image (np.ndarray): image as numpy array, or dict of arrays
-            k1 (array): gaussian blur kernel
-            k2 (array): ricker wavelet kernel
-            thres (float): percentage threshold
-            areathres (float): area threshold
-            rdl (array): radiality thresholds
-            z (array): z planes to image, default 0
-            d (int): Pixel radius value
-
-        Returns:
-            to_save (pl.DataFrame): data array to save as polars object,
-                                            or dict of polars objects
-            to_save_largeobjects (pl.DataFrame): data array of large objects
-                                                        or dict of large objects
-            lo_mask: mask of large objects in image
-        """
-        columns = [
-            "x",
-            "y",
-            "z",
-            "sum_intensity_in_photons",
-            "bg_per_punctum",
-            "bg_per_pixel",
-            "zi",
-            "zf",
-        ]
-        columns_large = [
-            "x",
-            "y",
-            "z",
-            "area",
-            "sum_intensity_in_photons",
-            "mean_intensity_in_photons",
-            "zi",
-            "zf",
-        ]
-        if not isinstance(z, int):
-            z_planes = np.arange(z[0], z[1])
-            centroids = {}
-            estimated_intensity = {}
-            estimated_background = {}
-            estimated_background_perpixel = {}
-            areas_large = {}
-            centroids_large = {}
-            meanintensities_large = {}
-            sumintensities_large = {}
-            lo_mask = np.zeros_like(image, dtype=bool)
-
-            def analyse_zplanes(zp):
-                (
-                    centroids[zp],
-                    estimated_intensity[zp],
-                    estimated_background[zp],
-                    estimated_background_perpixel[zp],
-                    areas_large[zp],
-                    centroids_large[zp],
-                    meanintensities_large[zp],
-                    sumintensities_large[zp],
-                    lo_mask[:, :, zp],
-                ) = self.default_spotanalysis_routine(
-                    image[:, :, zp], k1, k2, thres, large_thres, areathres, rdl, d
-                )
-
-            pool = Pool(nodes=cpu_number)
-            pool.restart()
-            pool.map(analyse_zplanes, z_planes)
-            pool.close()
-            pool.terminate()
-
-            to_save = self.make_datarray_spot(
-                centroids,
-                estimated_intensity,
-                estimated_background,
-                estimated_background_perpixel,
-                0,
-                columns,
-                z_planes,
-                cell_analysis=False,
-            )
-
-            to_save_largeobjects = self.make_datarray_largeobjects(
-                areas_large,
-                centroids_large,
-                sumintensities_large,
-                meanintensities_large,
-                0,
-                columns_large,
-                z_planes,
-                cell_analysis=False,
-            )
-
-        else:
-            centroids, estimated_intensity, estimated_background,
-            estimated_background_perpixel, areas_large, centroids_large,
-            meanintensities_large, sumintensities_large, lo_mask = (
-                self.default_spotanalysis_routine(
-                    image, k1, k2, thres, large_thres, areathres, rdl, d
-                )
-            )
-
-            to_save = self.make_datarray_spot(
-                centroids,
-                estimated_intensity,
-                estimated_background,
-                estimated_background_perpixel,
-                0,
-                columns[:-2],
-            )
-
-            to_save_largeobjects = self.make_datarray_largeobjects(
-                areas_large,
-                centroids_large,
-                sumintensities_large,
-                meanintensities_large,
-                0,
-                columns_large[:-2],
-                cell_analysis=False,
-            )
-
-        return to_save, to_save_largeobjects, lo_mask
 
     def Gauss2DFitting(self, image, pixel_index_list, expanded_area=5):
         """
@@ -2048,92 +1184,6 @@ class Analysis_Functions:
         nd2 = indices[data <= q1 - (1.5 * IQR)]
         return np.hstack([nd1, nd2])
 
-    def compute_image_props(
-        self,
-        image,
-        k1,
-        k2,
-        thres=0.05,
-        large_thres=450.0,
-        areathres=30.0,
-        rdl=[50.0, 0.0, 0.0],
-        d=2,
-        z_planes=0,
-        calib=False,
-    ):
-        """
-        Gets basic image properties (dl_mask, centroids, radiality)
-        from a single image
-
-        Args:
-            image (array): image as numpy array
-            k1 (array): gaussian blur kernel
-            k2 (array): ricker wavelet kernel
-            thres (float): percentage threshold
-            areathres (float): area threshold
-            rdl (array): radiality thresholds
-            d (int): radiality ring
-            z_planes (array): If multiple z planes, give z planes
-            calib (bool): If True, for radiality calibration
-
-        Returns:
-            dl_mask (numpy.ndarray): Binary mask for diffraction-limited (dl) features.
-            centroids (numpy.ndarray): Centroids for dl features.
-            radiality (numpy.ndarray): Radiality value for all features (before the filtering based on the radiality).
-            large_mask (np.ndarray): Binary mask for large (above diffraction-limited) features.
-
-        """
-        if isinstance(z_planes, int):
-            if calib == True:
-                large_mask = np.full_like(image, False)
-            else:
-                large_mask = self.detect_large_features(image, large_thres)
-            img2, Gx, Gy, focusScore, cfactor = self.calculate_gradient_field(image, k1)
-            dl_mask, centroids, radiality, idxs = self.small_feature_kernel(
-                image, large_mask, img2, Gx, Gy, k2, thres, areathres, rdl, d
-            )
-
-        else:
-            radiality = {}
-            centroids = {}
-            large_mask = np.zeros_like(image)
-            dl_mask = np.zeros_like(image)
-            img2 = np.zeros_like(image)
-            Gx = np.zeros_like(image)
-            Gy = np.zeros_like(image)
-
-            def run_over_z(z):
-                if calib == True:
-                    large_mask[:, :, z] = np.full_like(image[:, :, z], False)
-                else:
-                    large_mask[:, :, z] = self.detect_large_features(
-                        image[:, :, z], large_thres
-                    )
-                img2[:, :, z], Gx[:, :, z], Gy[:, :, z], focusScore, cfactor = (
-                    self.calculate_gradient_field(image[:, :, z], k1)
-                )
-                dl_mask[:, :, z], centroids[z], radiality[z], idxs = (
-                    self.small_feature_kernel(
-                        image[:, :, z],
-                        large_mask[:, :, z],
-                        img2[:, :, z],
-                        Gx[:, :, z],
-                        Gy[:, :, z],
-                        k2,
-                        thres,
-                        areathres,
-                        rdl,
-                        d,
-                    )
-                )
-
-            pool = Pool(nodes=cpu_number)
-            pool.restart()
-            pool.map(run_over_z, z_planes)
-            pool.close()
-            pool.terminate()
-        return dl_mask, centroids, radiality, large_mask
-
     def spot_to_spot_rdf(self, coordinates, pixel_size=0.11, dr=1.0):
         """
         Generates spot_to_spot_rdf
@@ -2232,182 +1282,6 @@ class Analysis_Functions:
             chance_coincidence_large,
             raw_colocalisation_large,
         )
-
-    def make_datarray_largeobjects(
-        self,
-        areas_large,
-        centroids_large,
-        sumintensities_large,
-        meanintensities_large,
-        raw_coloc,
-        columns,
-        z_planes=0,
-        cell_analysis=True,
-    ):
-        """
-        makes a datarray in pandas for large object information
-
-        Args:
-            areas_large (np.1darray): areas in pixels
-            centroids_large (np.1darray): centroids of large objects
-            meanintensities_large (np.1darray): mean intensities of large objects
-            raw_coloc (np.1darray): if large spot is in cell or not
-            columns (list of strings): column labels
-            z_planes: z_planes to put in array (if needed); if int, assumes only
-                one z-plane
-
-        Returns:
-            to_save_largeobjects (pandas DataArray) pandas array to save
-            columns_large = ['x', 'y', 'z', 'area', 'mean_intensity_in_photons', 'zi', 'zf']
-
-        """
-        if isinstance(z_planes, int):
-            if cell_analysis == True:
-                dataarray = np.vstack(
-                    [
-                        centroids_large[:, 0],
-                        centroids_large[:, 1],
-                        np.full_like(centroids_large[:, 0], 1),
-                        areas_large,
-                        sumintensities_large,
-                        meanintensities_large,
-                        raw_coloc,
-                    ]
-                )
-            else:
-                dataarray = np.vstack(
-                    [
-                        centroids_large[:, 0],
-                        centroids_large[:, 1],
-                        np.full_like(centroids_large[:, 0], 1),
-                        areas_large,
-                        sumintensities_large,
-                        meanintensities_large,
-                    ]
-                )
-        else:
-            for z in z_planes:
-                if cell_analysis == True:
-                    stack = np.vstack(
-                        [
-                            centroids_large[z][:, 0],
-                            centroids_large[z][:, 1],
-                            np.full_like(centroids_large[z][:, 0], z + 1),
-                            areas_large[z],
-                            sumintensities_large[z],
-                            meanintensities_large[z],
-                            raw_coloc[z],
-                            np.full_like(centroids_large[z][:, 0], 1 + z_planes[0]),
-                            np.full_like(centroids_large[z][:, 0], 1 + z_planes[-1]),
-                        ]
-                    )
-                else:
-                    stack = np.vstack(
-                        [
-                            centroids_large[z][:, 0],
-                            centroids_large[z][:, 1],
-                            np.full_like(centroids_large[z][:, 0], z + 1),
-                            areas_large[z],
-                            sumintensities_large[z],
-                            meanintensities_large[z],
-                            np.full_like(centroids_large[z][:, 0], 1 + z_planes[0]),
-                            np.full_like(centroids_large[z][:, 0], 1 + z_planes[-1]),
-                        ]
-                    )
-                if z == z_planes[0]:
-                    dataarray = stack
-                else:
-                    da = stack
-                    dataarray = np.hstack([dataarray, da])
-        return pl.DataFrame(data=dataarray.T, schema=columns)
-
-    def make_datarray_spot(
-        self,
-        centroids,
-        estimated_intensity,
-        estimated_background,
-        estimated_background_perpixel,
-        raw_colocalisation,
-        columns,
-        z_planes=0,
-        cell_analysis=True,
-    ):
-        """
-        makes a datarray in pandas for spot information
-
-        Args:
-            centroids (ndarray): centroid positions
-            estimated_intensity (ndarray): estimated intensities
-            estimated_background (ndarray): estimated backgrounds per punctum
-            estimated_background_perpixel (np.ndarray): estimated background per pixel
-            raw_colocalisation (np.ndarray): if spot is in cell mask or not
-            columns (list of strings): column labels
-            z_planes: z_planes to put in array (if needed); if int, assumes only
-                one z-plane
-
-        Returns:
-            to_save (pl.DataFrame) pandas array to save
-
-        """
-        if isinstance(z_planes, int):
-            if cell_analysis == True:
-                dataarray = np.vstack(
-                    [
-                        centroids[:, 0],
-                        centroids[:, 1],
-                        np.full_like(centroids[:, 0], 1),
-                        estimated_intensity,
-                        estimated_background,
-                        estimated_background_perpixel,
-                        raw_colocalisation,
-                    ]
-                )
-            else:
-                dataarray = np.vstack(
-                    [
-                        centroids[:, 0],
-                        centroids[:, 1],
-                        np.full_like(centroids[:, 0], 1),
-                        estimated_intensity,
-                        estimated_background,
-                        estimated_background_perpixel,
-                    ]
-                )
-        else:
-            for z in z_planes:
-                if cell_analysis == True:
-                    stack = np.vstack(
-                        [
-                            centroids[z][:, 0],
-                            centroids[z][:, 1],
-                            np.full_like(centroids[z][:, 0], z + 1),
-                            estimated_intensity[z],
-                            estimated_background[z],
-                            estimated_background_perpixel[z],
-                            raw_colocalisation[z],
-                            np.full_like(centroids[z][:, 0], 1 + z_planes[0]),
-                            np.full_like(centroids[z][:, 0], 1 + z_planes[-1]),
-                        ]
-                    )
-                else:
-                    stack = np.vstack(
-                        [
-                            centroids[z][:, 0],
-                            centroids[z][:, 1],
-                            np.full_like(centroids[z][:, 0], z + 1),
-                            estimated_intensity[z],
-                            estimated_background[z],
-                            estimated_background_perpixel[z],
-                            np.full_like(centroids[z][:, 0], 1 + z_planes[0]),
-                            np.full_like(centroids[z][:, 0], 1 + z_planes[-1]),
-                        ]
-                    )
-                if z == z_planes[0]:
-                    dataarray = stack
-                else:
-                    da = stack
-                    dataarray = np.hstack([dataarray, da])
-        return pl.DataFrame(data=dataarray.T, schema=columns)
 
     def colocalise_with_threshold(
         self,
@@ -2508,9 +1382,8 @@ class Analysis_Functions:
                     ycoords = filtered_file["y"].to_numpy()
                     mask = lo_mask[:, :, int(z_plane) - 1]
                     centroids = np.asarray(np.vstack([xcoords, ycoords]), dtype=int).T
-                    mask_indices, spot_indices = self.generate_mask_and_spot_indices(
-                        mask, centroids, image_size
-                    )
+                    mask_indices = self.generate_mask_indices(mask, image_size)
+                    spot_indices = self.generate_spot_indices(centroids, image_size)
                     if calc_clr == False:
                         (
                             temp_pl[j, 0],
@@ -3193,12 +2066,16 @@ class Analysis_Functions:
                         np.vstack([x_2_coords, y_2_coords]), dtype=int
                     ).T
 
-                    spot_1_indices, spot_2_indices = (
-                        self.generate_spot_and_spot_indices(
-                            centroids1, centroids2, image_size
+                    spot_1_indices = (
+                        self.generate_spot_indices(
+                            centroids1, image_size
                         )
                     )
-
+                    spot_2_indices = (
+                        self.generate_spot_indices(
+                            centroids2, image_size
+                        )
+                    )
                     (
                         temp_1_pl[j, 0],
                         temp_1_pl[j, 1],
@@ -3261,60 +2138,56 @@ class Analysis_Functions:
         return (plane_1_analysis, plane_2_analysis, spot_1_analysis, spot_2_analysis)
 
     def threshold_cell_areas(
-        self,
-        cell_mask_raw,
-        lower_cell_size_threshold=100,
-        upper_cell_size_threshold=np.inf,
-        z_project=True,
-    ):
+            self,
+            cell_mask_raw,
+            lower_cell_size_threshold=100,
+            upper_cell_size_threshold=np.inf,
+            z_project=True,
+        ):
         """
-        removes small and/or large objects from a cell mask
-
+        Removes small and/or large objects from a cell mask.
+        
         Args:
-            cell_mask_raw (np.ndarray): cell mask object
-            lower_cell_size_threshold (float): how big of an area do you take as lower threshold
-            upper_cell_size_threshold (float): how big of an area do you take as lower threshold
-            z_project (boolean): if True, z-projects cell
-
+            cell_mask_raw (np.ndarray): Cell mask object
+            lower_cell_size_threshold (float): Lower size threshold
+            upper_cell_size_threshold (float): Upper size threshold
+            z_project (bool): If True, z-projects cell mask
+        
         Returns:
-            cell_mask_new (np.2darray): cell mask with some objects removed
-            pil (dict): pixel image locations of mask
-            centroids (np.2darray): centroids of individual objects
-            areas (np.1darray): areas of individual cells
+            tuple: Processed cell mask, pixel image locations, centroids, areas
         """
-        if (z_project == True) and (len(cell_mask_raw.shape) > 2):
-            cell_mask = np.sum(cell_mask_raw, axis=-1)
-            cell_mask[cell_mask > 1] = 1
+        # Z-project if needed
+        if z_project and len(cell_mask_raw.shape) > 2:
+            cell_mask = np.sum(cell_mask_raw, axis=-1).clip(0, 1)
         else:
-            cell_mask = copy(cell_mask_raw)
-
-        cell_mask_new = copy(cell_mask)
+            cell_mask = cell_mask_raw.copy()
+        # Handle multi-dimensional and 2D masks differently
         if len(cell_mask.shape) > 2:
-            for plane in np.arange(cell_mask.shape[-1]):
-                pil, areas, centroids = self.calculate_region_properties(
-                    cell_mask_new[:, :, plane]
-                )
-                for c in np.arange(len(centroids)):
-                    if (areas[c] < lower_cell_size_threshold) or (
-                        areas[c] >= upper_cell_size_threshold
-                    ):
-                        cell_mask_new[pil[c][:, 0], pil[c][:, 1], plane] = 0
-            cell_mask_new = np.sum(cell_mask_new, axis=-1)
-            cell_mask_new[cell_mask_new > 1] = 1
+            # Process 3D mask
+            cell_mask_new = cell_mask.copy()
+            for plane in range(cell_mask.shape[-1]):
+                plane_mask = cell_mask_new[:, :, plane]
+                pil, areas, centroids = self.calculate_region_properties(plane_mask)    
+                # Vectorized filtering
+                mask = (areas >= lower_cell_size_threshold) & (areas < upper_cell_size_threshold)
+                # Update mask
+                for c in np.where(~mask)[0]:
+                    cell_mask_new[pil[c][:, 0], pil[c][:, 1], plane] = 0
+            # Reconstruct final mask
+            cell_mask_new = np.sum(cell_mask_new, axis=-1).clip(0, 1)
         else:
+            # Process 2D mask
+            cell_mask_new = cell_mask.copy()
             pil, areas, centroids = self.calculate_region_properties(cell_mask_new)
-            to_keep = np.ones(len(pil))
-            for c in np.arange(len(centroids)):
-                if (areas[c] < lower_cell_size_threshold) or (
-                    areas[c] >= upper_cell_size_threshold
-                ):
-                    to_keep[c] = 0
-                    centroids[c, :] = np.NAN
-                    areas[c] = np.NAN
-                    cell_mask_new[pil[c][:, 0], pil[c][:, 1]] = 0
+            # Vectorized filtering
+            mask = (areas >= lower_cell_size_threshold) & (areas < upper_cell_size_threshold)
+            # Update mask
+            for c in np.where(~mask)[0]:
+                cell_mask_new[pil[c][:, 0], pil[c][:, 1]] = 0
+        # Final region properties calculation
         pil, areas, centroids = self.calculate_region_properties(cell_mask_new)
         return cell_mask_new, pil, centroids, areas
-
+    
     def create_labelled_cellmasks(
         self,
         cell_analysis,
@@ -3375,96 +2248,3 @@ class Analysis_Functions:
             cell_mask_toplot_analysis,
             new_cell_mask,
         )
-
-    def make_datarray_cell(
-        self,
-        clr,
-        norm_std,
-        norm_CSR,
-        expected_spots,
-        coincidence,
-        chance_coincidence,
-        coincidence_large,
-        chance_coincidence_large,
-        n_iter,
-        columns,
-        z_planes="none",
-        analyse_clr=True,
-    ):
-        """
-        makes a datarray in pandas for cell information
-
-        Args:
-            clr (ndarray): colocalisation likelihood ratios
-            norm_std (np.1darray): array of standard deviations
-            norm_CSR (np.1darray): array of CSRs
-            expected_spots (np.1darray): array of expected spots
-            coincidence (np.1darray): array of coincidence values
-            chance_coincidence (np.1darray): array of chance coincidence values
-            coincidence_large (np.1darray): array of coincidence values (large objects)
-            chance_coincidence_large (np.1darray): array of chance coincidence values (large objects)
-            n_iter (np.1darray): array of iteration muber
-            columns (list of strings): column labels
-            z_planes: z_planes to put in array (if needed)
-            analyse_clr (boolean): If true, save clr
-
-        Returns:
-            to_save (pandas DataArray): pandas array to save
-
-        """
-        if isinstance(z_planes, str):
-            if analyse_clr == True:
-                dataarray_cell = np.vstack(
-                    [
-                        clr,
-                        norm_std,
-                        norm_CSR,
-                        expected_spots,
-                        coincidence,
-                        chance_coincidence,
-                        coincidence_large,
-                        chance_coincidence_large,
-                        n_iter,
-                    ]
-                )
-            else:
-                dataarray_cell = np.vstack(
-                    [
-                        coincidence,
-                        chance_coincidence,
-                        coincidence_large,
-                        chance_coincidence_large,
-                        n_iter,
-                    ]
-                )
-        else:
-            zps = np.zeros_like(coincidence)
-            zps[z_planes] = z_planes + 1
-            if analyse_clr == True:
-                dataarray_cell = np.vstack(
-                    [
-                        clr,
-                        norm_std,
-                        norm_CSR,
-                        expected_spots,
-                        coincidence,
-                        chance_coincidence,
-                        coincidence_large,
-                        chance_coincidence_large,
-                        n_iter,
-                        zps,
-                    ]
-                )
-            else:
-                dataarray_cell = np.vstack(
-                    [
-                        coincidence,
-                        chance_coincidence,
-                        coincidence_large,
-                        chance_coincidence_large,
-                        n_iter,
-                        zps,
-                    ]
-                )
-            dataarray_cell = dataarray_cell[:, np.sum(dataarray_cell, axis=0) > 0]
-        return pl.DataFrame(data=dataarray_cell.T, schema=columns)
