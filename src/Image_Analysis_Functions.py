@@ -788,8 +788,10 @@ class ImageAnalysis_Functions:
                     )
 
             pool = Pool(nodes=cpu_number)
+            pool.restart()
             pool.map(analyse_zplanes, z_planes)
             pool.close()
+            pool.terminate()
 
             to_save = HF.make_datarray_spot(
                 results["centroids"],

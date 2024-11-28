@@ -17,260 +17,6 @@ class IO_Functions:
         self = self
         return
 
-    def save_abovebelowthresholdcoloc(
-        self,
-        plane_1_analysis_AT,
-        plane_2_analysis_AT,
-        spot_1_analysis_AT,
-        spot_2_analysis_AT,
-        plane_1_analysis_UT,
-        plane_2_analysis_UT,
-        spot_1_analysis_UT,
-        spot_2_analysis_UT,
-        analysis_file_1,
-        analysis_file_2,
-        spot_1_string,
-        spot_2_string,
-        threshold1_str,
-        threshold2_str,
-    ):
-        """
-        saves analysis of above and below threshold.
-
-        Args:
-            plane_1_analysis_AT (pl.DataFrame): polars dataframe.
-            plane_2_analysis_AT (pl.DataFrame): polars dataframe.
-            spot_1_analysis_AT (pl.DataFrame): polars dataframe.
-            spot_2_analysis_AT (pl.DataFrame): polars dataframe.
-            plane_1_analysis_UT (pl.DataFrame): polars dataframe.
-            plane_2_analysis_UT (pl.DataFrame): polars dataframe.
-            spot_1_analysis_UT (pl.DataFrame): polars dataframe.
-            spot_2_analysis_UT (pl.DataFrame): polars dataframe.
-            analysis_file_1 (str): string of analysis file 1.
-            analysis_file_2 (str): string of analysis file 1.
-            spot_1_string (str): string of spot 1.
-            spot_2_string (str): string of spot 2.
-            threshold1_str (str): string of threshold 1.
-            threshold2_str (str): string of threshold 2.
-        """
-        if isinstance(plane_1_analysis_AT, pl.DataFrame) and isinstance(
-            plane_1_analysis_UT, pl.DataFrame
-        ):
-            above_str = "coincidence_above_" + threshold1_str
-            above_cc_str = "chance_coincidence_above_" + threshold1_str
-            below_str = "coincidence_below_" + threshold1_str
-            below_cc_str = "chance_coincidence_below_" + threshold1_str
-
-            plane_1_analysis = plane_1_analysis_AT
-            plane_1_analysis = plane_1_analysis.rename({"coincidence": above_str})
-            plane_1_analysis = plane_1_analysis.rename(
-                {"chance_coincidence": above_cc_str}
-            )
-
-            plane_1_analysis = plane_1_analysis.with_columns(
-                channelcol=plane_1_analysis_UT["coincidence"]
-            ).rename({"channelcol": below_str})
-            plane_1_analysis = plane_1_analysis.with_columns(
-                channelcol=plane_1_analysis_UT["chance_coincidence"]
-            ).rename({"channelcol": below_cc_str})
-
-            plane_1_analysis = plane_1_analysis[
-                above_str,
-                above_cc_str,
-                below_str,
-                below_cc_str,
-                "z",
-                "image_filename",
-            ]
-
-            plane_1_analysis.write_csv(
-                analysis_file_1.split(".")[0]
-                + "_colocalisationwith_"
-                + spot_2_string
-                + "_"
-                + threshold1_str
-                + "_"
-                + spot_1_string
-                + "_photonthreshold_"
-                + threshold2_str
-                + "_"
-                + spot_2_string
-                + "_photonthreshold.csv"
-            )
-        else:
-            if isinstance(plane_1_analysis_AT, pl.DataFrame):
-                plane_1_analysis = plane_1_analysis_AT
-                plane_1_analysis_AT.write_csv(
-                    analysis_file_1.split(".")[0]
-                    + "_colocalisationwith_"
-                    + spot_2_string
-                    + "_"
-                    + threshold1_str
-                    + "_"
-                    + spot_1_string
-                    + "_photonthreshold_"
-                    + threshold2_str
-                    + "_"
-                    + spot_2_string
-                    + "_photonthreshold_abovethreshold.csv"
-                )
-            if isinstance(plane_1_analysis_UT, pl.DataFrame):
-                plane_1_analysis = plane_1_analysis_UT
-                plane_1_analysis_UT.write_csv(
-                    analysis_file_1.split(".")[0]
-                    + "_colocalisationwith_"
-                    + spot_2_string
-                    + "_"
-                    + threshold1_str
-                    + "_"
-                    + spot_1_string
-                    + "_photonthreshold_"
-                    + threshold2_str
-                    + "_"
-                    + spot_2_string
-                    + "_photonthreshold_belowthreshold.csv"
-                )
-
-        if isinstance(plane_2_analysis_AT, pl.DataFrame) and isinstance(
-            plane_2_analysis_UT, pl.DataFrame
-        ):
-            above_str = "coincidence_above_" + threshold2_str
-            above_cc_str = "chance_coincidence_above_" + threshold2_str
-            below_str = "coincidence_below_" + threshold2_str
-            below_cc_str = "chance_coincidence_below_" + threshold2_str
-
-            plane_2_analysis = plane_2_analysis_AT
-            plane_2_analysis = plane_2_analysis.rename({"coincidence": above_str})
-            plane_2_analysis = plane_2_analysis.rename(
-                {"chance_coincidence": above_cc_str}
-            )
-
-            plane_2_analysis = plane_2_analysis.with_columns(
-                channelcol=plane_2_analysis_UT["coincidence"]
-            ).rename({"channelcol": below_str})
-            plane_2_analysis = plane_2_analysis.with_columns(
-                channelcol=plane_2_analysis_UT["chance_coincidence"]
-            ).rename({"channelcol": below_cc_str})
-
-            plane_2_analysis = plane_2_analysis[
-                above_str,
-                above_cc_str,
-                below_str,
-                below_cc_str,
-                "z",
-                "image_filename",
-            ]
-
-            plane_2_analysis.write_csv(
-                analysis_file_2.split(".")[0]
-                + "_colocalisationwith_"
-                + spot_1_string
-                + "_"
-                + threshold2_str
-                + "_"
-                + spot_2_string
-                + "_photonthreshold_"
-                + threshold1_str
-                + "_"
-                + spot_1_string
-                + "_photonthreshold.csv"
-            )
-        else:
-            if isinstance(plane_2_analysis_AT, pl.DataFrame):
-                plane_2_analysis = plane_2_analysis_AT
-                plane_2_analysis_AT.write_csv(
-                    analysis_file_2.split(".")[0]
-                    + "_colocalisationwith_"
-                    + spot_1_string
-                    + "_"
-                    + threshold2_str
-                    + "_"
-                    + spot_2_string
-                    + "_photonthreshold_"
-                    + threshold1_str
-                    + "_"
-                    + spot_1_string
-                    + "_photonthreshold_abovethreshold.csv"
-                )
-            if isinstance(plane_2_analysis_UT, pl.DataFrame):
-                plane_2_analysis = plane_2_analysis_UT
-                plane_2_analysis_UT.write_csv(
-                    analysis_file_2.split(".")[0]
-                    + "_colocalisationwith_"
-                    + spot_1_string
-                    + "_"
-                    + threshold2_str
-                    + "_"
-                    + spot_2_string
-                    + "_photonthreshold_"
-                    + threshold1_str
-                    + "_"
-                    + spot_1_string
-                    + "_photonthreshold_belowthreshold.csv"
-                )
-
-        if isinstance(spot_1_analysis_AT, pl.DataFrame):
-            spot_1_analysis_AT.write_csv(
-                analysis_file_1.split(".")[0]
-                + "_rawcolocalisationwith_"
-                + spot_2_string
-                + "_"
-                + threshold1_str
-                + "_"
-                + spot_1_string
-                + "_photonthreshold_"
-                + threshold2_str
-                + "_"
-                + spot_2_string
-                + "_photonthreshold_abovethreshold.csv"
-            )
-        if isinstance(spot_1_analysis_UT, pl.DataFrame):
-            spot_1_analysis_UT.write_csv(
-                analysis_file_1.split(".")[0]
-                + "_rawcolocalisationwith_"
-                + spot_2_string
-                + "_"
-                + threshold1_str
-                + "_"
-                + spot_1_string
-                + "_photonthreshold_"
-                + threshold2_str
-                + "_"
-                + spot_2_string
-                + "_photonthreshold_belowthreshold.csv"
-            )
-        if isinstance(spot_2_analysis_AT, pl.DataFrame):
-            spot_2_analysis_AT.write_csv(
-                analysis_file_2.split(".")[0]
-                + "_rawcolocalisationwith_"
-                + spot_1_string
-                + "_"
-                + threshold2_str
-                + "_"
-                + spot_2_string
-                + "_photonthreshold_"
-                + threshold1_str
-                + "_"
-                + spot_1_string
-                + "_photonthreshold_abovethreshold.csv"
-            )
-        if isinstance(spot_2_analysis_UT, pl.DataFrame):
-            spot_2_analysis_UT.write_csv(
-                analysis_file_2.split(".")[0]
-                + "_rawcolocalisationwith_"
-                + spot_1_string
-                + "_"
-                + threshold2_str
-                + "_"
-                + spot_2_string
-                + "_photonthreshold_"
-                + threshold1_str
-                + "_"
-                + spot_1_string
-                + "_photonthreshold_belowthreshold.csv"
-            )
-        return plane_1_analysis, plane_2_analysis
-
     def save_analysis(
         self,
         to_save,
@@ -283,8 +29,7 @@ class IO_Functions:
         i=0,
         z_planes=[0, 0],
         lo_mask=[0],
-        cell_analysis=False,
-        cell_mask=False,
+        cell_mask=None,
         one_savefile=True,
     ):
         """
@@ -300,9 +45,7 @@ class IO_Functions:
             i (int): location in files where we're analysing
             z_planes (np.1darray): array of z locations to count spots
             lo_mask (np.ndarray): mask of large objects
-            cell_analysis (boolean): if doing cell analysis saving
-            cell_mask (np.ndarray): cell mask if cell analysis saving
-            to_save_cell (pl.DataFrame): polars dataframe
+            cell_mask (np.ndarray): cell mask if cell mask saving
             one_savefile (boolean): if True, saving all analysis in one csv
         """
         module_dir = os.path.dirname(__file__)
@@ -311,132 +54,105 @@ class IO_Functions:
 
         A_F = AnalysisFunctions.Analysis_Functions()
 
-        if one_savefile == False:
-            savename = os.path.join(
-                analysis_directory,
-                os.path.split(files[i])[-1].split(imtype)[0] + ".csv",
-            )
+        def _get_base_filename(file):
+            return os.path.split(file)[-1].split(imtype)[0]
+
+        def _write_dataframe(df, filepath, append=False):
+            if df.shape[0] > 0:
+                if append and os.path.isfile(filepath):
+                    with open(filepath, mode="ab") as f:
+                        df.write_csv(f, include_header=False)
+                else:
+                    df.write_csv(filepath)
+
+        # Handle separate file saving
+        if not one_savefile:
+            base_filename = _get_base_filename(files[i])
+            savename = os.path.join(analysis_directory, f"{base_filename}.csv")
             savename_lo = os.path.join(
-                analysis_directory,
-                os.path.split(files[i])[-1].split(imtype)[0] + "_largeobjects.csv",
+                analysis_directory, f"{base_filename}_largeobjects.csv"
             )
+
             to_save.write_csv(savename)
             to_save_largeobjects.write_csv(savename_lo)
 
             self.write_tiff(
                 lo_mask,
-                os.path.join(
-                    analysis_directory,
-                    os.path.split(files[i])[-1].split(imtype)[0] + "_loMask.tiff",
-                ),
+                os.path.join(analysis_directory, f"{base_filename}_loMask.tiff"),
                 bit=np.uint8,
             )
 
-            if cell_analysis == True:
+            if cell_mask is not None:
                 self.write_tiff(
                     cell_mask,
                     os.path.join(
                         analysis_directory,
-                        os.path.split(files[i])[-1]
-                        .split(imtype)[0]
-                        .split(protein_string)[0]
-                        + str(cell_string)
-                        + "_cellMask.tiff",
+                        f"{files[i].split(imtype)[0].split(protein_string)[0]}{cell_string}_cellMask.tiff",
                     ),
                     bit=np.uint8,
                 )
-        else:
-            to_save = to_save.with_columns(
-                image_filename=np.full_like(
-                    to_save["z"].to_numpy(), files[i], dtype="object"
-                )
-            )
-            to_save_largeobjects = to_save_largeobjects.with_columns(
-                image_filename=np.full_like(
-                    to_save_largeobjects["z"].to_numpy(), files[i], dtype="object"
-                )
-            )
+            return
 
+        # Handling single file saving
+        to_save = to_save.with_columns(
+            image_filename=np.full_like(
+                to_save["z"].to_numpy(), files[i], dtype="object"
+            )
+        )
+        to_save_largeobjects = to_save_largeobjects.with_columns(
+            image_filename=np.full_like(
+                to_save_largeobjects["z"].to_numpy(), files[i], dtype="object"
+            )
+        )
+
+        # Write large object mask
+        self.write_tiff(
+            lo_mask,
+            os.path.join(
+                analysis_directory, f"{_get_base_filename(files[i])}_loMask.tiff"
+            ),
+            bit=np.uint8,
+        )
+
+        # Prepare save paths
+        save_paths = [
+            os.path.join(analysis_directory, "spot_analysis.csv"),
+            os.path.join(analysis_directory, "largeobject_analysis.csv"),
+            os.path.join(analysis_directory, "spot_numbers.csv"),
+            os.path.join(analysis_directory, "largeobject_numbers.csv"),
+        ]
+
+        # Count spots and large objects
+        n_spots = A_F.count_spots(
+            to_save, np.arange(z_planes[0], z_planes[1])
+        ).with_columns(
+            image_filename=np.full_like(
+                to_save["z"].to_numpy(), files[i], dtype="object"
+            )
+        )
+        n_largeobjects = A_F.count_spots(
+            to_save_largeobjects, np.arange(z_planes[0], z_planes[1])
+        ).with_columns(
+            image_filename=np.full_like(
+                to_save_largeobjects["z"].to_numpy(), files[i], dtype="object"
+            )
+        )
+
+        # Optional cell mask
+        if cell_mask is not None:
             self.write_tiff(
-                lo_mask,
+                cell_mask,
                 os.path.join(
                     analysis_directory,
-                    os.path.split(files[i])[-1].split(imtype)[0] + "_loMask.tiff",
+                    f"{files[i].split(imtype)[0].split(protein_string)[0]}{cell_string}_cellMask.tiff",
                 ),
                 bit=np.uint8,
             )
 
-            savename = os.path.join(analysis_directory, "spot_analysis.csv")
-            savename_lo = os.path.join(analysis_directory, "largeobject_analysis.csv")
-            savename_spot = os.path.join(analysis_directory, "spot_numbers.csv")
-            savename_nlargeobjects = os.path.join(
-                analysis_directory, "largeobject_numbers.csv"
-            )
-
-            n_spots = A_F.count_spots(to_save, np.arange(z_planes[0], z_planes[1]))
-            n_spots = n_spots.with_columns(
-                image_filename=np.full_like(
-                    n_spots["z"].to_numpy(), files[i], dtype="object"
-                )
-            )
-
-            n_largeobjects = A_F.count_spots(
-                to_save_largeobjects, np.arange(z_planes[0], z_planes[1])
-            )
-            n_largeobjects = n_largeobjects.with_columns(
-                image_filename=np.full_like(
-                    n_largeobjects["z"].to_numpy(), files[i], dtype="object"
-                )
-            )
-
-            if cell_analysis == True:
-                self.write_tiff(
-                    cell_mask,
-                    os.path.join(
-                        analysis_directory,
-                        os.path.split(files[i])[-1]
-                        .split(imtype)[0]
-                        .split(protein_string)[0]
-                        + str(cell_string)
-                        + "_cellMask.tiff",
-                    ),
-                    bit=np.uint8,
-                )
-
-            if i != 0:
-                if to_save.shape[0] > 0:
-                    if os.path.isfile(savename):
-                        with open(savename, mode="ab") as f:
-                            to_save.write_csv(f, include_header=False)
-                    else:
-                        to_save.write_csv(savename)
-                if to_save_largeobjects.shape[0] > 0:
-                    if os.path.isfile(savename_lo):
-                        with open(savename_lo, mode="ab") as f:
-                            to_save_largeobjects.write_csv(f, include_header=False)
-                    else:
-                        to_save_largeobjects.write_csv(savename_lo)
-                if n_spots.shape[0] > 0:
-                    if os.path.isfile(savename_spot):
-                        with open(savename_spot, mode="ab") as f:
-                            n_spots.write_csv(f, include_header=False)
-                    else:
-                        n_spots.write_csv(savename_spot)
-                if n_largeobjects.shape[0] > 0:
-                    if os.path.isfile(savename_nlargeobjects):
-                        with open(savename_nlargeobjects, mode="ab") as f:
-                            n_largeobjects.write_csv(f, include_header=False)
-                    else:
-                        n_largeobjects.write_csv(savename_nlargeobjects)
-            else:
-                if to_save.shape[0] > 0:
-                    to_save.write_csv(savename)
-                if to_save_largeobjects.shape[0] > 0:
-                    to_save_largeobjects.write_csv(savename_lo)
-                if n_spots.shape[0] > 0:
-                    n_spots.write_csv(savename_spot)
-                if n_largeobjects.shape[0] > 0:
-                    n_largeobjects.write_csv(savename_nlargeobjects)
+        # Save or append data
+        dfs_to_save = [to_save, to_save_largeobjects, n_spots, n_largeobjects]
+        for df, path in zip(dfs_to_save, save_paths):
+            _write_dataframe(df, path, append=(i != 0))
         return
 
     def save_analysis_params(
@@ -662,3 +378,170 @@ class IO_Functions:
             extratags=extra_tags,
             check_contrast=False,
         )
+
+    def save_abovebelowthresholdcoloc(
+        self,
+        plane_1_analysis_AT,
+        plane_2_analysis_AT,
+        spot_1_analysis_AT,
+        spot_2_analysis_AT,
+        plane_1_analysis_UT,
+        plane_2_analysis_UT,
+        spot_1_analysis_UT,
+        spot_2_analysis_UT,
+        analysis_file_1,
+        analysis_file_2,
+        spot_1_string,
+        spot_2_string,
+        threshold1_str,
+        threshold2_str,
+    ):
+        """
+        saves analysis of above and below threshold.
+
+        Args:
+            plane_1_analysis_AT (pl.DataFrame): polars dataframe.
+            plane_2_analysis_AT (pl.DataFrame): polars dataframe.
+            spot_1_analysis_AT (pl.DataFrame): polars dataframe.
+            spot_2_analysis_AT (pl.DataFrame): polars dataframe.
+            plane_1_analysis_UT (pl.DataFrame): polars dataframe.
+            plane_2_analysis_UT (pl.DataFrame): polars dataframe.
+            spot_1_analysis_UT (pl.DataFrame): polars dataframe.
+            spot_2_analysis_UT (pl.DataFrame): polars dataframe.
+            analysis_file_1 (str): string of analysis file 1.
+            analysis_file_2 (str): string of analysis file 1.
+            spot_1_string (str): string of spot 1.
+            spot_2_string (str): string of spot 2.
+            threshold1_str (str): string of threshold 1.
+            threshold2_str (str): string of threshold 2.
+        """
+
+        def _generate_filename(
+            base_file,
+            spot_str,
+            threshold1,
+            spot1_str,
+            threshold2,
+            spot2_str,
+            prefix="",
+            suffix="",
+        ):
+            return f"{base_file.split('.')[0]}{prefix}_colocalisationwith_{spot_str}_{threshold1}_{spot1_str}_photonthreshold_{threshold2}_{spot2_str}_photonthreshold{suffix}.csv"
+
+        def _save_dataframe(dataframe, filename):
+            if isinstance(dataframe, pl.DataFrame):
+                dataframe.write_csv(filename)
+
+        _save_dataframe(
+            plane_1_analysis_AT,
+            _generate_filename(
+                analysis_file_1,
+                spot_2_string,
+                threshold1_str,
+                spot_1_string,
+                threshold2_str,
+                spot_2_string,
+                suffix="_abovethreshold",
+            ),
+        )
+        _save_dataframe(
+            plane_1_analysis_UT,
+            _generate_filename(
+                analysis_file_1,
+                spot_2_string,
+                threshold1_str,
+                spot_1_string,
+                threshold2_str,
+                spot_2_string,
+                suffix="_belowthreshold",
+            ),
+        )
+
+        _save_dataframe(
+            plane_2_analysis_AT,
+            _generate_filename(
+                analysis_file_2,
+                spot_1_string,
+                threshold2_str,
+                spot_2_string,
+                threshold1_str,
+                spot_1_string,
+                suffix="_abovethreshold",
+            ),
+        )
+        _save_dataframe(
+            plane_1_analysis_UT,
+            _generate_filename(
+                analysis_file_2,
+                spot_1_string,
+                threshold2_str,
+                spot_2_string,
+                threshold1_str,
+                spot_1_string,
+                suffix="_belowthreshold",
+            ),
+        )
+
+        # Save spot analyses
+        _save_dataframes = [
+            (
+                spot_1_analysis_AT,
+                analysis_file_1,
+                spot_2_string,
+                threshold1_str,
+                spot_1_string,
+                threshold2_str,
+                "abovethreshold",
+            ),
+            (
+                spot_1_analysis_UT,
+                analysis_file_1,
+                spot_2_string,
+                threshold1_str,
+                spot_1_string,
+                threshold2_str,
+                "belowthreshold",
+            ),
+            (
+                spot_2_analysis_AT,
+                analysis_file_2,
+                spot_1_string,
+                threshold2_str,
+                spot_2_string,
+                threshold1_str,
+                "abovethreshold",
+            ),
+            (
+                spot_2_analysis_UT,
+                analysis_file_2,
+                spot_1_string,
+                threshold2_str,
+                spot_2_string,
+                threshold1_str,
+                "belowthreshold",
+            ),
+        ]
+
+        for (
+            dataframe,
+            file,
+            spot_str1,
+            threshold1,
+            spot_str2,
+            threshold2,
+            threshold_type,
+        ) in _save_dataframes:
+            _save_dataframe(
+                dataframe,
+                _generate_filename(
+                    file,
+                    spot_str1,
+                    threshold1,
+                    spot_str2,
+                    threshold2,
+                    spot_str1,
+                    prefix="_rawcolocalisationwith",
+                    suffix=f"_{threshold_type}",
+                ),
+            )
+        return
