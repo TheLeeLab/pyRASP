@@ -14,9 +14,9 @@ import skimage.draw as draw
 from scipy.ndimage import binary_opening, binary_closing, binary_fill_holes
 from numba import jit
 import polars as pl
+from multiprocessing import Manager
 import pathos
-from pathos.pools import ThreadPool as Pool
-
+from pathos.pools import ProcessPool as Pool
 import os
 import sys
 
@@ -27,7 +27,7 @@ import HelperFunctions
 
 HF = HelperFunctions.Helper_Functions()
 IO = IOFunctions.IO_Functions()
-cpu_number = int(pathos.helpers.cpu_count() * 0.8)
+cpu_number = int(pathos.helpers.cpu_count() * 0.9)
 
 
 class ImageAnalysis_Functions:
@@ -35,7 +35,7 @@ class ImageAnalysis_Functions:
         self = self
         return
 
-    def calculate_gradient_field(self, image, kernel):
+    def calculate_gradient_field(self, image, kernel, FS=True):
         """
         Calculate the gradient field of an image and compute focus-related measures.
 
@@ -94,13 +94,17 @@ class ImageAnalysis_Functions:
             gradient_y[:-1, :] = np.diff(
                 filtered_image, axis=0
             )  # y gradient (bottom to top)
-
-        gradient_magnitude = np.sqrt(
-            np.add(np.square(gradient_x), np.square(gradient_y))
-        )
-        sum_gradient = np.sum(gradient_magnitude, axis=(0, 1))
-        concentration_factor = np.divide(sum_gradient, np.max(sum_gradient))
-        focus_score = np.log(sum_gradient)
+        
+        if FS == True:
+            gradient_magnitude = np.sqrt(
+                np.add(np.square(gradient_x), np.square(gradient_y))
+            )
+            sum_gradient = np.sum(gradient_magnitude, axis=(0, 1))
+            concentration_factor = np.divide(sum_gradient, np.max(sum_gradient))
+            focus_score = np.log(sum_gradient)
+        else:
+            focus_score = None
+            concentration_factor = None
 
         return filtered_image, gradient_x, gradient_y, focus_score, concentration_factor
 
@@ -165,6 +169,9 @@ class ImageAnalysis_Functions:
         image,
         k1,
         k2,
+        img2,
+        Gx,
+        Gy,
         thres=0.05,
         large_thres=100.0,
         areathres=30.0,
@@ -197,25 +204,20 @@ class ImageAnalysis_Functions:
 
         """
         large_mask = self.detect_large_features(image, large_thres)
-        pil_large, areas_large, centroids_large = self.calculate_region_properties(
-            large_mask
+        pil_large, areas_large, centroids_large, sumintensities_large, meanintensities_large = self.calculate_region_properties(
+            large_mask, image
         )
         to_keep = np.where(areas_large > areathres)[0]
         pil_large = pil_large[to_keep]
         areas_large = areas_large[to_keep]
         centroids_large = centroids_large[to_keep, :]
-        meanintensities_large = np.zeros_like(areas_large)
-        sumintensities_large = np.zeros_like(areas_large)
-        for i in np.arange(len(centroids_large)):
-            sumintensities_large[i] = np.sum(
-                image[pil_large[i][:, 0], pil_large[i][:, 1]]
-            )
-
+        meanintensities_large = meanintensities_large[to_keep]
+        sumintensities_large = sumintensities_large[to_keep]
         lo_mask = np.zeros_like(large_mask, dtype=bool)
-        for i in np.arange(len(centroids_large)):
-            lo_mask[pil_large[i][:, 0], pil_large[i][:, 1]] = True
-        meanintensities_large = np.divide(sumintensities_large, areas_large)
-        img2, Gx, Gy, focusScore, cfactor = self.calculate_gradient_field(image, k1)
+        if len(pil_large) > 0:
+            indices_to_keep = np.concatenate(pil_large)
+            lo_mask[tuple(indices_to_keep.T)] = True
+        
         dl_mask, centroids, radiality, idxs = self.small_feature_kernel(
             image, large_mask, img2, Gx, Gy, k2, thres, areathres, rdl, d
         )
@@ -512,12 +514,13 @@ class ImageAnalysis_Functions:
 
         return large_mask.astype(bool)
 
-    def calculate_region_properties(self, binary_mask):
+    def calculate_region_properties(self, binary_mask, image=None):
         """
         Calculate properties for labeled regions in a binary mask.
 
         Args:
             binary_mask (numpy.ndarray): Binary mask of connected components.
+            image (numpy.ndarray): image of same dimension as binary mask. Optional.
 
         Returns:
             pixel_index_list (list): List containing pixel indices for each labeled object.
@@ -528,16 +531,27 @@ class ImageAnalysis_Functions:
         labeled_image, num_objects = label(binary_mask, connectivity=2, return_num=True)
         # Initialize arrays for storing properties
         centroids = np.zeros((num_objects, 2))
-
+        
+        if image is not None:
+            properties = ("centroid", "area", "coords", "intensity_mean")
+        else:
+            properties = ("centroid", "area", "coords")
+        
         # Get region properties
         props = regionprops_table(
-            labeled_image, properties=("centroid", "area", "coords")
+            labeled_image, intensity_image=image, properties=properties
         )
         centroids[:, 0] = props["centroid-1"]
         centroids[:, 1] = props["centroid-0"]
         areas = props["area"]
         pixel_index_list = props["coords"]
-        return pixel_index_list, areas, centroids
+        if image is not None:
+            sum_intensity = props["intensity_mean"]*areas
+            mean_intensity = props["intensity_mean"]
+        else:
+            sum_intensity = None
+            mean_intensity = None
+        return pixel_index_list, areas, centroids, sum_intensity, mean_intensity
 
     def small_feature_kernel(
         self, img, large_mask, img2, Gx, Gy, k2, thres, area_thres, rdl, d=2
@@ -575,7 +589,7 @@ class ImageAnalysis_Functions:
         BW = binary_opening(BW, structure=ski.morphology.disk(1))
 
         imsz = img.shape
-        pixel_idx_list, areas, centroids = self.calculate_region_properties(BW)
+        pixel_idx_list, areas, centroids, _, _ = self.calculate_region_properties(BW)
 
         border_value = int(np.multiply(d, 5))
         idxb = np.logical_and(
@@ -608,6 +622,9 @@ class ImageAnalysis_Functions:
         image,
         k1,
         k2,
+        img2,
+        Gx,
+        Gy,
         thres=0.05,
         large_thres=450.0,
         areathres=30.0,
@@ -643,7 +660,6 @@ class ImageAnalysis_Functions:
                 large_mask = np.full_like(image, False)
             else:
                 large_mask = self.detect_large_features(image, large_thres)
-            img2, Gx, Gy, focusScore, cfactor = self.calculate_gradient_field(image, k1)
             dl_mask, centroids, radiality, idxs = self.small_feature_kernel(
                 image, large_mask, img2, Gx, Gy, k2, thres, areathres, rdl, d
             )
@@ -653,10 +669,10 @@ class ImageAnalysis_Functions:
             centroids = {}
             large_mask = np.zeros_like(image)
             dl_mask = np.zeros_like(image)
-            img2 = np.zeros_like(image)
-            Gx = np.zeros_like(image)
-            Gy = np.zeros_like(image)
-
+            img2, Gx, Gy, _, _ = (
+                self.calculate_gradient_field(image, k1, False)
+            )
+            
             def run_over_z(z):
                 if calib == True:
                     large_mask[:, :, z] = np.full_like(image[:, :, z], False)
@@ -664,9 +680,7 @@ class ImageAnalysis_Functions:
                     large_mask[:, :, z] = self.detect_large_features(
                         image[:, :, z], large_thres
                     )
-                img2[:, :, z], Gx[:, :, z], Gy[:, :, z], focusScore, cfactor = (
-                    self.calculate_gradient_field(image[:, :, z], k1)
-                )
+                
                 dl_mask[:, :, z], centroids[z], radiality[z], idxs = (
                     self.small_feature_kernel(
                         image[:, :, z],
@@ -695,6 +709,9 @@ class ImageAnalysis_Functions:
         image_cell,
         k1,
         k2,
+        img2,
+        Gx,
+        Gy,
         prot_thres=0.05,
         large_prot_thres=100.0,
         areathres=30.0,
@@ -743,20 +760,15 @@ class ImageAnalysis_Functions:
             "zi",
             "zf",
         ]
-        columns_large = columns[:-2] + ["area", "mean_intensity_in_photons"]
+        columns_large = ['x', 'y', 'z', 'area', 'sum_intensity_in_photons', 'mean_intensity_in_photons', 'zi', 'zf']
 
         if not isinstance(z, int):
             z_planes = np.arange(z[0], z[1])
-            cell_mask = (
-                np.zeros_like(image_cell, dtype=bool)
-                if image_cell is not None
-                else None
-            )
-            lo_mask = np.zeros_like(image, dtype=bool)
-
-            results = {
-                key: {}
-                for key in [
+            
+            
+            manager = Manager()
+            results = manager.dict()
+            for key in [
                     "centroids",
                     "estimated_intensity",
                     "estimated_background",
@@ -765,33 +777,60 @@ class ImageAnalysis_Functions:
                     "centroids_large",
                     "meanintensities_large",
                     "sumintensities_large",
-                ]
-            }
-
-            def analyse_zplanes(zp):
-                img_z = image[:, :, zp]
+                ]:
+                results[key] = manager.dict()
+                
+            lo_mask_dict = manager.dict()
+            
+            cell_mask_dict = (
+                manager.dict()
+                if image_cell is not None
+                else None
+            )
+           
+            def analyse_zplanes(zp, image_plane, img2_plane, Gx_plane, Gy_plane, imagecell_plane):
                 results_zp = self.default_spotanalysis_routine(
-                    img_z, k1, k2, prot_thres, large_prot_thres, areathres, rdl, d
+                    image_plane, k1, k2, img2_plane, Gx_plane, Gy_plane, prot_thres, large_prot_thres, areathres, rdl, d
                 )
                 for key, val in zip(results.keys(), results_zp[:-1]):
                     results[key][zp] = val
 
-                lo_mask[:, :, zp] = results_zp[-1]
+                lo_mask_dict[zp] = results_zp[-1]
 
                 if image_cell is not None:
-                    cell_mask[:, :, zp] = self.detect_large_features(
-                        image_cell[:, :, zp],
+                    cell_mask_dict[zp] = self.detect_large_features(
+                        imagecell_plane,
                         cell_threshold1,
                         cell_threshold2,
                         cell_sigma1,
                         cell_sigma2,
                     )
-
+                
+            planes = [image[:,:,i] for i in range(image.shape[-1])]
+            planes_img2 = [img2[:,:,i] for i in range(img2.shape[-1])]
+            planes_Gx = [Gx[:,:,i] for i in range(Gx.shape[-1])]
+            planes_Gy = [Gy[:,:,i] for i in range(Gy.shape[-1])]
+            if image_cell is not None:
+                planes_imagecell = [image_cell[:,:,i] for i in range(image_cell.shape[-1])]
+            else:
+                planes_imagecell = [None]*image.shape[-1]
+            
             pool = Pool(nodes=cpu_number)
             pool.restart()
-            pool.map(analyse_zplanes, z_planes)
+            pool.map(analyse_zplanes, np.arange(image.shape[-1]), planes, planes_img2, planes_Gx, planes_Gy, planes_imagecell)
             pool.close()
             pool.terminate()
+            
+            if image_cell is not None:
+                cell_mask = np.zeros_like(image_cell)
+                for zp in np.arange(image_cell.shape[-1]):  
+                    cell_mask[:, :, zp] = cell_mask_dict[zp]
+            else:
+                cell_mask = None
+                
+            lo_mask = np.zeros_like(image)
+            for zp in np.arange(image.shape[-1]):  
+                    lo_mask[:, :, zp] = lo_mask_dict[zp]
 
             to_save = HF.make_datarray_spot(
                 results["centroids"],
@@ -821,7 +860,7 @@ class ImageAnalysis_Functions:
                 sumintensities_large,
                 lo_mask,
             ) = self.default_spotanalysis_routine(
-                image, k1, k2, prot_thres, large_prot_thres, areathres, rdl, d
+                image, k1, k2, img2, Gx, Gy, prot_thres, large_prot_thres, areathres, rdl, d
             )
             cell_mask = (
                 self.detect_large_features(

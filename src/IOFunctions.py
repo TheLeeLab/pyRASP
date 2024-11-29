@@ -53,7 +53,6 @@ class IO_Functions:
         import AnalysisFunctions
 
         A_F = AnalysisFunctions.Analysis_Functions()
-
         def _get_base_filename(file):
             return os.path.split(file)[-1].split(imtype)[0]
 
@@ -85,10 +84,7 @@ class IO_Functions:
             if cell_mask is not None:
                 self.write_tiff(
                     cell_mask,
-                    os.path.join(
-                        analysis_directory,
-                        f"{files[i].split(imtype)[0].split(protein_string)[0]}{cell_string}_cellMask.tiff",
-                    ),
+                    os.path.join(analysis_directory, f"{base_filename}.split(protein_string)[0]{cell_string}_cellMask.tiff"),
                     bit=np.uint8,
                 )
             return
@@ -124,27 +120,26 @@ class IO_Functions:
 
         # Count spots and large objects
         n_spots = A_F.count_spots(
-            to_save, np.arange(z_planes[0], z_planes[1])
-        ).with_columns(
-            image_filename=np.full_like(
-                to_save["z"].to_numpy(), files[i], dtype="object"
-            )
-        )
+            to_save, np.arange(z_planes[0], z_planes[1]))
+        n_spots = n_spots.with_columns(
+                image_filename=np.full_like(
+                    n_spots["z"].to_numpy(), files[i], dtype="object"
+                ))
         n_largeobjects = A_F.count_spots(
             to_save_largeobjects, np.arange(z_planes[0], z_planes[1])
-        ).with_columns(
-            image_filename=np.full_like(
-                to_save_largeobjects["z"].to_numpy(), files[i], dtype="object"
-            )
         )
+        n_largeobjects = n_largeobjects.with_columns(
+                image_filename=np.full_like(
+                    n_largeobjects["z"].to_numpy(), files[i], dtype="object"
+                )
+            )
 
         # Optional cell mask
         if cell_mask is not None:
             self.write_tiff(
                 cell_mask,
                 os.path.join(
-                    analysis_directory,
-                    f"{files[i].split(imtype)[0].split(protein_string)[0]}{cell_string}_cellMask.tiff",
+                    analysis_directory, f"{_get_base_filename(files[i]).split(protein_string)[0]}{cell_string}_cellMask.tiff"
                 ),
                 bit=np.uint8,
             )

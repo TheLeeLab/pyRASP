@@ -50,24 +50,25 @@ class Helper_Functions:
                 ]
             )
         else:
+            dataarray = None
             for z in z_planes:
-                stack = np.vstack(
-                    [
-                        centroids_large[z][:, 0],
-                        centroids_large[z][:, 1],
-                        np.full_like(centroids_large[z][:, 0], z + 1),
-                        areas_large[z],
-                        sumintensities_large[z],
-                        meanintensities_large[z],
-                        np.full_like(centroids_large[z][:, 0], 1 + z_planes[0]),
-                        np.full_like(centroids_large[z][:, 0], 1 + z_planes[-1]),
-                    ]
-                )
-                if z == z_planes[0]:
-                    dataarray = stack
-                else:
-                    da = stack
-                    dataarray = np.hstack([dataarray, da])
+                if len(areas_large[z]) > 0:
+                    stack = np.asarray(
+                        [
+                            centroids_large[z][:, 0],
+                            centroids_large[z][:, 1],
+                            np.full_like(centroids_large[z][:, 0], z + 1),
+                            areas_large[z],
+                            sumintensities_large[z],
+                            meanintensities_large[z],
+                            np.full_like(centroids_large[z][:, 0], 1 + z_planes[0]),
+                            np.full_like(centroids_large[z][:, 0], 1 + z_planes[-1]),
+                        ]
+                    )
+                    if dataarray is not None:
+                        dataarray = np.vstack([dataarray, np.squeeze(stack.T)])
+                    else:
+                        dataarray = np.squeeze(stack.T)
         return pl.DataFrame(data=dataarray.T, schema=columns)
 
     def make_datarray_spot(
@@ -220,3 +221,47 @@ class Helper_Functions:
                 )
             dataarray_cell = dataarray_cell[:, np.sum(dataarray_cell, axis=0) > 0]
         return pl.DataFrame(data=dataarray_cell.T, schema=columns)
+    
+    def gen_CSRmats(self, image_z_shape):
+        """
+        Generates empty matrices for the CSR
+
+        Args:
+            image_z_shape (int): shape of new array
+
+        Returns:
+            clr (ndarray): empty array
+            norm_std (ndarray): empty array
+            norm_CSR (ndarray): empty array
+            expected_spots (ndarray): empty array
+            coincidence (ndarray): empty array
+            chance_coincidence (ndarray): empty array
+            raw_localisation (dict): empty dict
+            n_iter (ndarray): empty array
+
+        """
+
+        clr = np.zeros(image_z_shape)
+        norm_std = np.zeros(image_z_shape)
+        norm_CSR = np.zeros(image_z_shape)
+        expected_spots = np.zeros(image_z_shape)
+        coincidence = np.zeros(image_z_shape)
+        chance_coincidence = np.zeros(image_z_shape)
+        raw_colocalisation = {}
+        n_iter = np.zeros(image_z_shape)
+        coincidence_large = np.zeros(image_z_shape)
+        chance_coincidence_large = np.zeros(image_z_shape)
+        raw_colocalisation_large = {}
+        return (
+            clr,
+            norm_std,
+            norm_CSR,
+            expected_spots,
+            coincidence,
+            chance_coincidence,
+            raw_colocalisation,
+            n_iter,
+            coincidence_large,
+            chance_coincidence_large,
+            raw_colocalisation_large,
+        )

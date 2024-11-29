@@ -109,6 +109,26 @@ class Analysis_Functions:
                 data = np.vstack([data, stack])
         n_spots = pl.DataFrame(data=data, schema=columns)
         return n_spots
+    
+    def generate_lo_indices(self, mask, image_size):
+        """
+        makes mask indices from xy coordinates
+
+        Args:
+            mask (2D array): boolean matrix
+            centroids (2D array): xy centroid coordinates
+            image_size (tuple): Image dimensions (height, width).
+
+        Returns:
+            mask_indices (1D array): indices of mask
+            spot_indices (1D array): indices of spots
+        """
+        pil, _, _ = self.calculate_region_properties(mask)
+        for i in np.arange(len(pil)):
+            pil[i] = np.ravel_multi_index(
+            [pil[i][:, 0], pil[i][:, 1]], image_size, order="F"
+        )
+        return pil, len(pil)
 
     def generate_mask_indices(self, mask, image_size):
         """
@@ -1239,75 +1259,38 @@ class Analysis_Functions:
         )
         return g_r, radii
 
-    def gen_CSRmats(self, image_z_shape):
-        """
-        Generates empty matrices for the CSR
-
-        Args:
-            image_z_shape (int): shape of new array
-
-        Returns:
-            clr (ndarray): empty array
-            norm_std (ndarray): empty array
-            norm_CSR (ndarray): empty array
-            expected_spots (ndarray): empty array
-            coincidence (ndarray): empty array
-            chance_coincidence (ndarray): empty array
-            raw_localisation (dict): empty dict
-            n_iter (ndarray): empty array
-
-        """
-
-        clr = np.zeros(image_z_shape)
-        norm_std = np.zeros(image_z_shape)
-        norm_CSR = np.zeros(image_z_shape)
-        expected_spots = np.zeros(image_z_shape)
-        coincidence = np.zeros(image_z_shape)
-        chance_coincidence = np.zeros(image_z_shape)
-        raw_colocalisation = {}
-        n_iter = np.zeros(image_z_shape)
-        coincidence_large = np.zeros(image_z_shape)
-        chance_coincidence_large = np.zeros(image_z_shape)
-        raw_colocalisation_large = {}
-        return (
-            clr,
-            norm_std,
-            norm_CSR,
-            expected_spots,
-            coincidence,
-            chance_coincidence,
-            raw_colocalisation,
-            n_iter,
-            coincidence_large,
-            chance_coincidence_large,
-            raw_colocalisation_large,
-        )
-
     def colocalise_with_threshold(
         self,
         analysis_file,
         threshold,
         protein_string,
         lo_string,
+        cell_string,
         coloc_type=1,
         imtype=".tif",
         blur_degree=1,
         calc_clr=False,
         aboveT=1,
+        lower_cell_size_threshold=0,
+        upper_cell_size_threshold=np.inf
     ):
         """
         Does colocalisation analysis of spots vs mask with an additional threshold.
 
         Args:
-            analysis_file (string): The analysis file of puncta.
+            analysis_file (string): The analysis file of puncta. If large objects are to be 
+                                    analysed as puncta, make sure this is a large object file.
             threshold (float): The photon threshold for puncta.
             protein_string (str): string of protein images
             lo_string (str): string of larger object images
-            coloc_typ (boolean): if 1 (default), for cells. if 0, for large protein objects
+            coloc_typ (boolean): if 1 (default), for cells. if 0, for large protein objects. 
+                                if 2, between cell mask and large protein objects.
             imtype (str): image end string
             blur_degree (int): degree of blur to apply to puncta
             calc_clr (boolean): calculate clr yes/no
             aboveT (int): do the calculation above or below threshold
+            lower_cell_size_threshold (float): lower threshold of cell size
+            upper_cell_size_threshold (float): upper threshold of cell size
 
         Returns:
             lo_analysis (pl.DataFrame): polars dataframe of the cell analysis
@@ -1315,10 +1298,16 @@ class Analysis_Functions:
         """
         if coloc_type == 1:
             end_str = "_cellMask.tiff"
-        else:
+        elif coloc_type == 0:
             end_str = "_loMask.tiff"
+        else:
+            end_str = None
 
         spots_with_intensities = pl.read_csv(analysis_file)
+        if coloc_type == 2:
+            if "mean_intensity_in_photons" not in spots_with_intensities.columns:
+                print("Large object analysis file not loaded in. Code will fail.")
+                return
         if aboveT == 1:
             spots_with_intensities = spots_with_intensities.filter(
                 pl.col("sum_intensity_in_photons") > threshold
@@ -1334,7 +1323,7 @@ class Analysis_Functions:
                 spots_with_intensities["image_filename"].to_numpy()
             )
 
-            if calc_clr == False:
+            if (calc_clr == False) and (coloc_type == 2):
                 columns = [
                     "coincidence",
                     "chance_coincidence",
@@ -1356,16 +1345,41 @@ class Analysis_Functions:
             start = time.time()
 
             for i, image in enumerate(image_filenames):
-                lo_mask = IO.read_tiff(
-                    os.path.join(
-                        analysis_directory,
-                        os.path.split(image.split(imtype)[0])[-1].split(protein_string)[
-                            0
-                        ]
-                        + str(lo_string)
-                        + end_str,
+                if end_str is not None:
+                    lo_mask = IO.read_tiff(
+                        os.path.join(
+                            analysis_directory,
+                            os.path.split(image.split(imtype)[0])[-1].split(protein_string)[
+                                0
+                            ]
+                            + str(lo_string)
+                            + end_str,
+                        )
                     )
-                )
+                    lo_mask, _, _, _ = self.threshold_cell_areas(lo_mask, lower_cell_size_threshold, upper_cell_size_threshold, [False, False])
+                else:
+                    lo_mask = IO.read_tiff(
+                        os.path.join(
+                            analysis_directory,
+                            os.path.split(image.split(imtype)[0])[-1].split(protein_string)[
+                                0
+                            ]
+                            + str(lo_string)
+                            + "_loMask.tiff",
+                        )
+                    )
+                    cell_mask = IO.read_tiff(
+                        os.path.join(
+                            analysis_directory,
+                            os.path.split(image.split(imtype)[0])[-1].split(protein_string)[
+                                0
+                            ]
+                            + str(cell_string)
+                            + "_cellMask.tiff",
+                        )
+                    )
+                    cell_mask, _, _, _ = self.threshold_cell_areas(cell_mask, lower_cell_size_threshold, upper_cell_size_threshold, [False, False])
+
                 image_size = lo_mask.shape[:-1]
                 image_file = spots_with_intensities.filter(
                     pl.col("image_filename") == image
@@ -1377,37 +1391,57 @@ class Analysis_Functions:
                 temp_pl = pl.DataFrame(data=dataarray, schema=columns)
 
                 for j, z_plane in enumerate(z_planes):
-                    filtered_file = image_file.filter(pl.col("z") == z_plane)
-                    xcoords = filtered_file["x"].to_numpy()
-                    ycoords = filtered_file["y"].to_numpy()
-                    mask = lo_mask[:, :, int(z_plane) - 1]
-                    centroids = np.asarray(np.vstack([xcoords, ycoords]), dtype=int).T
-                    mask_indices = self.generate_mask_indices(mask, image_size)
-                    spot_indices = self.generate_spot_indices(centroids, image_size)
-                    if calc_clr == False:
-                        (
-                            temp_pl[j, 0],
-                            temp_pl[j, 1],
-                            raw_colocalisation,
-                            temp_pl[j, 2],
-                        ) = self.calculate_spot_to_mask_coincidence(
-                            spot_indices,
-                            mask_indices,
-                            image_size,
-                            blur_degree=blur_degree,
-                        )
+                    if coloc_type != 2:
+                        filtered_file = image_file.filter(pl.col("z") == z_plane)
+                        xcoords = filtered_file["x"].to_numpy()
+                        ycoords = filtered_file["y"].to_numpy()
+                        if lo_mask.shape[-1] > z_planes[-1]:
+                            mask = lo_mask[:, :, int(z_plane) - 1]
+                        else:
+                            mask = lo_mask[:, :, j]
+                        centroids = np.asarray(np.vstack([xcoords, ycoords]), dtype=int).T
+                        mask_indices = self.generate_mask_indices(mask, image_size)
+                        spot_indices = self.generate_spot_indices(centroids, image_size)
+                        if calc_clr == False:
+                            (
+                                temp_pl[j, 0],
+                                temp_pl[j, 1],
+                                raw_colocalisation,
+                                temp_pl[j, 2],
+                            ) = self.calculate_spot_to_mask_coincidence(
+                                spot_indices,
+                                mask_indices,
+                                image_size,
+                                blur_degree=blur_degree,
+                            )
+                        else:
+                            (
+                                temp_pl[j, 0],
+                                temp_pl[j, 1],
+                                temp_pl[j, 2],
+                                temp_pl[j, 3],
+                                temp_pl[j, 4],
+                                temp_pl[j, 5],
+                                raw_colocalisation,
+                                temp_pl[j, 6],
+                            ) = self.calculate_spot_colocalisation_likelihood_ratio(
+                                spot_indices, mask_indices, image_size, blur_degree=1
+                            )
                     else:
+                        if lo_mask.shape[-1] > z_planes[-1]:
+                            mask_lo = lo_mask[:, :, int(z_plane) - 1]
+                            mask_cell = cell_mask[:, :, int(z_plane) - 1]
+                        else:
+                            mask_lo = lo_mask[:, :, j]
+                            mask_cell = cell_mask[:, :, j]
+                        mask_lo_indices, n_largeobjs = self.generate_lo_indices(mask_lo, image_size)
+                        mask_cell_indices = self.generate_mask_indices(mask_cell, image_size)
                         (
                             temp_pl[j, 0],
                             temp_pl[j, 1],
-                            temp_pl[j, 2],
-                            temp_pl[j, 3],
-                            temp_pl[j, 4],
-                            temp_pl[j, 5],
                             raw_colocalisation,
-                            temp_pl[j, 6],
-                        ) = self.calculate_spot_colocalisation_likelihood_ratio(
-                            spot_indices, mask_indices, image_size, blur_degree=1
+                        ) = self.calculate_largeobj_coincidence(
+                            mask_lo_indices, mask_cell_indices, n_largeobjs, image_size,
                         )
                     if j == 0:
                         rc = raw_colocalisation
@@ -1673,7 +1707,7 @@ class Analysis_Functions:
         protein_string="C1",
         imtype=".tif",
         aboveT=1,
-        z_project_first=True,
+        z_project_first=[True, True],
         q1=None,
         q2=None,
         IQR=None,
@@ -2134,7 +2168,7 @@ class Analysis_Functions:
         cell_mask_raw,
         lower_cell_size_threshold=100,
         upper_cell_size_threshold=np.inf,
-        z_project=True,
+        z_project=[True, True],
     ):
         """
         Removes small and/or large objects from a cell mask.
@@ -2149,7 +2183,7 @@ class Analysis_Functions:
             tuple: Processed cell mask, pixel image locations, centroids, areas
         """
         # Z-project if needed
-        if z_project and len(cell_mask_raw.shape) > 2:
+        if z_project[0] and len(cell_mask_raw.shape) > 2:
             cell_mask = np.sum(cell_mask_raw, axis=-1).clip(0, 1)
         else:
             cell_mask = cell_mask_raw.copy()
@@ -2168,7 +2202,8 @@ class Analysis_Functions:
                 for c in np.where(~mask)[0]:
                     cell_mask_new[pil[c][:, 0], pil[c][:, 1], plane] = 0
             # Reconstruct final mask
-            cell_mask_new = np.sum(cell_mask_new, axis=-1).clip(0, 1)
+            if z_project[1]:
+                cell_mask_new = np.sum(cell_mask_new, axis=-1).clip(0, 1)
         else:
             # Process 2D mask
             cell_mask_new = cell_mask.copy()
@@ -2181,7 +2216,12 @@ class Analysis_Functions:
             for c in np.where(~mask)[0]:
                 cell_mask_new[pil[c][:, 0], pil[c][:, 1]] = 0
         # Final region properties calculation
-        pil, areas, centroids = self.calculate_region_properties(cell_mask_new)
+        if z_project[0] and z_project[1]:
+            pil, areas, centroids = self.calculate_region_properties(cell_mask_new)
+        else:
+            pil = None
+            areas = None
+            centroids = None
         return cell_mask_new, pil, centroids, areas
 
     def create_labelled_cellmasks(
@@ -2191,7 +2231,7 @@ class Analysis_Functions:
         cell_mask,
         lower_cell_size_threshold=100,
         upper_cell_size_threshold=np.inf,
-        z_project=True,
+        z_project=[True, True],
         parameter="n_puncta_in_cell",
     ):
         """
