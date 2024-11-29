@@ -109,7 +109,7 @@ class Analysis_Functions:
                 data = np.vstack([data, stack])
         n_spots = pl.DataFrame(data=data, schema=columns)
         return n_spots
-    
+
     def generate_lo_indices(self, mask, image_size):
         """
         makes mask indices from xy coordinates
@@ -126,8 +126,8 @@ class Analysis_Functions:
         pil, _, _ = self.calculate_region_properties(mask)
         for i in np.arange(len(pil)):
             pil[i] = np.ravel_multi_index(
-            [pil[i][:, 0], pil[i][:, 1]], image_size, order="F"
-        )
+                [pil[i][:, 0], pil[i][:, 1]], image_size, order="F"
+            )
         return pil, len(pil)
 
     def generate_mask_indices(self, mask, image_size):
@@ -1272,18 +1272,18 @@ class Analysis_Functions:
         calc_clr=False,
         aboveT=1,
         lower_cell_size_threshold=0,
-        upper_cell_size_threshold=np.inf
+        upper_cell_size_threshold=np.inf,
     ):
         """
         Does colocalisation analysis of spots vs mask with an additional threshold.
 
         Args:
-            analysis_file (string): The analysis file of puncta. If large objects are to be 
+            analysis_file (string): The analysis file of puncta. If large objects are to be
                                     analysed as puncta, make sure this is a large object file.
             threshold (float): The photon threshold for puncta.
             protein_string (str): string of protein images
             lo_string (str): string of larger object images
-            coloc_typ (boolean): if 1 (default), for cells. if 0, for large protein objects. 
+            coloc_typ (boolean): if 1 (default), for cells. if 0, for large protein objects.
                                 if 2, between cell mask and large protein objects.
             imtype (str): image end string
             blur_degree (int): degree of blur to apply to puncta
@@ -1349,21 +1349,26 @@ class Analysis_Functions:
                     lo_mask = IO.read_tiff(
                         os.path.join(
                             analysis_directory,
-                            os.path.split(image.split(imtype)[0])[-1].split(protein_string)[
-                                0
-                            ]
+                            os.path.split(image.split(imtype)[0])[-1].split(
+                                protein_string
+                            )[0]
                             + str(lo_string)
                             + end_str,
                         )
                     )
-                    lo_mask, _, _, _ = self.threshold_cell_areas(lo_mask, lower_cell_size_threshold, upper_cell_size_threshold, [False, False])
+                    lo_mask, _, _, _ = self.threshold_cell_areas(
+                        lo_mask,
+                        lower_cell_size_threshold,
+                        upper_cell_size_threshold,
+                        [False, False],
+                    )
                 else:
                     lo_mask = IO.read_tiff(
                         os.path.join(
                             analysis_directory,
-                            os.path.split(image.split(imtype)[0])[-1].split(protein_string)[
-                                0
-                            ]
+                            os.path.split(image.split(imtype)[0])[-1].split(
+                                protein_string
+                            )[0]
                             + str(lo_string)
                             + "_loMask.tiff",
                         )
@@ -1371,14 +1376,19 @@ class Analysis_Functions:
                     cell_mask = IO.read_tiff(
                         os.path.join(
                             analysis_directory,
-                            os.path.split(image.split(imtype)[0])[-1].split(protein_string)[
-                                0
-                            ]
+                            os.path.split(image.split(imtype)[0])[-1].split(
+                                protein_string
+                            )[0]
                             + str(cell_string)
                             + "_cellMask.tiff",
                         )
                     )
-                    cell_mask, _, _, _ = self.threshold_cell_areas(cell_mask, lower_cell_size_threshold, upper_cell_size_threshold, [False, False])
+                    cell_mask, _, _, _ = self.threshold_cell_areas(
+                        cell_mask,
+                        lower_cell_size_threshold,
+                        upper_cell_size_threshold,
+                        [False, False],
+                    )
 
                 image_size = lo_mask.shape[:-1]
                 image_file = spots_with_intensities.filter(
@@ -1399,7 +1409,9 @@ class Analysis_Functions:
                             mask = lo_mask[:, :, int(z_plane) - 1]
                         else:
                             mask = lo_mask[:, :, j]
-                        centroids = np.asarray(np.vstack([xcoords, ycoords]), dtype=int).T
+                        centroids = np.asarray(
+                            np.vstack([xcoords, ycoords]), dtype=int
+                        ).T
                         mask_indices = self.generate_mask_indices(mask, image_size)
                         spot_indices = self.generate_spot_indices(centroids, image_size)
                         if calc_clr == False:
@@ -1434,14 +1446,21 @@ class Analysis_Functions:
                         else:
                             mask_lo = lo_mask[:, :, j]
                             mask_cell = cell_mask[:, :, j]
-                        mask_lo_indices, n_largeobjs = self.generate_lo_indices(mask_lo, image_size)
-                        mask_cell_indices = self.generate_mask_indices(mask_cell, image_size)
+                        mask_lo_indices, n_largeobjs = self.generate_lo_indices(
+                            mask_lo, image_size
+                        )
+                        mask_cell_indices = self.generate_mask_indices(
+                            mask_cell, image_size
+                        )
                         (
                             temp_pl[j, 0],
                             temp_pl[j, 1],
                             raw_colocalisation,
                         ) = self.calculate_largeobj_coincidence(
-                            mask_lo_indices, mask_cell_indices, n_largeobjs, image_size,
+                            mask_lo_indices,
+                            mask_cell_indices,
+                            n_largeobjs,
+                            image_size,
                         )
                     if j == 0:
                         rc = raw_colocalisation

@@ -530,16 +530,16 @@ class RASP_Routines:
             offset_map=self.offset_map,
             variance_map=self.variance_map,
         )
-        
+
         def _analysis_loop(img, k1, k2, img_cell, thres, large_thres, rdl, z_test):
             z_planes, img2, Gx, Gy = self.get_infocus_planes(img, k1)
             if z_test:
-                img = img[:, :, z_planes[0]:z_planes[1]]
-                img2 = img2[:, :, z_planes[0]:z_planes[1]]
-                Gx = Gx[:, :, z_planes[0]:z_planes[1]]
-                Gy = Gy[:, :, z_planes[0]:z_planes[1]]
+                img = img[:, :, z_planes[0] : z_planes[1]]
+                img2 = img2[:, :, z_planes[0] : z_planes[1]]
+                Gx = Gx[:, :, z_planes[0] : z_planes[1]]
+                Gy = Gy[:, :, z_planes[0] : z_planes[1]]
                 if img_cell is not None:
-                    img_cell = img_cell[:, :, z_planes[0]:z_planes[1]]
+                    img_cell = img_cell[:, :, z_planes[0] : z_planes[1]]
             (
                 to_save,
                 to_save_largeobjects,
@@ -616,7 +616,9 @@ class RASP_Routines:
                     else:
                         img_cell = None
                     z_test = len(img.shape) > 2
-                    _analysis_loop(img, k1, k2, img_cell, thres, large_thres, rdl, z_test)
+                    _analysis_loop(
+                        img, k1, k2, img_cell, thres, large_thres, rdl, z_test
+                    )
                     if disp == True:
                         print(
                             "Analysed image file {}/{}    Time elapsed: {:.3f} s".format(
@@ -1217,7 +1219,7 @@ class RASP_Routines:
         blur_degree=1,
         calc_clr=False,
         lower_cell_size_threshold=0,
-        upper_cell_size_threshold=np.inf
+        upper_cell_size_threshold=np.inf,
     ):
         """
         Redo colocalisation analyses of spots above a photon threshold in an
@@ -1228,7 +1230,7 @@ class RASP_Routines:
             threshold (float): The photon threshold
             protein_string (str): string of analysed protein
             lo_string (str): string of large object to analyse
-            coloc_typ (boolean): if 1 (default), for cells. if 0, for large protein objects. 
+            coloc_typ (boolean): if 1 (default), for cells. if 0, for large protein objects.
                                 if 2, between cell mask and large protein objects.
             imtype (str): image type
             blur_degree (int): blur degree for colocalisation analysis
@@ -1258,7 +1260,7 @@ class RASP_Routines:
             calc_clr=False,
             aboveT=1,
             lower_cell_size_threshold=0,
-            upper_cell_size_threshold=np.inf
+            upper_cell_size_threshold=np.inf,
         )
 
         lo_analysis_UT, spot_analysis_UT = A_F.colocalise_with_threshold(
@@ -1273,7 +1275,7 @@ class RASP_Routines:
             calc_clr=False,
             aboveT=0,
             lower_cell_size_threshold=0,
-            upper_cell_size_threshold=np.inf
+            upper_cell_size_threshold=np.inf,
         )
 
         savecell_string = os.path.join(

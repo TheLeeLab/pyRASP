@@ -221,7 +221,7 @@ class Helper_Functions:
                 )
             dataarray_cell = dataarray_cell[:, np.sum(dataarray_cell, axis=0) > 0]
         return pl.DataFrame(data=dataarray_cell.T, schema=columns)
-    
+
     def gen_CSRmats(self, image_z_shape):
         """
         Generates empty matrices for the CSR

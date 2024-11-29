@@ -94,7 +94,7 @@ class ImageAnalysis_Functions:
             gradient_y[:-1, :] = np.diff(
                 filtered_image, axis=0
             )  # y gradient (bottom to top)
-        
+
         if FS == True:
             gradient_magnitude = np.sqrt(
                 np.add(np.square(gradient_x), np.square(gradient_y))
@@ -204,9 +204,13 @@ class ImageAnalysis_Functions:
 
         """
         large_mask = self.detect_large_features(image, large_thres)
-        pil_large, areas_large, centroids_large, sumintensities_large, meanintensities_large = self.calculate_region_properties(
-            large_mask, image
-        )
+        (
+            pil_large,
+            areas_large,
+            centroids_large,
+            sumintensities_large,
+            meanintensities_large,
+        ) = self.calculate_region_properties(large_mask, image)
         to_keep = np.where(areas_large > areathres)[0]
         pil_large = pil_large[to_keep]
         areas_large = areas_large[to_keep]
@@ -217,7 +221,7 @@ class ImageAnalysis_Functions:
         if len(pil_large) > 0:
             indices_to_keep = np.concatenate(pil_large)
             lo_mask[tuple(indices_to_keep.T)] = True
-        
+
         dl_mask, centroids, radiality, idxs = self.small_feature_kernel(
             image, large_mask, img2, Gx, Gy, k2, thres, areathres, rdl, d
         )
@@ -531,12 +535,12 @@ class ImageAnalysis_Functions:
         labeled_image, num_objects = label(binary_mask, connectivity=2, return_num=True)
         # Initialize arrays for storing properties
         centroids = np.zeros((num_objects, 2))
-        
+
         if image is not None:
             properties = ("centroid", "area", "coords", "intensity_mean")
         else:
             properties = ("centroid", "area", "coords")
-        
+
         # Get region properties
         props = regionprops_table(
             labeled_image, intensity_image=image, properties=properties
@@ -546,7 +550,7 @@ class ImageAnalysis_Functions:
         areas = props["area"]
         pixel_index_list = props["coords"]
         if image is not None:
-            sum_intensity = props["intensity_mean"]*areas
+            sum_intensity = props["intensity_mean"] * areas
             mean_intensity = props["intensity_mean"]
         else:
             sum_intensity = None
@@ -669,10 +673,8 @@ class ImageAnalysis_Functions:
             centroids = {}
             large_mask = np.zeros_like(image)
             dl_mask = np.zeros_like(image)
-            img2, Gx, Gy, _, _ = (
-                self.calculate_gradient_field(image, k1, False)
-            )
-            
+            img2, Gx, Gy, _, _ = self.calculate_gradient_field(image, k1, False)
+
             def run_over_z(z):
                 if calib == True:
                     large_mask[:, :, z] = np.full_like(image[:, :, z], False)
@@ -680,7 +682,7 @@ class ImageAnalysis_Functions:
                     large_mask[:, :, z] = self.detect_large_features(
                         image[:, :, z], large_thres
                     )
-                
+
                 dl_mask[:, :, z], centroids[z], radiality[z], idxs = (
                     self.small_feature_kernel(
                         image[:, :, z],
@@ -760,37 +762,53 @@ class ImageAnalysis_Functions:
             "zi",
             "zf",
         ]
-        columns_large = ['x', 'y', 'z', 'area', 'sum_intensity_in_photons', 'mean_intensity_in_photons', 'zi', 'zf']
+        columns_large = [
+            "x",
+            "y",
+            "z",
+            "area",
+            "sum_intensity_in_photons",
+            "mean_intensity_in_photons",
+            "zi",
+            "zf",
+        ]
 
         if not isinstance(z, int):
             z_planes = np.arange(z[0], z[1])
-            
-            
+
             manager = Manager()
             results = manager.dict()
             for key in [
-                    "centroids",
-                    "estimated_intensity",
-                    "estimated_background",
-                    "estimated_background_perpixel",
-                    "areas_large",
-                    "centroids_large",
-                    "meanintensities_large",
-                    "sumintensities_large",
-                ]:
+                "centroids",
+                "estimated_intensity",
+                "estimated_background",
+                "estimated_background_perpixel",
+                "areas_large",
+                "centroids_large",
+                "meanintensities_large",
+                "sumintensities_large",
+            ]:
                 results[key] = manager.dict()
-                
+
             lo_mask_dict = manager.dict()
-            
-            cell_mask_dict = (
-                manager.dict()
-                if image_cell is not None
-                else None
-            )
-           
-            def analyse_zplanes(zp, image_plane, img2_plane, Gx_plane, Gy_plane, imagecell_plane):
+
+            cell_mask_dict = manager.dict() if image_cell is not None else None
+
+            def analyse_zplanes(
+                zp, image_plane, img2_plane, Gx_plane, Gy_plane, imagecell_plane
+            ):
                 results_zp = self.default_spotanalysis_routine(
-                    image_plane, k1, k2, img2_plane, Gx_plane, Gy_plane, prot_thres, large_prot_thres, areathres, rdl, d
+                    image_plane,
+                    k1,
+                    k2,
+                    img2_plane,
+                    Gx_plane,
+                    Gy_plane,
+                    prot_thres,
+                    large_prot_thres,
+                    areathres,
+                    rdl,
+                    d,
                 )
                 for key, val in zip(results.keys(), results_zp[:-1]):
                     results[key][zp] = val
@@ -805,32 +823,42 @@ class ImageAnalysis_Functions:
                         cell_sigma1,
                         cell_sigma2,
                     )
-                
-            planes = [image[:,:,i] for i in range(image.shape[-1])]
-            planes_img2 = [img2[:,:,i] for i in range(img2.shape[-1])]
-            planes_Gx = [Gx[:,:,i] for i in range(Gx.shape[-1])]
-            planes_Gy = [Gy[:,:,i] for i in range(Gy.shape[-1])]
+
+            planes = [image[:, :, i] for i in range(image.shape[-1])]
+            planes_img2 = [img2[:, :, i] for i in range(img2.shape[-1])]
+            planes_Gx = [Gx[:, :, i] for i in range(Gx.shape[-1])]
+            planes_Gy = [Gy[:, :, i] for i in range(Gy.shape[-1])]
             if image_cell is not None:
-                planes_imagecell = [image_cell[:,:,i] for i in range(image_cell.shape[-1])]
+                planes_imagecell = [
+                    image_cell[:, :, i] for i in range(image_cell.shape[-1])
+                ]
             else:
-                planes_imagecell = [None]*image.shape[-1]
-            
+                planes_imagecell = [None] * image.shape[-1]
+
             pool = Pool(nodes=cpu_number)
             pool.restart()
-            pool.map(analyse_zplanes, np.arange(image.shape[-1]), planes, planes_img2, planes_Gx, planes_Gy, planes_imagecell)
+            pool.map(
+                analyse_zplanes,
+                np.arange(image.shape[-1]),
+                planes,
+                planes_img2,
+                planes_Gx,
+                planes_Gy,
+                planes_imagecell,
+            )
             pool.close()
             pool.terminate()
-            
+
             if image_cell is not None:
                 cell_mask = np.zeros_like(image_cell)
-                for zp in np.arange(image_cell.shape[-1]):  
+                for zp in np.arange(image_cell.shape[-1]):
                     cell_mask[:, :, zp] = cell_mask_dict[zp]
             else:
                 cell_mask = None
-                
+
             lo_mask = np.zeros_like(image)
-            for zp in np.arange(image.shape[-1]):  
-                    lo_mask[:, :, zp] = lo_mask_dict[zp]
+            for zp in np.arange(image.shape[-1]):
+                lo_mask[:, :, zp] = lo_mask_dict[zp]
 
             to_save = HF.make_datarray_spot(
                 results["centroids"],
@@ -860,7 +888,17 @@ class ImageAnalysis_Functions:
                 sumintensities_large,
                 lo_mask,
             ) = self.default_spotanalysis_routine(
-                image, k1, k2, img2, Gx, Gy, prot_thres, large_prot_thres, areathres, rdl, d
+                image,
+                k1,
+                k2,
+                img2,
+                Gx,
+                Gy,
+                prot_thres,
+                large_prot_thres,
+                areathres,
+                rdl,
+                d,
             )
             cell_mask = (
                 self.detect_large_features(
