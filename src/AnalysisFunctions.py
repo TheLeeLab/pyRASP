@@ -2251,7 +2251,7 @@ class Analysis_Functions:
             for c in np.where(~mask)[0]:
                 cell_mask_new[pil[c][:, 0], pil[c][:, 1]] = 0
         # Final region properties calculation
-        if z_project[0] and z_project[1]:
+        if z_project[1]:
             pil, areas, centroids = self.calculate_region_properties(cell_mask_new)
         else:
             pil = None
