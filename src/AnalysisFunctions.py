@@ -1161,8 +1161,16 @@ class Analysis_Functions:
             and isinstance(q2, type(None))
             and isinstance(IQR, type(None))
         ):
-            q1 = np.squeeze(data.select(pl.col("sum_intensity_in_photons").quantile(0.25)).to_numpy())
-            q2 = np.squeeze(data.select(pl.col("sum_intensity_in_photons").quantile(0.75)).to_numpy())
+            q1 = np.squeeze(
+                data.select(
+                    pl.col("sum_intensity_in_photons").quantile(0.25)
+                ).to_numpy()
+            )
+            q2 = np.squeeze(
+                data.select(
+                    pl.col("sum_intensity_in_photons").quantile(0.75)
+                ).to_numpy()
+            )
             IQR = np.abs(q2 - q1)
 
             upper_limit = (1.5 * IQR) + q2
@@ -1774,20 +1782,18 @@ class Analysis_Functions:
 
             for i, file in enumerate(files):
                 cell_file = os.path.join(
-                        analysis_directory,
-                        os.path.split(file.split(imtype)[0])[-1].split(protein_string)[
-                            0
-                        ]
-                        + str(cell_string)
-                        + "_cellMask.tiff",
-                    )
+                    analysis_directory,
+                    os.path.split(file.split(imtype)[0])[-1].split(protein_string)[0]
+                    + str(cell_string)
+                    + "_cellMask.tiff",
+                )
                 if os.path.isfile(cell_file):
                     raw_cell_mask = IO.read_tiff(
                         os.path.join(
                             analysis_directory,
-                            os.path.split(file.split(imtype)[0])[-1].split(protein_string)[
-                                0
-                            ]
+                            os.path.split(file.split(imtype)[0])[-1].split(
+                                protein_string
+                            )[0]
                             + str(cell_string)
                             + "_cellMask.tiff",
                         )
@@ -1826,7 +1832,9 @@ class Analysis_Functions:
                             n_cell_ratios[k] = np.NAN
                             n_spots_in_object[k] = np.NAN
                         else:
-                            coordinates_mask = np.asarray(np.vstack([xm, ym]), dtype=int)
+                            coordinates_mask = np.asarray(
+                                np.vstack([xm, ym]), dtype=int
+                            )
                             mask_indices = np.ravel_multi_index(
                                 coordinates_mask, image_size, order="F"
                             )
