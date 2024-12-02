@@ -1063,6 +1063,7 @@ class RASP_Routines:
 
     def count_puncta_in_individual_cells_threshold(
         self,
+        analysis_data,
         analysis_file,
         threshold,
         cell_string,
@@ -1155,11 +1156,12 @@ class RASP_Routines:
         if replace_files == False:
             if os.path.isfile(above_string) or os.path.isfile(below_string):
                 print("Analysis already complete; exiting.")
-                return
+                return None, None
 
         cell_punctum_analysis_AT = (
             A_F.number_of_puncta_per_segmented_cell_with_threshold(
                 analysis_file,
+                analysis_data,
                 threshold,
                 lower_cell_size_threshold=lower_cell_size_threshold,
                 upper_cell_size_threshold=upper_cell_size_threshold,
@@ -1178,6 +1180,7 @@ class RASP_Routines:
         cell_punctum_analysis_UT = (
             A_F.number_of_puncta_per_segmented_cell_with_threshold(
                 analysis_file,
+                analysis_data,
                 threshold,
                 lower_cell_size_threshold=lower_cell_size_threshold,
                 upper_cell_size_threshold=upper_cell_size_threshold,
@@ -1198,14 +1201,12 @@ class RASP_Routines:
         ):
             cell_punctum_analysis_AT.write_csv(above_string)
             cell_punctum_analysis_UT.write_csv(below_string)
-            cell_punctum_analysis = cell_punctum_analysis_AT
         else:
             if isinstance(cell_punctum_analysis_AT, pl.DataFrame):
                 cell_punctum_analysis_AT.write_csv(above_string)
-                cell_punctum_analysis = cell_punctum_analysis_AT
             if isinstance(cell_punctum_analysis_UT, pl.DataFrame):
                 cell_punctum_analysis_UT.write_csv(below_string)
-        return cell_punctum_analysis
+        return cell_punctum_analysis_AT, cell_punctum_analysis_UT
 
     def colocalise_with_threshold(
         self,

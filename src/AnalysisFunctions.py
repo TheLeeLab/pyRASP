@@ -1161,12 +1161,9 @@ class Analysis_Functions:
             and isinstance(q2, type(None))
             and isinstance(IQR, type(None))
         ):
-            from scipy.stats import iqr
-
-            IQR = iqr(data["sum_intensity_in_photons"].to_numpy())
-            q1, q2 = np.percentile(
-                data["sum_intensity_in_photons"].to_numpy(), q=(25, 75)
-            )
+            q1 = np.squeeze(data.select(pl.col("sum_intensity_in_photons").quantile(0.25)).to_numpy())
+            q2 = np.squeeze(data.select(pl.col("sum_intensity_in_photons").quantile(0.75)).to_numpy())
+            IQR = np.abs(q2 - q1)
 
             upper_limit = (1.5 * IQR) + q2
             lower_limit = q1 - (1.5 * IQR)
@@ -1718,6 +1715,7 @@ class Analysis_Functions:
     def number_of_puncta_per_segmented_cell_with_threshold(
         self,
         analysis_file,
+        analysis_data_raw,
         threshold,
         lower_cell_size_threshold=100,
         upper_cell_size_threshold=np.inf,
@@ -1726,7 +1724,7 @@ class Analysis_Functions:
         protein_string="C1",
         imtype=".tif",
         aboveT=1,
-        z_project_first=[True, True],
+        z_project_first=True,
         q1=None,
         q2=None,
         IQR=None,
@@ -1757,23 +1755,13 @@ class Analysis_Functions:
             cell_punctum_analysis (pl.DataFrame): polars datarray of the cell analysis
         """
 
-        analysis_data = pl.read_csv(analysis_file)
-        if (
-            ~isinstance(q1, type(None))
-            and ~isinstance(q2, type(None))
-            and ~isinstance(IQR, type(None))
-        ):
-            analysis_data, _, _, _ = self.rejectoutliers_value(
-                analysis_data, q1, q2, IQR
-            )
-
         if aboveT == 1:
-            analysis_data = analysis_data.filter(
+            analysis_data = analysis_data_raw.filter(
                 pl.col("sum_intensity_in_photons") > threshold
             )
             typestr = "> threshold"
         else:
-            analysis_data = analysis_data.filter(
+            analysis_data = analysis_data_raw.filter(
                 pl.col("sum_intensity_in_photons") <= threshold
             )
             typestr = "<= threshold"
@@ -1785,8 +1773,7 @@ class Analysis_Functions:
             files = np.unique(analysis_data["image_filename"].to_numpy())
 
             for i, file in enumerate(files):
-                raw_cell_mask = IO.read_tiff(
-                    os.path.join(
+                cell_file = os.path.join(
                         analysis_directory,
                         os.path.split(file.split(imtype)[0])[-1].split(protein_string)[
                             0
@@ -1794,72 +1781,82 @@ class Analysis_Functions:
                         + str(cell_string)
                         + "_cellMask.tiff",
                     )
-                )
-                subset = analysis_data.filter(pl.col("image_filename") == file)
-                cell_mask, pil_mask, centroids, areas = self.threshold_cell_areas(
-                    raw_cell_mask,
-                    lower_cell_size_threshold,
-                    upper_cell_size_threshold=upper_cell_size_threshold,
-                    z_project=z_project_first,
-                )
-                image_size = cell_mask.shape
-
-                x_m = centroids[:, 0]
-                y_m = centroids[:, 1]
-                x = subset["x"].to_numpy()
-                y = subset["y"].to_numpy()
-                bounds_x = (x < image_size[0]) & (x >= 0)
-                bounds_y = (y < image_size[1]) & (y >= 0)
-                bounds = bounds_x * bounds_y
-                x = x[bounds]
-                y = y[bounds]
-                centroids_puncta = np.asarray(np.vstack([x, y]), dtype=int)
-                spot_indices = np.unique(
-                    np.ravel_multi_index(centroids_puncta, image_size, order="F")
-                )
-                filename_tosave = np.full_like(x_m, file, dtype="object")
-                n_spots_in_object = np.zeros_like(x_m)
-                n_cell_ratios = np.zeros_like(x_m)
-
-                for k in np.arange(len(areas)):
-                    coords = pil_mask[k]
-                    xm = coords[:, 0]
-                    ym = coords[:, 1]
-                    if (np.any(xm > image_size[0])) or (np.any(ym > image_size[1])):
-                        n_cell_ratios[k] = np.NAN
-                        n_spots_in_object[k] = np.NAN
-                    else:
-                        coordinates_mask = np.asarray(np.vstack([xm, ym]), dtype=int)
-                        mask_indices = np.ravel_multi_index(
-                            coordinates_mask, image_size, order="F"
+                if os.path.isfile(cell_file):
+                    raw_cell_mask = IO.read_tiff(
+                        os.path.join(
+                            analysis_directory,
+                            os.path.split(file.split(imtype)[0])[-1].split(protein_string)[
+                                0
+                            ]
+                            + str(cell_string)
+                            + "_cellMask.tiff",
                         )
-                        olig_cell_ratio, n_olig_in_cell, n_iter_rec = (
-                            self.calculate_spot_to_cell_numbers(
-                                spot_indices,
-                                mask_indices,
-                                image_size,
-                                n_iter=1,
-                                blur_degree=1,
+                    )
+                    subset = analysis_data.filter(pl.col("image_filename") == file)
+                    cell_mask, pil_mask, centroids, areas = self.threshold_cell_areas(
+                        raw_cell_mask,
+                        lower_cell_size_threshold,
+                        upper_cell_size_threshold=upper_cell_size_threshold,
+                        z_project=z_project_first,
+                    )
+                    image_size = cell_mask.shape
+
+                    x_m = centroids[:, 0]
+                    y_m = centroids[:, 1]
+                    x = subset["x"].to_numpy()
+                    y = subset["y"].to_numpy()
+                    bounds_x = (x < image_size[0]) & (x >= 0)
+                    bounds_y = (y < image_size[1]) & (y >= 0)
+                    bounds = bounds_x * bounds_y
+                    x = x[bounds]
+                    y = y[bounds]
+                    centroids_puncta = np.asarray(np.vstack([x, y]), dtype=int)
+                    spot_indices = np.unique(
+                        np.ravel_multi_index(centroids_puncta, image_size, order="F")
+                    )
+                    filename_tosave = np.full_like(x_m, file, dtype="object")
+                    n_spots_in_object = np.zeros_like(x_m)
+                    n_cell_ratios = np.zeros_like(x_m)
+
+                    for k in np.arange(len(areas)):
+                        coords = pil_mask[k]
+                        xm = coords[:, 0]
+                        ym = coords[:, 1]
+                        if (np.any(xm > image_size[0])) or (np.any(ym > image_size[1])):
+                            n_cell_ratios[k] = np.NAN
+                            n_spots_in_object[k] = np.NAN
+                        else:
+                            coordinates_mask = np.asarray(np.vstack([xm, ym]), dtype=int)
+                            mask_indices = np.ravel_multi_index(
+                                coordinates_mask, image_size, order="F"
                             )
-                        )
-                        n_cell_ratios[k] = olig_cell_ratio
-                        n_spots_in_object[k] = n_olig_in_cell
+                            olig_cell_ratio, n_olig_in_cell, n_iter_rec = (
+                                self.calculate_spot_to_cell_numbers(
+                                    spot_indices,
+                                    mask_indices,
+                                    image_size,
+                                    n_iter=1,
+                                    blur_degree=1,
+                                )
+                            )
+                            n_cell_ratios[k] = olig_cell_ratio
+                            n_spots_in_object[k] = n_olig_in_cell
 
-                if len(areas) > 0:
-                    data = {
-                        "area/pixels": areas,
-                        "x_centre": x_m,
-                        "y_centre": y_m,
-                        "puncta_cell_likelihood": n_cell_ratios,
-                        "n_puncta_in_cell": n_spots_in_object,
-                        "image_filename": filename_tosave,
-                    }
-                    if isinstance(cell_punctum_analysis, type(None)):
-                        cell_punctum_analysis = pl.DataFrame(data)
-                    else:
-                        cell_punctum_analysis = pl.concat(
-                            [cell_punctum_analysis, pl.DataFrame(data)]
-                        )
+                    if len(areas) > 0:
+                        data = {
+                            "area/pixels": areas,
+                            "x_centre": x_m,
+                            "y_centre": y_m,
+                            "puncta_cell_likelihood": n_cell_ratios,
+                            "n_puncta_in_cell": n_spots_in_object,
+                            "image_filename": filename_tosave,
+                        }
+                        if isinstance(cell_punctum_analysis, type(None)):
+                            cell_punctum_analysis = pl.DataFrame(data)
+                        else:
+                            cell_punctum_analysis = pl.concat(
+                                [cell_punctum_analysis, pl.DataFrame(data)]
+                            )
                 print(
                     "Computing "
                     + typestr

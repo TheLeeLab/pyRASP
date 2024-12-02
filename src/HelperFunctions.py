@@ -34,7 +34,7 @@ class Helper_Functions:
                 one z-plane
 
         Returns:
-            to_save_largeobjects (pandas DataArray) pandas array to save
+            to_save_largeobjects (polars DataArray) polars array to save
             columns_large = ['x', 'y', 'z', 'area', 'mean_intensity_in_photons', 'zi', 'zf']
 
         """
@@ -69,7 +69,10 @@ class Helper_Functions:
                         dataarray = np.vstack([dataarray, np.squeeze(stack.T)])
                     else:
                         dataarray = np.squeeze(stack.T)
-        return pl.DataFrame(data=dataarray.T, schema=columns)
+        return pl.DataFrame(
+            data=dataarray.T,
+            schema=columns,
+        )
 
     def make_datarray_spot(
         self,
@@ -127,7 +130,10 @@ class Helper_Functions:
                 else:
                     da = stack
                     dataarray = np.hstack([dataarray, da])
-        return pl.DataFrame(data=dataarray.T, schema=columns)
+        return pl.DataFrame(
+            data=dataarray.T,
+            schema=columns,
+        )
 
     def make_datarray_cell(
         self,
@@ -220,7 +226,10 @@ class Helper_Functions:
                     ]
                 )
             dataarray_cell = dataarray_cell[:, np.sum(dataarray_cell, axis=0) > 0]
-        return pl.DataFrame(data=dataarray_cell.T, schema=columns)
+        return pl.DataFrame(
+            data=dataarray_cell.T,
+            schema=columns,
+        )
 
     def gen_CSRmats(self, image_z_shape):
         """
