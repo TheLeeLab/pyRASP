@@ -1122,7 +1122,7 @@ class Analysis_Functions:
         HWHMarray = HWHMarray[~np.isnan(HWHMarray)]
         return HWHMarray
 
-    def rejectoutliers(self, data):
+    def rejectoutliers(self, data, k=3):
         """rejectoutliers function
         # rejects outliers from data, does iqr method (i.e. anything below
         lower quartile (25 percent) or above upper quartile (75 percent)
@@ -1130,6 +1130,7 @@ class Analysis_Functions:
 
         Args:
             data (np.1darray): data matrix
+            k (float): value for IQR
 
         Returns:
             newdata (np.1darray): data matrix"""
@@ -1138,11 +1139,11 @@ class Analysis_Functions:
         IQR = iqr(data)
         q1, q2 = np.percentile(data, q=(25, 75))
 
-        nd1 = data[data <= (1.5 * IQR) + q2]
-        newdata = nd1[nd1 >= q1 - (1.5 * IQR)]
+        nd1 = data[data <= (k * IQR) + q2]
+        newdata = nd1[nd1 >= q1 - (k * IQR)]
         return newdata
 
-    def rejectoutliers_value(self, data, q1=None, q2=None, IQR=None):
+    def rejectoutliers_value(self, data, k=3, q1=None, q2=None, IQR=None):
         """rejectoutliers_value function
         # rejects outliers from data, does iqr method (i.e. anything below
         lower quartile (25 percent) or above upper quartile (75 percent)
@@ -1173,22 +1174,22 @@ class Analysis_Functions:
             )
             IQR = np.abs(q2 - q1)
 
-            upper_limit = (1.5 * IQR) + q2
-            lower_limit = q1 - (1.5 * IQR)
+            upper_limit = (k * IQR) + q2
+            lower_limit = q1 - (k * IQR)
             newdata = data.filter(
                 (pl.col("sum_intensity_in_photons") >= lower_limit)
                 & (pl.col("sum_intensity_in_photons") <= upper_limit)
             )
         else:
-            upper_limit = (1.5 * IQR) + q2
-            lower_limit = q1 - (1.5 * IQR)
+            upper_limit = (k * IQR) + q2
+            lower_limit = q1 - (k * IQR)
             newdata = data.filter(
                 (pl.col("sum_intensity_in_photons") >= lower_limit)
                 & (pl.col("sum_intensity_in_photons") <= upper_limit)
             )
         return newdata, q1, q2, IQR
 
-    def rejectoutliers_ind(self, data):
+    def rejectoutliers_ind(self, data, k=3):
         """rejectoutliers function
         # gets indices to reject outliers from data, does iqr method (i.e. anything
         below lower quartile (25 percent) or above upper quartile (75 percent)
@@ -1205,8 +1206,8 @@ class Analysis_Functions:
         q1, q2 = np.percentile(data, q=(25, 75))
 
         indices = np.arange(len(data), dtype=int)
-        nd1 = indices[data >= (1.5 * IQR) + q2]
-        nd2 = indices[data <= q1 - (1.5 * IQR)]
+        nd1 = indices[data >= (k * IQR) + q2]
+        nd2 = indices[data <= q1 - (k * IQR)]
         return np.hstack([nd1, nd2])
 
     def spot_to_spot_rdf(self, coordinates, pixel_size=0.11, dr=1.0):
@@ -1821,16 +1822,13 @@ class Analysis_Functions:
                         np.ravel_multi_index(centroids_puncta, image_size, order="F")
                     )
                     filename_tosave = np.full_like(x_m, file, dtype="object")
-                    n_spots_in_object = np.zeros_like(x_m)
-                    n_cell_ratios = np.zeros_like(x_m)
-
-                    for k in np.arange(len(areas)):
-                        coords = pil_mask[k]
+                    
+                    def areaanalysis(coords):
                         xm = coords[:, 0]
                         ym = coords[:, 1]
                         if (np.any(xm > image_size[0])) or (np.any(ym > image_size[1])):
-                            n_cell_ratios[k] = np.NAN
-                            n_spots_in_object[k] = np.NAN
+                            n_cell_ratios = np.NAN
+                            n_spots_in_object = np.NAN
                         else:
                             coordinates_mask = np.asarray(
                                 np.vstack([xm, ym]), dtype=int
@@ -1847,8 +1845,21 @@ class Analysis_Functions:
                                     blur_degree=1,
                                 )
                             )
-                            n_cell_ratios[k] = olig_cell_ratio
-                            n_spots_in_object[k] = n_olig_in_cell
+                            n_cell_ratios = olig_cell_ratio
+                            n_spots_in_object = n_olig_in_cell
+                        return n_cell_ratios, n_spots_in_object
+                            
+                    pool = Pool(nodes=cpu_number)
+                    pool.restart()
+                    results = pool.map(
+                        areaanalysis,
+                        pil_mask
+                    )
+                    pool.close()
+                    pool.terminate()
+                    
+                    n_cell_ratios = np.array([i[0] for i in results])
+                    n_spots_in_object = np.array([i[1] for i in results])
 
                     if len(areas) > 0:
                         data = {
