@@ -1334,6 +1334,7 @@ class Analysis_Functions:
                     "coincidence",
                     "chance_coincidence",
                     "n_iter",
+                    "z_plane",
                     "image_filename",
                 ]
             else:
@@ -1345,6 +1346,7 @@ class Analysis_Functions:
                     "coincidence",
                     "chance_coincidence",
                     "n_iter",
+                    "z_plane",
                     "image_filename",
                 ]
 
@@ -1472,10 +1474,12 @@ class Analysis_Functions:
                         rc = raw_colocalisation
                     else:
                         rc = np.hstack([rc, raw_colocalisation])
+                    temp_pl[j, -2] = np.full_like(temp_pl[j, 0], z_plane)
                 temp_pl = temp_pl.with_columns(
                     image_filename=np.full_like(z_planes, image, dtype="object")
                 )
-                image_file = image_file.with_columns(incell=rc * 1)
+                #TODO: fix
+                #image_file = image_file.with_columns(incell=rc * 1)
                 if i == 0:
                     lo_analysis = temp_pl
                     spot_analysis = image_file

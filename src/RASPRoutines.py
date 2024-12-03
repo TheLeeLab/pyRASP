@@ -1209,7 +1209,7 @@ class RASP_Routines:
                 cell_punctum_analysis_UT.write_csv(below_string)
         return cell_punctum_analysis_AT, cell_punctum_analysis_UT
 
-    def colocalise_with_threshold(
+    def lo_colocalise_wrapper(
         self,
         analysis_file,
         threshold,
@@ -1316,7 +1316,7 @@ class RASP_Routines:
             )
         return lo_analysis, spot_analysis_AT, spot_analysis_UT
 
-    def colocalise_spots_with_threshold(
+    def spot_colocalisation_wrapper(
         self,
         analysis_file_1,
         analysis_file_2,
