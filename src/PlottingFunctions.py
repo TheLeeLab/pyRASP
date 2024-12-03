@@ -146,7 +146,7 @@ class Plotter:
             ax.xaxis.set_tick_params(width=lw, length=lw * 4)
             ax.yaxis.set_tick_params(width=lw, length=lw * 4)
             ax.tick_params(axis="both", pad=1.2)
-        
+
         axs = axs[0] if isinstance(axs, list) else axs[:]
         return fig, axs
 

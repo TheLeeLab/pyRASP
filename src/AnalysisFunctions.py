@@ -1353,15 +1353,14 @@ class Analysis_Functions:
             start = time.time()
 
             for i, image in enumerate(image_filenames):
+                common_path = os.path.split(image.split(imtype)[0])[-1].split(
+                    protein_string
+                )[0]
                 if end_str is not None:
                     lo_mask = IO.read_tiff(
                         os.path.join(
                             analysis_directory,
-                            os.path.split(image.split(imtype)[0])[-1].split(
-                                protein_string
-                            )[0]
-                            + str(lo_string)
-                            + end_str,
+                            common_path + str(lo_string) + end_str,
                         )
                     )
                     lo_mask, _, _, _ = self.threshold_cell_areas(
@@ -1374,21 +1373,13 @@ class Analysis_Functions:
                     lo_mask = IO.read_tiff(
                         os.path.join(
                             analysis_directory,
-                            os.path.split(image.split(imtype)[0])[-1].split(
-                                protein_string
-                            )[0]
-                            + str(lo_string)
-                            + "_loMask.tiff",
+                            common_path + str(lo_string) + "_loMask.tiff",
                         )
                     )
                     cell_mask = IO.read_tiff(
                         os.path.join(
                             analysis_directory,
-                            os.path.split(image.split(imtype)[0])[-1].split(
-                                protein_string
-                            )[0]
-                            + str(cell_string)
-                            + "_cellMask.tiff",
+                            common_path + str(cell_string) + "_cellMask.tiff",
                         )
                     )
                     cell_mask, _, _, _ = self.threshold_cell_areas(
@@ -1478,8 +1469,8 @@ class Analysis_Functions:
                 temp_pl = temp_pl.with_columns(
                     image_filename=np.full_like(z_planes, image, dtype="object")
                 )
-                #TODO: fix
-                #image_file = image_file.with_columns(incell=rc * 1)
+                # TODO: fix
+                # image_file = image_file.with_columns(incell=rc * 1)
                 if i == 0:
                     lo_analysis = temp_pl
                     spot_analysis = image_file
@@ -1826,7 +1817,7 @@ class Analysis_Functions:
                         np.ravel_multi_index(centroids_puncta, image_size, order="F")
                     )
                     filename_tosave = np.full_like(x_m, file, dtype="object")
-                    
+
                     def areaanalysis(coords):
                         xm = coords[:, 0]
                         ym = coords[:, 1]
@@ -1852,16 +1843,13 @@ class Analysis_Functions:
                             n_cell_ratios = olig_cell_ratio
                             n_spots_in_object = n_olig_in_cell
                         return n_cell_ratios, n_spots_in_object
-                            
+
                     pool = Pool(nodes=cpu_number)
                     pool.restart()
-                    results = pool.map(
-                        areaanalysis,
-                        pil_mask
-                    )
+                    results = pool.map(areaanalysis, pil_mask)
                     pool.close()
                     pool.terminate()
-                    
+
                     n_cell_ratios = np.array([i[0] for i in results])
                     n_spots_in_object = np.array([i[1] for i in results])
 

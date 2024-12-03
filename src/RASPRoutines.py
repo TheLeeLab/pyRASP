@@ -1115,7 +1115,9 @@ class RASP_Routines:
             and ~isinstance(q2, type(None))
             and ~isinstance(IQR, type(None))
         ):
-            threshold_str = threshold_str + "_k_"+str(k).replace('.', 'p')+"_outliersremoved"
+            threshold_str = (
+                threshold_str + "_k_" + str(k).replace(".", "p") + "_outliersremoved"
+            )
 
         if int(lower_cell_size_threshold) == lower_cell_size_threshold:
             lc_str = str(int(lower_cell_size_threshold))
