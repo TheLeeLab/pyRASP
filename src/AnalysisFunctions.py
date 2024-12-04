@@ -465,9 +465,9 @@ class Analysis_Functions:
         """
 
         if n_largeobjs == 0:
-            coincidence = 0
-            chance_coincidence = 0
-            raw_colocalisation = np.full_like(largeobj_indices, np.NAN)
+            coincidence = 0.0
+            chance_coincidence = 0.0
+            raw_colocalisation = np.array([0.0])
             return coincidence, chance_coincidence, raw_colocalisation
 
         highest_index = np.prod(image_size)
@@ -1518,7 +1518,7 @@ class Analysis_Functions:
                             ]
                         )
                 else:
-                    if lo_mask.shape[-1] > z_planes[-1]:
+                    if lo_mask.shape[-1] > len(z_planes):
                         masks_lo = [
                             lo_mask[:, :, int(z_plane) - 1] for z_plane in z_planes
                         ]
@@ -1546,15 +1546,18 @@ class Analysis_Functions:
                     dataarray = np.vstack(
                         [coincidence, chance_coincidence, n_iter, z_planes]
                     )
-
                 image_file = image_file.with_columns(incell=raw_colocalisation)
+                dataarray = np.vstack(
+                    [
+                        np.asarray(dataarray, dtype="object"),
+                        np.repeat(image, len(z_planes)),
+                    ]
+                )
                 if i == 0:
-                    lo_analysis = pl.DataFrame(data=dataarray.T, schema=columns)
+                    lo_analysis = dataarray
                     spot_analysis = image_file
                 else:
-                    lo_analysis = pl.concat(
-                        [lo_analysis, pl.DataFrame(data=dataarray.T, schema=columns)]
-                    )
+                    lo_analysis = np.hstack([lo_analysis, dataarray])
                     spot_analysis = pl.concat([spot_analysis, image_file])
 
                 print(
@@ -1564,7 +1567,7 @@ class Analysis_Functions:
                     end="\r",
                     flush=True,
                 )
-            return lo_analysis, spot_analysis
+            return pl.DataFrame(data=lo_analysis.T, schema=columns), spot_analysis
         else:
             return np.NAN, np.NAN
 
