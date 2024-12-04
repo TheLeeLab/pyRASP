@@ -14,7 +14,6 @@ import skimage.draw as draw
 from scipy.ndimage import binary_opening, binary_closing, binary_fill_holes
 from numba import jit
 import polars as pl
-from multiprocessing import Manager
 import pathos
 from pathos.pools import ProcessPool as Pool
 import os
@@ -776,28 +775,20 @@ class ImageAnalysis_Functions:
         if not isinstance(z, int):
             z_planes = np.arange(z[0], z[1])
 
-            manager = Manager()
-            results = manager.dict()
-            for key in [
-                "centroids",
-                "estimated_intensity",
-                "estimated_background",
-                "estimated_background_perpixel",
-                "areas_large",
-                "centroids_large",
-                "meanintensities_large",
-                "sumintensities_large",
-            ]:
-                results[key] = manager.dict()
-
-            lo_mask_dict = manager.dict()
-
-            cell_mask_dict = manager.dict() if image_cell is not None else None
-
             def analyse_zplanes(
                 zp, image_plane, img2_plane, Gx_plane, Gy_plane, imagecell_plane
             ):
-                results_zp = self.default_spotanalysis_routine(
+                (
+                    centroids,
+                    estimated_intensity,
+                    estimated_background,
+                    estimated_background_perpixel,
+                    areas_large,
+                    centroids_large,
+                    meanintensities_large,
+                    sumintensities_large,
+                    lo_mask,
+                ) = self.default_spotanalysis_routine(
                     image_plane,
                     k1,
                     k2,
@@ -810,19 +801,29 @@ class ImageAnalysis_Functions:
                     rdl,
                     d,
                 )
-                for key, val in zip(results.keys(), results_zp[:-1]):
-                    results[key][zp] = val
 
-                lo_mask_dict[zp] = results_zp[-1]
-
-                if image_cell is not None:
-                    cell_mask_dict[zp] = self.detect_large_features(
+                if imagecell_plane is not None:
+                    cell_mask = self.detect_large_features(
                         imagecell_plane,
                         cell_threshold1,
                         cell_threshold2,
                         cell_sigma1,
                         cell_sigma2,
                     )
+                else:
+                    cell_mask = None
+                return (
+                    centroids,
+                    estimated_intensity,
+                    estimated_background,
+                    estimated_background_perpixel,
+                    areas_large,
+                    centroids_large,
+                    meanintensities_large,
+                    sumintensities_large,
+                    lo_mask,
+                    cell_mask,
+                )
 
             planes = [image[:, :, i] for i in range(image.shape[-1])]
             planes_img2 = [img2[:, :, i] for i in range(img2.shape[-1])]
@@ -837,7 +838,7 @@ class ImageAnalysis_Functions:
 
             pool = Pool(nodes=cpu_number)
             pool.restart()
-            pool.map(
+            results = pool.map(
                 analyse_zplanes,
                 np.arange(image.shape[-1]),
                 planes,
@@ -849,30 +850,35 @@ class ImageAnalysis_Functions:
             pool.close()
             pool.terminate()
 
+            centroids = [i[0] for i in results]
+            estimated_intensity = [i[1] for i in results]
+            estimated_background = [i[2] for i in results]
+            estimated_background_perpixel = [i[3] for i in results]
+            areas_large = [i[4] for i in results]
+            centroids_large = [i[5] for i in results]
+            meanintensities_large = [i[6] for i in results]
+            sumintensities_large = [i[7] for i in results]
+
             if image_cell is not None:
-                cell_mask = np.zeros_like(image_cell)
-                for zp in np.arange(image_cell.shape[-1]):
-                    cell_mask[:, :, zp] = cell_mask_dict[zp]
+                cell_mask = np.dstack([i[9] for i in results])
             else:
                 cell_mask = None
 
-            lo_mask = np.zeros_like(image)
-            for zp in np.arange(image.shape[-1]):
-                lo_mask[:, :, zp] = lo_mask_dict[zp]
+            lo_mask = np.dstack([i[8] for i in results])
 
             to_save = HF.make_datarray_spot(
-                results["centroids"],
-                results["estimated_intensity"],
-                results["estimated_background"],
-                results["estimated_background_perpixel"],
+                centroids,
+                estimated_intensity,
+                estimated_background,
+                estimated_background_perpixel,
                 columns,
                 z_planes,
             )
             to_save_largeobjects = HF.make_datarray_largeobjects(
-                results["areas_large"],
-                results["centroids_large"],
-                results["sumintensities_large"],
-                results["meanintensities_large"],
+                areas_large,
+                centroids_large,
+                sumintensities_large,
+                meanintensities_large,
                 columns_large,
                 z_planes,
             )
