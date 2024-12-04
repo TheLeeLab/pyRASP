@@ -5,13 +5,8 @@ radiality, relating to the RASP concept.
 jsb92, 2024/01/02
 """
 import numpy as np
-from scipy.signal.windows import gaussian as gauss
-from scipy.signal import fftconvolve
 import skimage as ski
-from skimage.filters import gaussian
 from skimage.measure import label, regionprops_table
-import skimage.draw as draw
-from scipy.ndimage import binary_opening, binary_closing, binary_fill_holes
 from numba import jit
 import polars as pl
 import pathos
@@ -1059,7 +1054,7 @@ class Analysis_Functions:
         # this code from https://scipy-cookbook.readthedocs.io/items/FittingData.html
         from scipy import optimize
 
-        def gaussian(height, center_x, center_y, width_x, width_y, bg):
+        def gauss_fit(height, center_x, center_y, width_x, width_y, bg):
             """Returns a gaussian function with the given parameters"""
             width_x = float(width_x)
             width_y = float(width_y)
@@ -1097,7 +1092,7 @@ class Analysis_Functions:
             the gaussian parameters of a 2D distribution found by a fit"""
             params = moments(data)
             errorfunction = lambda p: np.ravel(
-                (gaussian(*p)(*np.indices(data.shape)) - data)
+                (gauss_fit(*p)(*np.indices(data.shape)) - data)
             )
             p, success = optimize.leastsq(errorfunction, params)
             return np.abs(p), success
@@ -1150,7 +1145,7 @@ class Analysis_Functions:
         is rejected). If given q1, q2, and IQR, uses directly.
 
         Args:
-            data (pl.dataarray): polars dataarray
+            data (pl.DataFrame): polars dataarray
             q1 (float): if float, uses directly
             q2 (float): if float, uses directly
             IQR (float): if float, uses directly
@@ -1329,7 +1324,7 @@ class Analysis_Functions:
                 spots_with_intensities["image_filename"].to_numpy()
             )
 
-            if (calc_clr == False) and (coloc_type == 2):
+            if calc_clr == False:
                 columns = [
                     "coincidence",
                     "chance_coincidence",
@@ -1357,18 +1352,18 @@ class Analysis_Functions:
                     protein_string
                 )[0]
                 if end_str is not None:
-                    lo_mask = IO.read_tiff(
-                        os.path.join(
-                            analysis_directory,
-                            common_path + str(lo_string) + end_str,
-                        )
-                    )
                     lo_mask, _, _, _ = self.threshold_cell_areas(
-                        lo_mask,
+                        IO.read_tiff(
+                            os.path.join(
+                                analysis_directory,
+                                common_path + str(lo_string) + end_str,
+                            )
+                        ),
                         lower_cell_size_threshold,
                         upper_cell_size_threshold,
                         [False, False],
                     )
+
                 else:
                     lo_mask = IO.read_tiff(
                         os.path.join(
@@ -1376,14 +1371,13 @@ class Analysis_Functions:
                             common_path + str(lo_string) + "_loMask.tiff",
                         )
                     )
-                    cell_mask = IO.read_tiff(
-                        os.path.join(
-                            analysis_directory,
-                            common_path + str(cell_string) + "_cellMask.tiff",
-                        )
-                    )
                     cell_mask, _, _, _ = self.threshold_cell_areas(
-                        cell_mask,
+                        IO.read_tiff(
+                            os.path.join(
+                                analysis_directory,
+                                common_path + str(cell_string) + "_cellMask.tiff",
+                            )
+                        ),
                         lower_cell_size_threshold,
                         upper_cell_size_threshold,
                         [False, False],
@@ -1395,87 +1389,172 @@ class Analysis_Functions:
                 )
                 z_planes = np.unique(image_file["z"].to_numpy())
 
-                dataarray = np.zeros([len(z_planes), len(columns)])
+                def parallel_coloc_per_z_clr_spot(xcoords, ycoords, mask):
+                    centroids = np.asarray(np.vstack([xcoords, ycoords]), dtype=int).T
+                    mask_indices = self.generate_mask_indices(mask, image_size)
+                    spot_indices = self.generate_spot_indices(centroids, image_size)
+                    (
+                        clr,
+                        norm_std,
+                        norm_CSR,
+                        expected_spots,
+                        coincidence,
+                        chance_coincidence,
+                        raw_colocalisation,
+                        n_iter,
+                    ) = self.calculate_spot_colocalisation_likelihood_ratio(
+                        spot_indices, mask_indices, image_size, blur_degree=1
+                    )
+                    return (
+                        clr,
+                        norm_std,
+                        norm_CSR,
+                        expected_spots,
+                        coincidence,
+                        chance_coincidence,
+                        raw_colocalisation,
+                        n_iter,
+                    )
 
-                temp_pl = pl.DataFrame(data=dataarray, schema=columns)
+                def parallel_coloc_per_z_noclr_spot(xcoords, ycoords, mask):
+                    centroids = np.asarray(np.vstack([xcoords, ycoords]), dtype=int).T
+                    mask_indices = self.generate_mask_indices(mask, image_size)
+                    spot_indices = self.generate_spot_indices(centroids, image_size)
+                    (
+                        coincidence,
+                        chance_coincidence,
+                        raw_colocalisation,
+                        n_iter,
+                    ) = self.calculate_spot_to_mask_coincidence(
+                        spot_indices,
+                        mask_indices,
+                        image_size,
+                        blur_degree=blur_degree,
+                    )
+                    return coincidence, chance_coincidence, raw_colocalisation, n_iter
 
-                for j, z_plane in enumerate(z_planes):
-                    if coloc_type != 2:
-                        filtered_file = image_file.filter(pl.col("z") == z_plane)
-                        xcoords = filtered_file["x"].to_numpy()
-                        ycoords = filtered_file["y"].to_numpy()
-                        if lo_mask.shape[-1] > z_planes[-1]:
-                            mask = lo_mask[:, :, int(z_plane) - 1]
-                        else:
-                            mask = lo_mask[:, :, j]
-                        centroids = np.asarray(
-                            np.vstack([xcoords, ycoords]), dtype=int
-                        ).T
-                        mask_indices = self.generate_mask_indices(mask, image_size)
-                        spot_indices = self.generate_spot_indices(centroids, image_size)
-                        if calc_clr == False:
-                            (
-                                temp_pl[j, 0],
-                                temp_pl[j, 1],
-                                raw_colocalisation,
-                                temp_pl[j, 2],
-                            ) = self.calculate_spot_to_mask_coincidence(
-                                spot_indices,
-                                mask_indices,
-                                image_size,
-                                blur_degree=blur_degree,
-                            )
-                        else:
-                            (
-                                temp_pl[j, 0],
-                                temp_pl[j, 1],
-                                temp_pl[j, 2],
-                                temp_pl[j, 3],
-                                temp_pl[j, 4],
-                                temp_pl[j, 5],
-                                raw_colocalisation,
-                                temp_pl[j, 6],
-                            ) = self.calculate_spot_colocalisation_likelihood_ratio(
-                                spot_indices, mask_indices, image_size, blur_degree=1
-                            )
+                def parallel_coloc_per_z_los(mask_lo, mask_cell):
+                    mask_lo_indices, n_largeobjs = self.generate_lo_indices(
+                        mask_lo, image_size
+                    )
+                    mask_cell_indices = self.generate_mask_indices(
+                        mask_cell, image_size
+                    )
+                    (
+                        coincidence,
+                        chance_coincidence,
+                        raw_colocalisation,
+                    ) = self.calculate_largeobj_coincidence(
+                        mask_lo_indices,
+                        mask_cell_indices,
+                        n_largeobjs,
+                        image_size,
+                    )
+                    n_iter = 100
+                    return coincidence, chance_coincidence, raw_colocalisation, n_iter
+
+                if coloc_type != 2:
+                    xcoords = [
+                        image_file.filter(pl.col("z") == z_plane)["x"].to_numpy()
+                        for z_plane in z_planes
+                    ]
+                    ycoords = [
+                        image_file.filter(pl.col("z") == z_plane)["x"].to_numpy()
+                        for z_plane in z_planes
+                    ]
+                    if lo_mask.shape[-1] > z_planes[-1]:
+                        masks = [
+                            lo_mask[:, :, int(z_plane) - 1] for z_plane in z_planes
+                        ]
                     else:
-                        if lo_mask.shape[-1] > z_planes[-1]:
-                            mask_lo = lo_mask[:, :, int(z_plane) - 1]
-                            mask_cell = cell_mask[:, :, int(z_plane) - 1]
-                        else:
-                            mask_lo = lo_mask[:, :, j]
-                            mask_cell = cell_mask[:, :, j]
-                        mask_lo_indices, n_largeobjs = self.generate_lo_indices(
-                            mask_lo, image_size
+                        masks = [lo_mask[:, :, j] for j in np.arange(len(z_planes))]
+                    if calc_clr == False:
+                        pool = Pool(nodes=cpu_number)
+                        pool.restart()
+                        results = pool.map(
+                            parallel_coloc_per_z_noclr_spot,
+                            xcoords,
+                            ycoords,
+                            masks,
                         )
-                        mask_cell_indices = self.generate_mask_indices(
-                            mask_cell, image_size
+                        pool.close()
+                        pool.terminate()
+                        coincidence = np.array([i[0] for i in results])
+                        chance_coincidence = np.array([i[1] for i in results])
+                        raw_colocalisation = np.concatenate([i[2] for i in results])
+                        n_iter = np.array([i[3] for i in results])
+                        dataarray = np.vstack(
+                            [coincidence, chance_coincidence, n_iter, z_planes]
                         )
-                        (
-                            temp_pl[j, 0],
-                            temp_pl[j, 1],
-                            raw_colocalisation,
-                        ) = self.calculate_largeobj_coincidence(
-                            mask_lo_indices,
-                            mask_cell_indices,
-                            n_largeobjs,
-                            image_size,
-                        )
-                    if j == 0:
-                        rc = raw_colocalisation
                     else:
-                        rc = np.hstack([rc, raw_colocalisation])
-                    temp_pl[j, -2] = np.full_like(temp_pl[j, 0], z_plane)
-                temp_pl = temp_pl.with_columns(
-                    image_filename=np.full_like(z_planes, image, dtype="object")
-                )
-                # TODO: fix
-                # image_file = image_file.with_columns(incell=rc * 1)
+                        pool = Pool(nodes=cpu_number)
+                        pool.restart()
+                        results = pool.map(
+                            parallel_coloc_per_z_clr_spot,
+                            xcoords,
+                            ycoords,
+                            masks,
+                        )
+                        pool.close()
+                        pool.terminate()
+                        clr = np.array([i[0] for i in results])
+                        norm_std = np.array([i[1] for i in results])
+                        norm_CSR = np.array([i[2] for i in results])
+                        expected_spots = np.array([i[3] for i in results])
+                        coincidence = np.array([i[4] for i in results])
+                        chance_coincidence = np.array([i[5] for i in results])
+                        raw_colocalisation = np.concatenate([i[6] for i in results])
+                        n_iter = np.array([i[7] for i in results])
+                        dataarray = np.vstack(
+                            [
+                                clr,
+                                norm_std,
+                                norm_CSR,
+                                expected_spots,
+                                coincidence,
+                                chance_coincidence,
+                                n_iter,
+                                z_planes,
+                            ]
+                        )
+                else:
+                    if lo_mask.shape[-1] > z_planes[-1]:
+                        masks_lo = [
+                            lo_mask[:, :, int(z_plane) - 1] for z_plane in z_planes
+                        ]
+                        masks_cell = [
+                            cell_mask[:, :, int(z_plane) - 1] for z_plane in z_planes
+                        ]
+                    else:
+                        masks_lo = [lo_mask[:, :, j] for j in np.arange(len(z_planes))]
+                        masks_cell = [
+                            cell_mask[:, :, j] for j in np.arange(len(z_planes))
+                        ]
+                    pool = Pool(nodes=cpu_number)
+                    pool.restart()
+                    results = pool.map(
+                        parallel_coloc_per_z_los,
+                        masks_lo,
+                        masks_cell,
+                    )
+                    pool.close()
+                    pool.terminate()
+                    coincidence = np.array([i[0] for i in results])
+                    chance_coincidence = np.array([i[1] for i in results])
+                    raw_colocalisation = np.concatenate([i[2] for i in results])
+                    n_iter = np.array([i[3] for i in results])
+                    dataarray = np.vstack(
+                        [coincidence, chance_coincidence, n_iter, z_planes]
+                    )
+
+                image_file = image_file.with_columns(incell=raw_colocalisation)
                 if i == 0:
-                    lo_analysis = temp_pl
+                    lo_analysis = pl.DataFrame(data=dataarray.T, schema=columns)
                     spot_analysis = image_file
                 else:
-                    lo_analysis = pl.concat([lo_analysis, temp_pl])
+                    lo_analysis = pl.concat(
+                        [lo_analysis, pl.DataFrame(data=dataarray.T, schema=columns)]
+                    )
                     spot_analysis = pl.concat([spot_analysis, image_file])
 
                 print(
@@ -1519,7 +1598,7 @@ class Analysis_Functions:
             aboveT (int): do the calculation above or below threshold
 
         Returns:
-            rdf (pl.DataArray): polars datarray of the rdf
+            rdf (pl.DataFrame): polars datarray of the rdf
         """
 
         start = time.time()
@@ -1646,7 +1725,7 @@ class Analysis_Functions:
             aboveT (int): do the calculation above or below threshold
 
         Returns:
-            rdf (pl.DataArray): polars datarray of the rdf
+            rdf (pl.DataFrame): polars datarray of the rdf
         """
 
         analysis_data = pl.read_csv(analysis_file)
@@ -1909,7 +1988,7 @@ class Analysis_Functions:
             aboveT (int): do the calculation above or below threshold
 
         Returns:
-            rdf (pl.DataArray): polars datarray of the rdf
+            rdf (pl.DataFrame): polars datarray of the rdf
         """
 
         analysis_data = pl.read_csv(analysis_file)
