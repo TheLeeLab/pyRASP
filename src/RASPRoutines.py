@@ -1261,9 +1261,9 @@ class RASP_Routines:
             coloc_type=coloc_type,
             imtype=".tif",
             blur_degree=1,
-            calc_clr=False,
+            calc_clr=calc_clr,
             aboveT=1,
-            lower_cell_size_threshold=0,
+            lower_cell_size_threshold=lower_cell_size_threshold,
             upper_cell_size_threshold=np.inf,
         )
 
@@ -1276,9 +1276,9 @@ class RASP_Routines:
             coloc_type=coloc_type,
             imtype=".tif",
             blur_degree=1,
-            calc_clr=False,
+            calc_clr=calc_clr,
             aboveT=0,
-            lower_cell_size_threshold=0,
+            lower_cell_size_threshold=lower_cell_size_threshold,
             upper_cell_size_threshold=np.inf,
         )
 
@@ -1287,10 +1287,9 @@ class RASP_Routines:
             startstr + "colocalisation_analysis_" + threshold_str,
         )
         if isinstance(lo_analysis_AT, pl.DataFrame):
-            lo_analysis = lo_analysis_AT
+            print(lo_analysis_AT)
             lo_analysis_AT.write_csv(savecell_string + "_abovephotonthreshold.csv")
         if isinstance(lo_analysis_UT, pl.DataFrame):
-            lo_analysis = lo_analysis_UT
             lo_analysis_UT.write_csv(savecell_string + "_belowphotonthreshold.csv")
 
         if isinstance(spot_analysis_AT, pl.DataFrame):
@@ -1308,7 +1307,7 @@ class RASP_Routines:
                 + threshold_str
                 + "_belowphotonthreshold.csv"
             )
-        return lo_analysis, spot_analysis_AT, spot_analysis_UT
+        return lo_analysis_AT, lo_analysis_UT, spot_analysis_AT, spot_analysis_UT
 
     def spot_colocalisation_wrapper(
         self,

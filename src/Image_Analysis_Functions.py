@@ -858,13 +858,12 @@ class ImageAnalysis_Functions:
             centroids_large = [i[5] for i in results]
             meanintensities_large = [i[6] for i in results]
             sumintensities_large = [i[7] for i in results]
+            lo_mask = np.dstack([i[8] for i in results])
 
             if image_cell is not None:
                 cell_mask = np.dstack([i[9] for i in results])
             else:
                 cell_mask = None
-
-            lo_mask = np.dstack([i[8] for i in results])
 
             to_save = HF.make_datarray_spot(
                 centroids,
@@ -872,7 +871,7 @@ class ImageAnalysis_Functions:
                 estimated_background,
                 estimated_background_perpixel,
                 columns,
-                z_planes,
+                np.arange(len(z_planes)),
             )
             to_save_largeobjects = HF.make_datarray_largeobjects(
                 areas_large,
@@ -880,7 +879,7 @@ class ImageAnalysis_Functions:
                 sumintensities_large,
                 meanintensities_large,
                 columns_large,
-                z_planes,
+                np.arange(len(z_planes)),
             )
         else:
             (

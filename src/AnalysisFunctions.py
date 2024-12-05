@@ -1567,6 +1567,11 @@ class Analysis_Functions:
                     end="\r",
                     flush=True,
                 )
+            df = pl.DataFrame(data=lo_analysis.T, schema=columns)
+            for column in columns[:-1]:
+                df = df.with_columns(
+                    np.asarray(pl.col(column).to_numpy(), dtype=float).alias(column)
+                )
             return pl.DataFrame(data=lo_analysis.T, schema=columns), spot_analysis
         else:
             return np.NAN, np.NAN
