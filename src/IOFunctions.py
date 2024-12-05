@@ -58,12 +58,13 @@ class IO_Functions:
             return os.path.split(file)[-1].split(imtype)[0]
 
         def _write_dataframe(df, filepath, append=False):
-            if df.shape[0] > 0:
-                if append and os.path.isfile(filepath):
-                    with open(filepath, mode="ab") as f:
-                        df.write_csv(f, include_header=False)
-                else:
-                    df.write_csv(filepath)
+            if df is not None:
+                if df.shape[0] > 0:
+                    if append and os.path.isfile(filepath):
+                        with open(filepath, mode="ab") as f:
+                            df.write_csv(f, include_header=False)
+                    else:
+                        df.write_csv(filepath)
 
         # Handle separate file saving
         if not one_savefile:
@@ -94,16 +95,35 @@ class IO_Functions:
             return
 
         # Handling single file saving
-        to_save = to_save.with_columns(
-            image_filename=np.full_like(
-                to_save["z"].to_numpy(), files[i], dtype="object"
+        if to_save is not None:
+            to_save = to_save.with_columns(
+                image_filename=np.full_like(
+                    to_save["z"].to_numpy(), files[i], dtype="object"
+                )
             )
-        )
-        to_save_largeobjects = to_save_largeobjects.with_columns(
-            image_filename=np.full_like(
-                to_save_largeobjects["z"].to_numpy(), files[i], dtype="object"
+            n_spots = A_F.count_spots(to_save, np.arange(z_planes[0], z_planes[1]))
+            n_spots = n_spots.with_columns(
+                image_filename=np.full_like(
+                    n_spots["z"].to_numpy(), files[i], dtype="object"
+                )
             )
-        )
+
+            
+        if to_save_largeobjects is not None:
+            to_save_largeobjects = to_save_largeobjects.with_columns(
+                image_filename=np.full_like(
+                    to_save_largeobjects["z"].to_numpy(), files[i], dtype="object"
+                )
+            )
+            n_largeobjects = A_F.count_spots(
+                to_save_largeobjects, np.arange(z_planes[0], z_planes[1])
+            )
+            n_largeobjects = n_largeobjects.with_columns(
+                image_filename=np.full_like(
+                    n_largeobjects["z"].to_numpy(), files[i], dtype="object"
+                )
+            )
+
 
         # Write large object mask
         self.write_tiff(
@@ -123,20 +143,6 @@ class IO_Functions:
         ]
 
         # Count spots and large objects
-        n_spots = A_F.count_spots(to_save, np.arange(z_planes[0], z_planes[1]))
-        n_spots = n_spots.with_columns(
-            image_filename=np.full_like(
-                n_spots["z"].to_numpy(), files[i], dtype="object"
-            )
-        )
-        n_largeobjects = A_F.count_spots(
-            to_save_largeobjects, np.arange(z_planes[0], z_planes[1])
-        )
-        n_largeobjects = n_largeobjects.with_columns(
-            image_filename=np.full_like(
-                n_largeobjects["z"].to_numpy(), files[i], dtype="object"
-            )
-        )
 
         # Optional cell mask
         if cell_mask is not None:
