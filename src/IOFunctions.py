@@ -58,13 +58,12 @@ class IO_Functions:
             return os.path.split(file)[-1].split(imtype)[0]
 
         def _write_dataframe(df, filepath, append=False):
-            if df is not None:
-                if df.shape[0] > 0:
-                    if append and os.path.isfile(filepath):
-                        with open(filepath, mode="ab") as f:
-                            df.write_csv(f, include_header=False)
-                    else:
-                        df.write_csv(filepath)
+            if df.shape[0] > 0:
+                if append and os.path.isfile(filepath):
+                    with open(filepath, mode="ab") as f:
+                        df.write_csv(f, include_header=False)
+                else:
+                    df.write_csv(filepath)
 
         # Handle separate file saving
         if not one_savefile:
@@ -156,7 +155,8 @@ class IO_Functions:
         # Save or append data
         dfs_to_save = [to_save, to_save_largeobjects, n_spots, n_largeobjects]
         for df, path in zip(dfs_to_save, save_paths):
-            _write_dataframe(df, path, append=(i != 0))
+            if df is not None:
+                _write_dataframe(df, path, append=(i != 0))
         return
 
     def save_analysis_params(
