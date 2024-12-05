@@ -1568,11 +1568,11 @@ class Analysis_Functions:
                     flush=True,
                 )
             df = pl.DataFrame(data=lo_analysis.T, schema=columns)
-            for column in columns[:-1]:
-                df = df.with_columns(
-                    np.asarray(pl.col(column).to_numpy(), dtype=float).alias(column)
+            for i, column in enumerate(columns[:-1]):
+                df = df.replace_column(
+                    i, pl.Series(column, np.array(df[column].to_numpy(), dtype="float"))
                 )
-            return pl.DataFrame(data=lo_analysis.T, schema=columns), spot_analysis
+            return df, spot_analysis
         else:
             return np.NAN, np.NAN
 
