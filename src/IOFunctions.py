@@ -10,7 +10,8 @@ import numpy as np
 import polars as pl
 import sys
 import denoisetools as ncs
-
+import warnings
+warnings.filterwarnings("ignore")
 
 class IO_Functions:
     def __init__(self):

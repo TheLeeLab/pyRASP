@@ -70,10 +70,16 @@ class Helper_Functions:
                     else:
                         dataarray = np.squeeze(stack.T)
         if dataarray is not None:
-            return pl.DataFrame(
-                data=dataarray.T,
-                schema=columns,
-            )
+            if len(dataarray.shape) > 1:
+                return pl.DataFrame(
+                    data=dataarray.T,
+                    schema=columns,
+                )
+            else:
+                return pl.DataFrame(
+                    data=np.array([dataarray]).T,
+                    schema=columns,
+                )
         else:
             return None
 
@@ -134,10 +140,16 @@ class Helper_Functions:
                     da = stack
                     dataarray = np.hstack([dataarray, da])
         if dataarray is not None:
-            return pl.DataFrame(
-                data=dataarray.T,
-                schema=columns,
-            )
+            if len(dataarray.shape) > 1:
+                return pl.DataFrame(
+                    data=dataarray.T,
+                    schema=columns,
+                )
+            else:
+                return pl.DataFrame(
+                    data=np.array([dataarray]).T,
+                    schema=columns,
+                )
         else:
             return None
 
@@ -232,10 +244,19 @@ class Helper_Functions:
                     ]
                 )
             dataarray_cell = dataarray_cell[:, np.sum(dataarray_cell, axis=0) > 0]
-        return pl.DataFrame(
-            data=dataarray_cell.T,
-            schema=columns,
-        )
+        if dataarray_cell is not None:
+            if len(dataarray_cell.shape) > 1:
+                return pl.DataFrame(
+                    data=dataarray_cell.T,
+                    schema=columns,
+                )
+            else:
+                return pl.DataFrame(
+                    data=np.array([dataarray_cell]).T,
+                    schema=columns,
+                )
+        else:
+            return None
 
     def gen_CSRmats(self, image_z_shape):
         """
