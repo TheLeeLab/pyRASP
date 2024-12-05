@@ -108,7 +108,6 @@ class IO_Functions:
                 )
             )
 
-            
         if to_save_largeobjects is not None:
             to_save_largeobjects = to_save_largeobjects.with_columns(
                 image_filename=np.full_like(
@@ -123,7 +122,6 @@ class IO_Functions:
                     n_largeobjects["z"].to_numpy(), files[i], dtype="object"
                 )
             )
-
 
         # Write large object mask
         self.write_tiff(
