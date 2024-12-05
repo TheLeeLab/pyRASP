@@ -69,10 +69,13 @@ class Helper_Functions:
                         dataarray = np.vstack([dataarray, np.squeeze(stack.T)])
                     else:
                         dataarray = np.squeeze(stack.T)
-        return pl.DataFrame(
-            data=dataarray.T,
-            schema=columns,
-        )
+        if dataarray is not None:
+            return pl.DataFrame(
+                data=dataarray.T,
+                schema=columns,
+            )
+        else:
+            return None
 
     def make_datarray_spot(
         self,
@@ -130,10 +133,13 @@ class Helper_Functions:
                 else:
                     da = stack
                     dataarray = np.hstack([dataarray, da])
-        return pl.DataFrame(
-            data=dataarray.T,
-            schema=columns,
-        )
+        if dataarray is not None:
+            return pl.DataFrame(
+                data=dataarray.T,
+                schema=columns,
+            )
+        else:
+            return None
 
     def make_datarray_cell(
         self,
