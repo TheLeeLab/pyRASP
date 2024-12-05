@@ -69,8 +69,8 @@ class Helper_Functions:
                         dataarray = np.vstack([dataarray, np.squeeze(stack.T)])
                     else:
                         dataarray = np.squeeze(stack.T)
-        dataarray = np.asarray(np.matrix(np.squeeze(dataarray)).transpose())
         if dataarray is not None:
+            dataarray = np.asarray(np.matrix(np.squeeze(dataarray)).transpose())
             if len(dataarray.shape) > 1:
                 return pl.DataFrame(
                     data=dataarray,
@@ -140,8 +140,8 @@ class Helper_Functions:
                 else:
                     da = stack
                     dataarray = np.hstack([dataarray, da])
-        dataarray = np.asarray(np.matrix(np.squeeze(dataarray)).transpose())
         if dataarray is not None:
+            dataarray = np.asarray(np.matrix(np.squeeze(dataarray)).transpose())
             if len(dataarray.shape) > 1:
                 return pl.DataFrame(
                     data=dataarray,
@@ -246,8 +246,10 @@ class Helper_Functions:
                     ]
                 )
             dataarray_cell = dataarray_cell[:, np.sum(dataarray_cell, axis=0) > 0]
-        dataarray_cell = np.asarray(np.matrix(np.squeeze(dataarray_cell)).transpose())
         if dataarray_cell is not None:
+            dataarray_cell = np.asarray(
+                np.matrix(np.squeeze(dataarray_cell)).transpose()
+            )
             if len(dataarray_cell.shape) > 1:
                 return pl.DataFrame(
                     data=dataarray_cell,
