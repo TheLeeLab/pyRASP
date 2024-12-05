@@ -106,6 +106,8 @@ class IO_Functions:
                     n_spots["z"].to_numpy(), files[i], dtype="object"
                 )
             )
+        else:
+            n_spots = None
 
         if to_save_largeobjects is not None:
             to_save_largeobjects = to_save_largeobjects.with_columns(
@@ -121,6 +123,8 @@ class IO_Functions:
                     n_largeobjects["z"].to_numpy(), files[i], dtype="object"
                 )
             )
+        else:
+            n_largeobjects = None
 
         # Write large object mask
         self.write_tiff(
