@@ -1298,9 +1298,9 @@ class Analysis_Functions:
             spot_analysis (pl.DataFrame): polars dataframe of the spot analysis
         """
         if coloc_type == 1:
-            end_str = "_cellMask.tiff"
+            end_str = cell_string + "_cellMask.tiff"
         elif coloc_type == 0:
-            end_str = "_loMask.tiff"
+            end_str = lo_string + "_loMask.tiff"
         else:
             end_str = None
 
@@ -1356,7 +1356,7 @@ class Analysis_Functions:
                         IO.read_tiff(
                             os.path.join(
                                 analysis_directory,
-                                common_path + str(lo_string) + end_str,
+                                common_path + end_str,
                             )
                         ),
                         lower_cell_size_threshold,

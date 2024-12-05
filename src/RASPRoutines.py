@@ -1288,17 +1288,9 @@ class RASP_Routines:
         )
         if isinstance(lo_analysis_AT, pl.DataFrame):
             lo_analysis = lo_analysis_AT
-            lo_analysis = lo_analysis.filter(
-                (lo_analysis["coincidence"] != 0)
-                & (lo_analysis["chance_coincidence"] != 0)
-            )
             lo_analysis_AT.write_csv(savecell_string + "_abovephotonthreshold.csv")
         if isinstance(lo_analysis_UT, pl.DataFrame):
             lo_analysis = lo_analysis_UT
-            lo_analysis = lo_analysis.filter(
-                (lo_analysis["coincidence"] != 0)
-                & (lo_analysis["chance_coincidence"] != 0)
-            )
             lo_analysis_UT.write_csv(savecell_string + "_belowphotonthreshold.csv")
 
         if isinstance(spot_analysis_AT, pl.DataFrame):
