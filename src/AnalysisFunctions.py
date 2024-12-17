@@ -1815,7 +1815,7 @@ class Analysis_Functions:
         protein_string="C1",
         imtype=".tif",
         aboveT=1,
-        z_project_first=True,
+        z_project_first=[True, True],
         q1=None,
         q2=None,
         IQR=None,
@@ -1836,8 +1836,11 @@ class Analysis_Functions:
             protein_string (string): will use this to find corresponding files
             imtype (string): image type previously analysed
             aboveT (int): do the calculation above or below threshold
-            z_project_first (boolean): if True (default), does a z projection before
-                                    thresholding cell size. If false, does the opposite.
+            z_project_first (boolean, boolean): if both True (default), does a z 
+                                    projection before
+                                    thresholding cell size. 
+                                    If both false, does not z project and
+                                    then does the analysis per z plane.
             q1 (float): if float, adds in IQR filter
             q2 (float): if float, adds in IQR filter
             IQR (Float): if float, adds in IQR filter
@@ -1888,7 +1891,7 @@ class Analysis_Functions:
                         upper_cell_size_threshold=upper_cell_size_threshold,
                         z_project=z_project_first,
                     )
-                    image_size = cell_mask.shape
+                    image_size = cell_mask.shape if len(cell_mask.shape) < 2 else cell_mask.shape[:-1]
 
                     x_m = centroids[:, 0]
                     y_m = centroids[:, 1]
