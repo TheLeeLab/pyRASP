@@ -21,8 +21,8 @@
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="PlottingFunctions module" href="PlottingFunctions.html" />
-    <link rel="prev" title="AnalysisFunctions module" href="AnalysisFunctions.html" /> 
+    <link rel="next" title="Image_Analysis_Functions module" href="Image_Analysis_Functions.html" />
+    <link rel="prev" title="HelperFunctions module" href="HelperFunctions.html" /> 
 </head>
 
 <body class="wy-body-for-nav"> 
@@ -49,12 +49,14 @@
 <li class="toctree-l1"><a class="reference internal" href="getting-started.html">Introduction</a></li>
 <li class="toctree-l1 current"><a class="reference internal" href="modules.html">src</a><ul class="current">
 <li class="toctree-l2"><a class="reference internal" href="AnalysisFunctions.html">AnalysisFunctions module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="HelperFunctions.html">HelperFunctions module</a></li>
 <li class="toctree-l2 current"><a class="current reference internal" href="#">IOFunctions module</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#IOFunctions.IO_Functions"><code class="docutils literal notranslate"><span class="pre">IO_Functions</span></code></a><ul>
 <li class="toctree-l4"><a class="reference internal" href="#IOFunctions.IO_Functions.load_json"><code class="docutils literal notranslate"><span class="pre">IO_Functions.load_json()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#IOFunctions.IO_Functions.make_directory"><code class="docutils literal notranslate"><span class="pre">IO_Functions.make_directory()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#IOFunctions.IO_Functions.read_tiff"><code class="docutils literal notranslate"><span class="pre">IO_Functions.read_tiff()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#IOFunctions.IO_Functions.read_tiff_tophotons"><code class="docutils literal notranslate"><span class="pre">IO_Functions.read_tiff_tophotons()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#IOFunctions.IO_Functions.save_abovebelowthresholdcoloc"><code class="docutils literal notranslate"><span class="pre">IO_Functions.save_abovebelowthresholdcoloc()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#IOFunctions.IO_Functions.save_analysis"><code class="docutils literal notranslate"><span class="pre">IO_Functions.save_analysis()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#IOFunctions.IO_Functions.save_analysis_params"><code class="docutils literal notranslate"><span class="pre">IO_Functions.save_analysis_params()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#IOFunctions.IO_Functions.save_as_json"><code class="docutils literal notranslate"><span class="pre">IO_Functions.save_as_json()</span></code></a></li>
@@ -63,6 +65,8 @@
 </li>
 </ul>
 </li>
+<li class="toctree-l2"><a class="reference internal" href="Image_Analysis_Functions.html">Image_Analysis_Functions module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="MultiD_RD_functions.html">MultiD_RD_functions module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="PlottingFunctions.html">PlottingFunctions module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="RASPRoutines.html">RASPRoutines module</a></li>
 </ul>
@@ -129,11 +133,14 @@ jsb92, 2024/01/02</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="IOFunctions.IO_Functions.read_tiff">
-<span class="sig-name descname"><span class="pre">read_tiff</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">file_path</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#IOFunctions.IO_Functions.read_tiff" title="Link to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">read_tiff</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">file_path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">frame</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#IOFunctions.IO_Functions.read_tiff" title="Link to this definition"></a></dt>
 <dd><p>Read a TIFF file using the skimage library.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>file_path</strong> (<em>str</em>) – The path to the TIFF file to be read.</p>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>file_path</strong> (<em>str</em>) – The path to the TIFF file to be read.</p></li>
+<li><p><strong>frame</strong> (<em>int</em>) – if not None, loads a single frame</p></li>
+</ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p><strong>image</strong> (<em>numpy.ndarray</em>) – The image data from the TIFF file.</p>
@@ -143,7 +150,7 @@ jsb92, 2024/01/02</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="IOFunctions.IO_Functions.read_tiff_tophotons">
-<span class="sig-name descname"><span class="pre">read_tiff_tophotons</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">file_path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">QE</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.95</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gain_map</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">offset_map</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#IOFunctions.IO_Functions.read_tiff_tophotons" title="Link to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">read_tiff_tophotons</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">file_path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">QE</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.95</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gain_map</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">offset_map</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">variance_map</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">frame</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#IOFunctions.IO_Functions.read_tiff_tophotons" title="Link to this definition"></a></dt>
 <dd><p>Read a TIFF file using the skimage library.
 Use camera parameters to convert output to photons</p>
 <dl class="field-list simple">
@@ -153,6 +160,7 @@ Use camera parameters to convert output to photons</p>
 <li><p><strong>QR</strong> (<em>float</em>) – QE of camera</p></li>
 <li><p><strong>gain_map</strong> (<em>matrix</em><em>, or </em><em>float</em>) – gain map. Assumes units of ADU/photoelectrons</p></li>
 <li><p><strong>offset_map</strong> (<em>matrix</em><em>, or </em><em>float</em>) – offset map. Assumes units of ADU</p></li>
+<li><p><strong>frame</strong> (<em>int</em><em>, </em><em>optional</em>) – if not None, loads a single frame</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
@@ -162,13 +170,39 @@ Use camera parameters to convert output to photons</p>
 </dd></dl>
 
 <dl class="py method">
+<dt class="sig sig-object py" id="IOFunctions.IO_Functions.save_abovebelowthresholdcoloc">
+<span class="sig-name descname"><span class="pre">save_abovebelowthresholdcoloc</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">plane_1_analysis_AT</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">plane_2_analysis_AT</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">spot_1_analysis_AT</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">spot_2_analysis_AT</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">plane_1_analysis_UT</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">plane_2_analysis_UT</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">spot_1_analysis_UT</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">spot_2_analysis_UT</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">analysis_file_1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">analysis_file_2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">spot_1_string</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">spot_2_string</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">threshold1_str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">threshold2_str</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#IOFunctions.IO_Functions.save_abovebelowthresholdcoloc" title="Link to this definition"></a></dt>
+<dd><p>Saves analysis of above and below threshold.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>plane_1_analysis_AT</strong> (<em>pl.DataFrame</em>) – polars dataframe.</p></li>
+<li><p><strong>plane_2_analysis_AT</strong> (<em>pl.DataFrame</em>) – polars dataframe.</p></li>
+<li><p><strong>spot_1_analysis_AT</strong> (<em>pl.DataFrame</em>) – polars dataframe.</p></li>
+<li><p><strong>spot_2_analysis_AT</strong> (<em>pl.DataFrame</em>) – polars dataframe.</p></li>
+<li><p><strong>plane_1_analysis_UT</strong> (<em>pl.DataFrame</em>) – polars dataframe.</p></li>
+<li><p><strong>plane_2_analysis_UT</strong> (<em>pl.DataFrame</em>) – polars dataframe.</p></li>
+<li><p><strong>spot_1_analysis_UT</strong> (<em>pl.DataFrame</em>) – polars dataframe.</p></li>
+<li><p><strong>spot_2_analysis_UT</strong> (<em>pl.DataFrame</em>) – polars dataframe.</p></li>
+<li><p><strong>analysis_file_1</strong> (<em>str</em>) – string of analysis file 1.</p></li>
+<li><p><strong>analysis_file_2</strong> (<em>str</em>) – string of analysis file 1.</p></li>
+<li><p><strong>spot_1_string</strong> (<em>str</em>) – string of spot 1.</p></li>
+<li><p><strong>spot_2_string</strong> (<em>str</em>) – string of spot 2.</p></li>
+<li><p><strong>threshold1_str</strong> (<em>str</em>) – string of threshold 1.</p></li>
+<li><p><strong>threshold2_str</strong> (<em>str</em>) – string of threshold 2.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
 <dt class="sig sig-object py" id="IOFunctions.IO_Functions.save_analysis">
-<span class="sig-name descname"><span class="pre">save_analysis</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">to_save</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">to_save_largeobjects</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">analysis_directory</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">imtype</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">protein_string</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cell_string</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">files</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">i</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">z_planes</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[0,</span> <span class="pre">0]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cell_analysis</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cell_mask</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">to_save_cell</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">one_savefile</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#IOFunctions.IO_Functions.save_analysis" title="Link to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">save_analysis</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">to_save</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">to_save_largeobjects</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">analysis_directory</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">imtype</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">protein_string</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cell_string</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">files</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">i</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">z_planes</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[0,</span> <span class="pre">0]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lo_mask</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[0]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cell_mask</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">one_savefile</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#IOFunctions.IO_Functions.save_analysis" title="Link to this definition"></a></dt>
 <dd><p>saves analysis.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>to_save</strong> (<em>pd.DataFrame</em>) – pandas dataframe.</p></li>
+<li><p><strong>to_save</strong> (<em>pl.DataFrame</em>) – polars dataframe.</p></li>
 <li><p><strong>to_save_largeobjects</strong> (<em>pd.DataFrame</em>) – pandas dataframe of large objects.</p></li>
 <li><p><strong>analysis_directory</strong> (<em>string</em>) – analysis directory to save in</p></li>
 <li><p><strong>imtype</strong> (<em>string</em>) – string of image type</p></li>
@@ -176,9 +210,8 @@ Use camera parameters to convert output to photons</p>
 <li><p><strong>cell_string</strong> (<em>np.1darray</em>) – strings for cell-containing data (default C0)</p></li>
 <li><p><strong>i</strong> (<em>int</em>) – location in files where we’re analysing</p></li>
 <li><p><strong>z_planes</strong> (<em>np.1darray</em>) – array of z locations to count spots</p></li>
-<li><p><strong>cell_analysis</strong> (<em>boolean</em>) – if doing cell analysis saving</p></li>
-<li><p><strong>cell_mask</strong> (<em>np.ndarray</em>) – cell mask if cell analysis saving</p></li>
-<li><p><strong>to_save_cell</strong> (<em>pd.DataFrame</em>) – pandas dataframe</p></li>
+<li><p><strong>lo_mask</strong> (<em>np.ndarray</em>) – mask of large objects</p></li>
+<li><p><strong>cell_mask</strong> (<em>np.ndarray</em>) – cell mask if cell mask saving</p></li>
 <li><p><strong>one_savefile</strong> (<em>boolean</em>) – if True, saving all analysis in one csv</p></li>
 </ul>
 </dd>
@@ -187,7 +220,7 @@ Use camera parameters to convert output to photons</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="IOFunctions.IO_Functions.save_analysis_params">
-<span class="sig-name descname"><span class="pre">save_analysis_params</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">analysis_p_directory</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">to_save</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gain_map</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">offset_map</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#IOFunctions.IO_Functions.save_analysis_params" title="Link to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">save_analysis_params</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">analysis_p_directory</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">to_save</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gain_map</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">offset_map</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">variance_map</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#IOFunctions.IO_Functions.save_analysis_params" title="Link to this definition"></a></dt>
 <dd><p>saves analysis parameters.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -196,6 +229,7 @@ Use camera parameters to convert output to photons</p>
 <li><p><strong>to_save</strong> (<em>dict</em>) – dict to save of analysis parameters.</p></li>
 <li><p><strong>gain_map</strong> (<em>array</em>) – gain_map to save</p></li>
 <li><p><strong>offset_map</strong> (<em>array</em>) – offset_map to save</p></li>
+<li><p><strong>variance_map</strong> (<em>array</em>) – variance_map to save</p></li>
 </ul>
 </dd>
 </dl>
@@ -217,7 +251,7 @@ Use camera parameters to convert output to photons</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="IOFunctions.IO_Functions.write_tiff">
-<span class="sig-name descname"><span class="pre">write_tiff</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">volume</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">file_path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bit=&lt;class</span> <span class="pre">'numpy.uint16'&gt;</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#IOFunctions.IO_Functions.write_tiff" title="Link to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">write_tiff</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">volume</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">file_path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bit=&lt;class</span> <span class="pre">'numpy.uint16'&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pixel_size=0.11</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#IOFunctions.IO_Functions.write_tiff" title="Link to this definition"></a></dt>
 <dd><p>Write a TIFF file using the skimage library.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -242,8 +276,8 @@ Additional metadata specifying the software as ‘Python’ is included.</p>
            </div>
           </div>
           <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
-        <a href="AnalysisFunctions.html" class="btn btn-neutral float-left" title="AnalysisFunctions module" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
-        <a href="PlottingFunctions.html" class="btn btn-neutral float-right" title="PlottingFunctions module" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="HelperFunctions.html" class="btn btn-neutral float-left" title="HelperFunctions module" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="Image_Analysis_Functions.html" class="btn btn-neutral float-right" title="Image_Analysis_Functions module" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 
   <hr/>

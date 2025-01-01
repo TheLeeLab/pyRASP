@@ -21,7 +21,7 @@
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="IOFunctions module" href="IOFunctions.html" />
+    <link rel="next" title="HelperFunctions module" href="HelperFunctions.html" />
     <link rel="prev" title="src" href="modules.html" /> 
 </head>
 
@@ -51,52 +51,47 @@
 <li class="toctree-l2 current"><a class="current reference internal" href="#">AnalysisFunctions module</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#AnalysisFunctions.Analysis_Functions"><code class="docutils literal notranslate"><span class="pre">Analysis_Functions</span></code></a><ul>
 <li class="toctree-l4"><a class="reference internal" href="#AnalysisFunctions.Analysis_Functions.Gauss2DFitting"><code class="docutils literal notranslate"><span class="pre">Analysis_Functions.Gauss2DFitting()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="#AnalysisFunctions.Analysis_Functions.bincalculator"><code class="docutils literal notranslate"><span class="pre">Analysis_Functions.bincalculator()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="#AnalysisFunctions.Analysis_Functions.calculate_gradient_field"><code class="docutils literal notranslate"><span class="pre">Analysis_Functions.calculate_gradient_field()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#AnalysisFunctions.Analysis_Functions.calculate_cell_protein_load"><code class="docutils literal notranslate"><span class="pre">Analysis_Functions.calculate_cell_protein_load()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#AnalysisFunctions.Analysis_Functions.calculate_largeobj_coincidence"><code class="docutils literal notranslate"><span class="pre">Analysis_Functions.calculate_largeobj_coincidence()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#AnalysisFunctions.Analysis_Functions.calculate_mask_fill"><code class="docutils literal notranslate"><span class="pre">Analysis_Functions.calculate_mask_fill()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="#AnalysisFunctions.Analysis_Functions.calculate_radiality"><code class="docutils literal notranslate"><span class="pre">Analysis_Functions.calculate_radiality()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#AnalysisFunctions.Analysis_Functions.calculate_region_properties"><code class="docutils literal notranslate"><span class="pre">Analysis_Functions.calculate_region_properties()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#AnalysisFunctions.Analysis_Functions.calculate_spot_colocalisation_likelihood_ratio"><code class="docutils literal notranslate"><span class="pre">Analysis_Functions.calculate_spot_colocalisation_likelihood_ratio()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#AnalysisFunctions.Analysis_Functions.calculate_spot_to_cell_numbers"><code class="docutils literal notranslate"><span class="pre">Analysis_Functions.calculate_spot_to_cell_numbers()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#AnalysisFunctions.Analysis_Functions.calculate_spot_to_mask_coincidence"><code class="docutils literal notranslate"><span class="pre">Analysis_Functions.calculate_spot_to_mask_coincidence()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#AnalysisFunctions.Analysis_Functions.calculate_spot_to_spot_coincidence"><code class="docutils literal notranslate"><span class="pre">Analysis_Functions.calculate_spot_to_spot_coincidence()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="#AnalysisFunctions.Analysis_Functions.compute_image_props"><code class="docutils literal notranslate"><span class="pre">Analysis_Functions.compute_image_props()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="#AnalysisFunctions.Analysis_Functions.compute_spot_and_cell_props"><code class="docutils literal notranslate"><span class="pre">Analysis_Functions.compute_spot_and_cell_props()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="#AnalysisFunctions.Analysis_Functions.compute_spot_props"><code class="docutils literal notranslate"><span class="pre">Analysis_Functions.compute_spot_props()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#AnalysisFunctions.Analysis_Functions.colocalise_spots_with_threshold"><code class="docutils literal notranslate"><span class="pre">Analysis_Functions.colocalise_spots_with_threshold()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#AnalysisFunctions.Analysis_Functions.colocalise_with_threshold"><code class="docutils literal notranslate"><span class="pre">Analysis_Functions.colocalise_with_threshold()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#AnalysisFunctions.Analysis_Functions.count_spots"><code class="docutils literal notranslate"><span class="pre">Analysis_Functions.count_spots()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="#AnalysisFunctions.Analysis_Functions.count_spots_withthreshold"><code class="docutils literal notranslate"><span class="pre">Analysis_Functions.count_spots_withthreshold()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#AnalysisFunctions.Analysis_Functions.create_filled_region"><code class="docutils literal notranslate"><span class="pre">Analysis_Functions.create_filled_region()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="#AnalysisFunctions.Analysis_Functions.create_gaussian_kernel"><code class="docutils literal notranslate"><span class="pre">Analysis_Functions.create_gaussian_kernel()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="#AnalysisFunctions.Analysis_Functions.create_kernel"><code class="docutils literal notranslate"><span class="pre">Analysis_Functions.create_kernel()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="#AnalysisFunctions.Analysis_Functions.default_spotanalysis_routine"><code class="docutils literal notranslate"><span class="pre">Analysis_Functions.default_spotanalysis_routine()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="#AnalysisFunctions.Analysis_Functions.detect_large_features"><code class="docutils literal notranslate"><span class="pre">Analysis_Functions.detect_large_features()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#AnalysisFunctions.Analysis_Functions.create_labelled_cellmasks"><code class="docutils literal notranslate"><span class="pre">Analysis_Functions.create_labelled_cellmasks()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#AnalysisFunctions.Analysis_Functions.dilate_pixel_matrix"><code class="docutils literal notranslate"><span class="pre">Analysis_Functions.dilate_pixel_matrix()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#AnalysisFunctions.Analysis_Functions.dilate_pixels"><code class="docutils literal notranslate"><span class="pre">Analysis_Functions.dilate_pixels()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#AnalysisFunctions.Analysis_Functions.estimate_intensity"><code class="docutils literal notranslate"><span class="pre">Analysis_Functions.estimate_intensity()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="#AnalysisFunctions.Analysis_Functions.gen_CSRmats"><code class="docutils literal notranslate"><span class="pre">Analysis_Functions.gen_CSRmats()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="#AnalysisFunctions.Analysis_Functions.generate_largeaggregate_indices"><code class="docutils literal notranslate"><span class="pre">Analysis_Functions.generate_largeaggregate_indices()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="#AnalysisFunctions.Analysis_Functions.generate_mask_and_spot_indices"><code class="docutils literal notranslate"><span class="pre">Analysis_Functions.generate_mask_and_spot_indices()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="#AnalysisFunctions.Analysis_Functions.generate_spot_and_spot_indices"><code class="docutils literal notranslate"><span class="pre">Analysis_Functions.generate_spot_and_spot_indices()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#AnalysisFunctions.Analysis_Functions.generate_indices"><code class="docutils literal notranslate"><span class="pre">Analysis_Functions.generate_indices()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#AnalysisFunctions.Analysis_Functions.infocus_indices"><code class="docutils literal notranslate"><span class="pre">Analysis_Functions.infocus_indices()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#AnalysisFunctions.Analysis_Functions.intensity_pixel_indices"><code class="docutils literal notranslate"><span class="pre">Analysis_Functions.intensity_pixel_indices()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="#AnalysisFunctions.Analysis_Functions.make_datarray_cell"><code class="docutils literal notranslate"><span class="pre">Analysis_Functions.make_datarray_cell()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="#AnalysisFunctions.Analysis_Functions.make_datarray_largeobjects"><code class="docutils literal notranslate"><span class="pre">Analysis_Functions.make_datarray_largeobjects()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="#AnalysisFunctions.Analysis_Functions.make_datarray_spot"><code class="docutils literal notranslate"><span class="pre">Analysis_Functions.make_datarray_spot()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#AnalysisFunctions.Analysis_Functions.number_of_puncta_per_segmented_cell_with_threshold"><code class="docutils literal notranslate"><span class="pre">Analysis_Functions.number_of_puncta_per_segmented_cell_with_threshold()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#AnalysisFunctions.Analysis_Functions.random_largeobj_locations"><code class="docutils literal notranslate"><span class="pre">Analysis_Functions.random_largeobj_locations()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#AnalysisFunctions.Analysis_Functions.rejectoutliers"><code class="docutils literal notranslate"><span class="pre">Analysis_Functions.rejectoutliers()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#AnalysisFunctions.Analysis_Functions.rejectoutliers_ind"><code class="docutils literal notranslate"><span class="pre">Analysis_Functions.rejectoutliers_ind()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="#AnalysisFunctions.Analysis_Functions.ricker_wavelet"><code class="docutils literal notranslate"><span class="pre">Analysis_Functions.ricker_wavelet()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="#AnalysisFunctions.Analysis_Functions.small_feature_kernel"><code class="docutils literal notranslate"><span class="pre">Analysis_Functions.small_feature_kernel()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#AnalysisFunctions.Analysis_Functions.rejectoutliers_value"><code class="docutils literal notranslate"><span class="pre">Analysis_Functions.rejectoutliers_value()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#AnalysisFunctions.Analysis_Functions.single_spot_channel_rdf_with_threshold"><code class="docutils literal notranslate"><span class="pre">Analysis_Functions.single_spot_channel_rdf_with_threshold()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#AnalysisFunctions.Analysis_Functions.spot_mask_rdf_with_threshold"><code class="docutils literal notranslate"><span class="pre">Analysis_Functions.spot_mask_rdf_with_threshold()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#AnalysisFunctions.Analysis_Functions.spot_to_mask_rdf"><code class="docutils literal notranslate"><span class="pre">Analysis_Functions.spot_to_mask_rdf()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#AnalysisFunctions.Analysis_Functions.spot_to_spot_rdf"><code class="docutils literal notranslate"><span class="pre">Analysis_Functions.spot_to_spot_rdf()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#AnalysisFunctions.Analysis_Functions.test_largeobj_mask_overlap"><code class="docutils literal notranslate"><span class="pre">Analysis_Functions.test_largeobj_mask_overlap()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#AnalysisFunctions.Analysis_Functions.test_spot_mask_overlap"><code class="docutils literal notranslate"><span class="pre">Analysis_Functions.test_spot_mask_overlap()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#AnalysisFunctions.Analysis_Functions.test_spot_spot_overlap"><code class="docutils literal notranslate"><span class="pre">Analysis_Functions.test_spot_spot_overlap()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#AnalysisFunctions.Analysis_Functions.threshold_cell_areas"><code class="docutils literal notranslate"><span class="pre">Analysis_Functions.threshold_cell_areas()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#AnalysisFunctions.Analysis_Functions.two_puncta_channels_rdf_with_thresholds"><code class="docutils literal notranslate"><span class="pre">Analysis_Functions.two_puncta_channels_rdf_with_thresholds()</span></code></a></li>
 </ul>
 </li>
 </ul>
 </li>
+<li class="toctree-l2"><a class="reference internal" href="HelperFunctions.html">HelperFunctions module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="IOFunctions.html">IOFunctions module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="Image_Analysis_Functions.html">Image_Analysis_Functions module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="MultiD_RD_functions.html">MultiD_RD_functions module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="PlottingFunctions.html">PlottingFunctions module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="RASPRoutines.html">RASPRoutines module</a></li>
 </ul>
@@ -157,39 +152,24 @@ Pixels expanded borders by n pixels (default 5)</p>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="AnalysisFunctions.Analysis_Functions.bincalculator">
-<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">bincalculator</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#AnalysisFunctions.Analysis_Functions.bincalculator" title="Link to this definition"></a></dt>
-<dd><p>bincalculator function
-reads in data and generates bins according to Freedman-Diaconis rule</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>data</strong> (<em>np.1darray</em>) – data to calculate bins</p>
-</dd>
-<dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p><strong>bins</strong> (<em>np.1darray</em>) – bins for histogram according to Freedman-Diaconis rule</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="AnalysisFunctions.Analysis_Functions.calculate_gradient_field">
-<span class="sig-name descname"><span class="pre">calculate_gradient_field</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">image</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">kernel</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#AnalysisFunctions.Analysis_Functions.calculate_gradient_field" title="Link to this definition"></a></dt>
-<dd><p>Calculate the gradient field of an image and compute focus-related measures.</p>
+<dt class="sig sig-object py" id="AnalysisFunctions.Analysis_Functions.calculate_cell_protein_load">
+<span class="sig-name descname"><span class="pre">calculate_cell_protein_load</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">spot_indices</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mask_indices</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">spot_intensities</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">median_intensity</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">image_size</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_iter</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">100</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">blur_degree</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">analytical_solution</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#AnalysisFunctions.Analysis_Functions.calculate_cell_protein_load" title="Link to this definition"></a></dt>
+<dd><p>Calculate the protein load in a cell.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>image</strong> (<em>numpy.ndarray</em>) – The input image.</p></li>
-<li><p><strong>kernel</strong> (<em>numpy.ndarray</em>) – The kernel for low-pass filtering.</p></li>
+<li><p><strong>spot_indices</strong> (<em>np.ndarray</em>) – Indices of spots.</p></li>
+<li><p><strong>mask_indices</strong> (<em>np.ndarray</em>) – Indices of mask pixels.</p></li>
+<li><p><strong>spot_intensities</strong> (<em>np.ndarray</em>) – Intensities of spots.</p></li>
+<li><p><strong>median_intensity</strong> (<em>float</em>) – Median intensity of spots.</p></li>
+<li><p><strong>image_size</strong> (<em>tuple</em>) – Size of the image.</p></li>
+<li><p><strong>n_iter</strong> (<em>int</em>) – Number of iterations for randomization.</p></li>
+<li><p><strong>blur_degree</strong> (<em>int</em>) – Degree of blur to apply.</p></li>
+<li><p><strong>analytical_solution</strong> (<em>bool</em>) – Use analytical solution for randomization.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><ul class="simple">
-<li><p><strong>filtered_image</strong> (<em>numpy.ndarray</em>) – Image after low-pass filtering.</p></li>
-<li><p><strong>gradient_x</strong> (<em>numpy.ndarray</em>) – X-gradient of the filtered image.</p></li>
-<li><p><strong>gradient_y</strong> (<em>numpy.ndarray</em>) – Y-gradient of the filtered image.</p></li>
-<li><p><strong>focus_score</strong> (<em>numpy.ndarray</em>) – Focus score of the image.</p></li>
-<li><p><strong>concentration_factor</strong> (<em>numpy.ndarray</em>) – Concentration factor of the image.</p></li>
-</ul>
+<dd class="field-even"><p><strong>tuple</strong> – Oligomer to cell ratio, number of oligomers in cell, number of iterations.</p>
 </dd>
 </dl>
 </dd></dl>
@@ -230,26 +210,6 @@ bounds on the likelihood ratio for one image</p>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p><strong>mask_fill</strong> (<em>float</em>) – proportion of image filled by mask.</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="AnalysisFunctions.Analysis_Functions.calculate_radiality">
-<span class="sig-name descname"><span class="pre">calculate_radiality</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pil_small</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">img</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gradient_x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gradient_y</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">d</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#AnalysisFunctions.Analysis_Functions.calculate_radiality" title="Link to this definition"></a></dt>
-<dd><p>Calculate radiality measures based on pixel neighborhoods and gradients.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>pil_small</strong> (<em>list</em>) – List of pixel indices.</p></li>
-<li><p><strong>img</strong> (<em>numpy.ndarray</em>) – The input image.</p></li>
-<li><p><strong>gradient_x</strong> (<em>numpy.ndarray</em>) – X-gradient of the image.</p></li>
-<li><p><strong>gradient_y</strong> (<em>numpy.ndarray</em>) – Y-gradient of the image.</p></li>
-<li><p><strong>d</strong> (<em>integer</em>) – pixel ring size</p></li>
-</ul>
-</dd>
-<dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p><strong>radiality</strong> (<em>numpy.ndarray</em>) – Radiality measures.</p>
 </dd>
 </dl>
 </dd></dl>
@@ -306,6 +266,33 @@ consider part of spot). Default 1</p></li>
 </dd></dl>
 
 <dl class="py method">
+<dt class="sig sig-object py" id="AnalysisFunctions.Analysis_Functions.calculate_spot_to_cell_numbers">
+<span class="sig-name descname"><span class="pre">calculate_spot_to_cell_numbers</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">spot_indices</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mask_indices</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">image_size</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_iter</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">100</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">blur_degree</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">analytical_solution</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#AnalysisFunctions.Analysis_Functions.calculate_spot_to_cell_numbers" title="Link to this definition"></a></dt>
+<dd><p>gets cell analysis likelihood, as well as reporting error
+bounds on the likelihood ratio for one image</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>spot_indices</strong> (<em>1D array</em>) – indices of spots</p></li>
+<li><p><strong>mask_indices</strong> (<em>1D array</em>) – indices of pixels in mask</p></li>
+<li><p><strong>image_size</strong> (<em>tuple</em>) – Image dimensions (height, width).</p></li>
+<li><p><strong>n_iter</strong> (<em>int</em>) – default 100; number of iterations to start with</p></li>
+<li><p><strong>blur_degree</strong> (<em>int</em>) – number of pixels to blur spot indices with
+(i.e. number of pixels surrounding centroid to
+consider part of spot). Default 1</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>olig_cell_ratio</strong> (<em>float</em>) – coincidence per cell, normalised to chance</p></li>
+<li><p><strong>raw_colocalisation</strong> (<em>np.1darray</em>) – binary yes/no of coincidence per spot</p></li>
+<li><p><strong>n_iter</strong> (<em>int</em>) – how many iterations it took to converge</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
 <dt class="sig sig-object py" id="AnalysisFunctions.Analysis_Functions.calculate_spot_to_mask_coincidence">
 <span class="sig-name descname"><span class="pre">calculate_spot_to_mask_coincidence</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">spot_indices</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mask_indices</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">image_size</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_iter</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">100</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">blur_degree</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#AnalysisFunctions.Analysis_Functions.calculate_spot_to_mask_coincidence" title="Link to this definition"></a></dt>
 <dd><p>gets spot colocalisation likelihood ratio, as well as reporting error
@@ -351,103 +338,66 @@ consider part of spot). Default 1</p></li>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><ul class="simple">
-<li><p><strong>coincidence</strong> (<em>float</em>) – coincidence FoV</p></li>
-<li><p><strong>chance_coincidence</strong> (<em>float</em>) – chance coincidence</p></li>
+<li><p><strong>coincidence_1</strong> (<em>float</em>) – coincidence from 1 to 2 FoV</p></li>
+<li><p><strong>chance_coincidence_1</strong> (<em>float</em>) – chance coincidence from 1 to 2</p></li>
+<li><p><strong>coincidence_2</strong> (<em>float</em>) – coincidence from 2 to 1 FoV</p></li>
+<li><p><strong>chance_coincidence_2</strong> (<em>float</em>) – chance coincidence from 2 to 1</p></li>
+<li><p><strong>raw_coincidence_1</strong> (<em>np.1darray</em>) – raw colocalisation values per spot 1 to 2</p></li>
+<li><p><strong>raw_coincidence_2</strong> (<em>np.1darray</em>) – raw colocalisation values per spot 2 to 1</p></li>
 </ul>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="AnalysisFunctions.Analysis_Functions.compute_image_props">
-<span class="sig-name descname"><span class="pre">compute_image_props</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">image</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">k1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">k2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">thres</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.05</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">large_thres</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">450.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">areathres</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">30.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rdl</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[50.0,</span> <span class="pre">0.0,</span> <span class="pre">0.0]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">d</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">z_planes</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">calib</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#AnalysisFunctions.Analysis_Functions.compute_image_props" title="Link to this definition"></a></dt>
-<dd><p>Gets basic image properties (dl_mask, centroids, radiality)
-from a single image</p>
+<dt class="sig sig-object py" id="AnalysisFunctions.Analysis_Functions.colocalise_spots_with_threshold">
+<span class="sig-name descname"><span class="pre">colocalise_spots_with_threshold</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">spots_1_with_intensities</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">spots_2_with_intensities</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">threshold_1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">threshold_2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">spot_1_string</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">spot_2_string</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">imtype</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'.tif'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">image_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">(1200,</span> <span class="pre">1200)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">blur_degree</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">aboveT</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#AnalysisFunctions.Analysis_Functions.colocalise_spots_with_threshold" title="Link to this definition"></a></dt>
+<dd><p>Redo colocalisation analayses of spots above a photon threshold in an
+analysis file, to spots above a second threshold in a separate analysis file.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>image</strong> (<em>array</em>) – image as numpy array</p></li>
-<li><p><strong>k1</strong> (<em>array</em>) – gaussian blur kernel</p></li>
-<li><p><strong>k2</strong> (<em>array</em>) – ricker wavelet kernel</p></li>
-<li><p><strong>thres</strong> (<em>float</em>) – percentage threshold</p></li>
-<li><p><strong>areathres</strong> (<em>float</em>) – area threshold</p></li>
-<li><p><strong>rdl</strong> (<em>array</em>) – radiality thresholds</p></li>
-<li><p><strong>d</strong> (<em>int</em>) – radiality ring</p></li>
-<li><p><strong>z_planes</strong> (<em>array</em>) – If multiple z planes, give z planes</p></li>
-<li><p><strong>calib</strong> (<em>bool</em>) – If True, for radiality calibration</p></li>
-</ul>
-</dd>
-<dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><ul class="simple">
-<li><p><strong>dl_mask</strong> (<em>numpy.ndarray</em>) – Binary mask for diffraction-limited (dl) features.</p></li>
-<li><p><strong>centroids</strong> (<em>numpy.ndarray</em>) – Centroids for dl features.</p></li>
-<li><p><strong>radiality</strong> (<em>numpy.ndarray</em>) – Radiality value for all features (before the filtering based on the radiality).</p></li>
-<li><p><strong>large_mask</strong> (<em>np.ndarray</em>) – Binary mask for large (above diffraction-limited) features.</p></li>
+<li><p><strong>spots_1_with_intensities</strong> (<em>pl.DataFrame</em>) – Analysis file (channel 1) to be re-done.</p></li>
+<li><p><strong>analysis_2_data</strong> (<em>pl.DataFrame</em>) – Analysis file (channel 2) to be re-done.</p></li>
+<li><p><strong>threshold_1</strong> (<em>float</em>) – The photon threshold for channel 1</p></li>
+<li><p><strong>threshold_2</strong> (<em>float</em>) – The photon threshold for channel 2</p></li>
+<li><p><strong>spot_1_string</strong> (<em>str</em>) – string of spot 1</p></li>
+<li><p><strong>spot_2_string</strong> (<em>str</em>) – string of spot 2</p></li>
+<li><p><strong>imtype</strong> (<em>str</em>) – image type</p></li>
+<li><p><strong>image_size</strong> (<em>list</em>) – original image size</p></li>
+<li><p><strong>blur_degree</strong> (<em>int</em>) – blur degree for colocalisation analysis</p></li>
+<li><p><strong>aboveT</strong> (<em>int</em>) – do the calculation above or below threshold</p></li>
 </ul>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="AnalysisFunctions.Analysis_Functions.compute_spot_and_cell_props">
-<span class="sig-name descname"><span class="pre">compute_spot_and_cell_props</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">image</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">image_cell</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">k1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">k2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prot_thres</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.05</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">large_prot_thres</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">100.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">areathres</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">30.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rdl</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[50.0,</span> <span class="pre">0.0,</span> <span class="pre">0.0]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">z</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cell_threshold1</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">200.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cell_threshold2</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">200</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cell_sigma1</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cell_sigma2</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">40.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">d</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">analyse_clr</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#AnalysisFunctions.Analysis_Functions.compute_spot_and_cell_props" title="Link to this definition"></a></dt>
-<dd><p>Gets basic image properties (centroids, radiality)
-from a single image and compare to a cell mask from another image channel</p>
+<dt class="sig sig-object py" id="AnalysisFunctions.Analysis_Functions.colocalise_with_threshold">
+<span class="sig-name descname"><span class="pre">colocalise_with_threshold</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">analysis_file</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">threshold</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">protein_string</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lo_string</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cell_string</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">coloc_type</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">imtype</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'.tif'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">blur_degree</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">calc_clr</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">aboveT</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lower_cell_size_threshold</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">upper_cell_size_threshold</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">inf</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#AnalysisFunctions.Analysis_Functions.colocalise_with_threshold" title="Link to this definition"></a></dt>
+<dd><p>Does colocalisation analysis of spots vs mask with an additional threshold.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>image</strong> (<em>array</em>) – image of protein stain as numpy array</p></li>
-<li><p><strong>image_cell</strong> (<em>array</em>) – image of cell stain as numpy array</p></li>
-<li><p><strong>k1</strong> (<em>array</em>) – gaussian blur kernel</p></li>
-<li><p><strong>k2</strong> (<em>array</em>) – ricker wavelet kernel</p></li>
-<li><p><strong>prot_thres</strong> (<em>float</em>) – percentage threshold for protein</p></li>
-<li><p><strong>large_prot_thres</strong> (<em>float</em>) – Protein threshold intensity</p></li>
-<li><p><strong>areathres</strong> (<em>float</em>) – area threshold</p></li>
-<li><p><strong>rdl</strong> (<em>array</em>) – radiality thresholds</p></li>
-<li><p><strong>z</strong> (<em>array</em>) – z planes to image, default 0</p></li>
-<li><p><strong>cell_threshold1</strong> (<em>float</em>) – 1st cell intensity threshold</p></li>
-<li><p><strong>cell_threshold2</strong> (<em>float</em>) – 2nd cell intensity threshold</p></li>
-<li><p><strong>cell_sigma1</strong> (<em>float</em>) – cell blur value 1</p></li>
-<li><p><strong>cell_sigma2</strong> (<em>float</em>) – cell blur value 2</p></li>
-<li><p><strong>d</strong> (<em>integer</em>) – pixel radius value</p></li>
-<li><p><strong>analyse_clr</strong> (<em>boolean</em>) – analyse clr yes/no</p></li>
+<li><p><strong>analysis_file</strong> (<em>string</em>) – The analysis file of puncta. If large objects are to be
+analysed as puncta, make sure this is a large object file.</p></li>
+<li><p><strong>threshold</strong> (<em>float</em>) – The photon threshold for puncta.</p></li>
+<li><p><strong>protein_string</strong> (<em>str</em>) – string of protein images</p></li>
+<li><p><strong>lo_string</strong> (<em>str</em>) – string of larger object images</p></li>
+<li><p><strong>coloc_typ</strong> (<em>boolean</em>) – if 1 (default), for cells. if 0, for large protein objects.
+if 2, between cell mask and large protein objects.</p></li>
+<li><p><strong>imtype</strong> (<em>str</em>) – image end string</p></li>
+<li><p><strong>blur_degree</strong> (<em>int</em>) – degree of blur to apply to puncta</p></li>
+<li><p><strong>calc_clr</strong> (<em>boolean</em>) – calculate clr yes/no</p></li>
+<li><p><strong>aboveT</strong> (<em>int</em>) – do the calculation above or below threshold</p></li>
+<li><p><strong>lower_cell_size_threshold</strong> (<em>float</em>) – lower threshold of cell size</p></li>
+<li><p><strong>upper_cell_size_threshold</strong> (<em>float</em>) – upper threshold of cell size</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><ul class="simple">
-<li><p><strong>to_save</strong> (<em>pd.DataFrame</em>) – spot properties ready to save</p></li>
-<li><p><strong>to_save_largeobjects</strong> (<em>pd.DataFrame</em>) – large object properties ready to save</p></li>
-<li><p><strong>to_save_cell</strong> (<em>pd.DataFrame</em>) – cell properties ready to save</p></li>
-<li><p><strong>cell_mask</strong> (<em>np.ndarray</em>) – cell mask</p></li>
-</ul>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="AnalysisFunctions.Analysis_Functions.compute_spot_props">
-<span class="sig-name descname"><span class="pre">compute_spot_props</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">image</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">k1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">k2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">thres</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.05</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">large_thres</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">100.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">areathres</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">30.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rdl</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[50.0,</span> <span class="pre">0.0,</span> <span class="pre">0.0]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">z</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">d</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#AnalysisFunctions.Analysis_Functions.compute_spot_props" title="Link to this definition"></a></dt>
-<dd><p>Gets basic image properties (centroids, radiality)
-from a single image</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>image</strong> (<em>np.ndarray</em>) – image as numpy array, or dict of arrays</p></li>
-<li><p><strong>k1</strong> (<em>array</em>) – gaussian blur kernel</p></li>
-<li><p><strong>k2</strong> (<em>array</em>) – ricker wavelet kernel</p></li>
-<li><p><strong>thres</strong> (<em>float</em>) – percentage threshold</p></li>
-<li><p><strong>areathres</strong> (<em>float</em>) – area threshold</p></li>
-<li><p><strong>rdl</strong> (<em>array</em>) – radiality thresholds</p></li>
-<li><p><strong>z</strong> (<em>array</em>) – z planes to image, default 0</p></li>
-<li><p><strong>d</strong> (<em>int</em>) – Pixel radius value</p></li>
-</ul>
-</dd>
-<dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><ul class="simple">
-<li><p><strong>to_save</strong> (<em>pd.DataFrame</em>) – data array to save as pandas object,
-or dict of pandas objects</p></li>
-<li><p><strong>to_save_largeobjects</strong> (<em>pd.DataFrame</em>) – data array of large objects
-or dict of large objects</p></li>
+<li><p><strong>lo_analysis</strong> (<em>pl.DataFrame</em>) – polars dataframe of the cell analysis</p></li>
+<li><p><strong>spot_analysis</strong> (<em>pl.DataFrame</em>) – polars dataframe of the spot analysis</p></li>
 </ul>
 </dd>
 </dl>
@@ -455,34 +405,17 @@ or dict of large objects</p></li>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="AnalysisFunctions.Analysis_Functions.count_spots">
-<span class="sig-name descname"><span class="pre">count_spots</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">database</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">z_planes</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#AnalysisFunctions.Analysis_Functions.count_spots" title="Link to this definition"></a></dt>
-<dd><p>Counts spots per z plane</p>
+<span class="sig-name descname"><span class="pre">count_spots</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">database</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">threshold</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#AnalysisFunctions.Analysis_Functions.count_spots" title="Link to this definition"></a></dt>
+<dd><p>Counts spots per z plane, optionally with a threshold.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>database</strong> (<em>pandas array</em>) – pandas array of spots</p></li>
-<li><p><strong>z_planes</strong> (<em>np.1darray</em>) – is range of zplanes</p></li>
+<li><p><strong>database</strong> (<em>polars DataFrame</em>) – DataFrame of spots.</p></li>
+<li><p><strong>threshold</strong> (<em>float</em><em>, </em><em>optional</em>) – Intensity threshold.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p><strong>n_spots</strong></p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="AnalysisFunctions.Analysis_Functions.count_spots_withthreshold">
-<span class="sig-name descname"><span class="pre">count_spots_withthreshold</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">database</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">threshold</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#AnalysisFunctions.Analysis_Functions.count_spots_withthreshold" title="Link to this definition"></a></dt>
-<dd><p>Counts spots per z plane</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>database</strong> (<em>pandas array</em>) – pandas array of spots</p></li>
-<li><p><strong>threshold</strong> (<em>float</em>) – intensity threshold</p></li>
-</ul>
-</dd>
-<dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p><strong>n_spots</strong> (<em>pandas array</em>)</p>
+<dd class="field-even"><p><strong>polars.DataFrame</strong> – DataFrame with number of spots per z-plane.</p>
 </dd>
 </dl>
 </dd></dl>
@@ -505,93 +438,26 @@ or dict of large objects</p></li>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="AnalysisFunctions.Analysis_Functions.create_gaussian_kernel">
-<span class="sig-name descname"><span class="pre">create_gaussian_kernel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sigmas</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">size</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#AnalysisFunctions.Analysis_Functions.create_gaussian_kernel" title="Link to this definition"></a></dt>
-<dd><p>Create a 2D Gaussian kernel.</p>
+<dt class="sig sig-object py" id="AnalysisFunctions.Analysis_Functions.create_labelled_cellmasks">
+<span class="sig-name descname"><span class="pre">create_labelled_cellmasks</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cell_analysis</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">puncta</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cell_mask</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lower_cell_size_threshold</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">100</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">upper_cell_size_threshold</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">inf</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">z_project</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[True,</span> <span class="pre">True]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parameter</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'n_puncta_in_cell'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#AnalysisFunctions.Analysis_Functions.create_labelled_cellmasks" title="Link to this definition"></a></dt>
+<dd><p>create_labelled_cellmasks plots values of specified parameter in cell objects</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>sigmas</strong> (<em>tuple</em>) – Standard deviations in X and Y directions.</p></li>
-<li><p><strong>size</strong> (<em>tuple</em>) – Size of the kernel.</p></li>
-</ul>
-</dd>
-<dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p><strong>kernel</strong> (<em>numpy.ndarray</em>) – 2D Gaussian kernel.</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="AnalysisFunctions.Analysis_Functions.create_kernel">
-<span class="sig-name descname"><span class="pre">create_kernel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">background_sigma</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">wavelet_sigma</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#AnalysisFunctions.Analysis_Functions.create_kernel" title="Link to this definition"></a></dt>
-<dd><p>Create Gaussian and Ricker wavelet kernels.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>background_sigma</strong> (<em>float</em>) – Standard deviation for Gaussian kernel.</p></li>
-<li><p><strong>wavelet_sigma</strong> (<em>float</em>) – Standard deviation for Ricker wavelet.</p></li>
+<li><p><strong>cell_analysis</strong> (<em>polars dataarray</em>) – cell analysis</p></li>
+<li><p><strong>puncta</strong> (<em>polars dataarray</em>) – puncta analysis</p></li>
+<li><p><strong>cell_mask</strong> (<em>np.2darray</em>) – cell mask object</p></li>
+<li><p><strong>lower_cell_size_threshold</strong> (<em>float</em>) – how big of an area do you take as lower threshold</p></li>
+<li><p><strong>upper_cell_size_threshold</strong> (<em>float</em>) – how big of an area do you take as upper threshold</p></li>
+<li><p><strong>z_project</strong> (<em>boolean</em>) – project z first or not for cell mask</p></li>
+<li><p><strong>parameter</strong> (<em>string</em>) – parameter to plot</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><ul class="simple">
-<li><p><strong>gaussian_kernel</strong> (<em>numpy.ndarray</em>) – Gaussian kernel for background suppression.</p></li>
-<li><p><strong>ricker_kernel</strong> (<em>numpy.ndarray</em>) – Ricker wavelet for feature enhancement.</p></li>
+<li><p><strong>cell_mask_toplot_analysis</strong> (<em>np.2darray</em>) – cell mask of analysed quantity</p></li>
+<li><p><strong>new_cell_mask</strong> (<em>np.2darray</em>) – thresholded cell mask</p></li>
 </ul>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="AnalysisFunctions.Analysis_Functions.default_spotanalysis_routine">
-<span class="sig-name descname"><span class="pre">default_spotanalysis_routine</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">image</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">k1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">k2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">thres</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.05</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">large_thres</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">100.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">areathres</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">30.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rdl</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[50.0,</span> <span class="pre">0.0,</span> <span class="pre">0.0]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">d</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#AnalysisFunctions.Analysis_Functions.default_spotanalysis_routine" title="Link to this definition"></a></dt>
-<dd><p>Daisy-chains analyses to get
-basic image properties (centroids, radiality)
-from a single image</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>image</strong> (<em>array</em>) – image as numpy array</p></li>
-<li><p><strong>k1</strong> (<em>array</em>) – gaussian blur kernel</p></li>
-<li><p><strong>k2</strong> (<em>array</em>) – ricker wavelet kernel</p></li>
-<li><p><strong>thres</strong> (<em>float</em>) – percentage threshold</p></li>
-<li><p><strong>areathres</strong> (<em>float</em>) – area threshold</p></li>
-<li><p><strong>rdl</strong> (<em>array</em>) – radiality thresholds</p></li>
-</ul>
-</dd>
-<dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><ul class="simple">
-<li><p><strong>centroids</strong> (<em>2D array</em>) – centroid positions per oligomer</p></li>
-<li><p><strong>estimated_intensity</strong> (<em>numpy.ndarray</em>) – Estimated sum intensity per oligomer.</p></li>
-<li><p><strong>estimated_background</strong> (<em>numpy.ndarray</em>) – Estimated mean background per oligomer.</p></li>
-<li><p><strong>estimated_background_perpixel</strong> (<em>numpy.ndarray</em>) – Estimated mean background per pixel.</p></li>
-<li><p><strong>areas_large</strong> (<em>np.1darray</em>) – 1d array of areas of large objects</p></li>
-<li><p><strong>centroids_large</strong> (<em>np.2darray</em>) – centroids of large objects</p></li>
-<li><p><strong>meanintensities_large</strong> (<em>np.1darray</em>) – mean intensities of large objects</p></li>
-<li><p><strong>sumintensities_large</strong> (<em>np.1darray</em>) – sum intensities of large objects</p></li>
-<li><p><strong>pil_large</strong> (<em>list of np.2darray</em>) – pixels where large objects found</p></li>
-</ul>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="AnalysisFunctions.Analysis_Functions.detect_large_features">
-<span class="sig-name descname"><span class="pre">detect_large_features</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">image</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">threshold1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">threshold2</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sigma1</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sigma2</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">60.0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#AnalysisFunctions.Analysis_Functions.detect_large_features" title="Link to this definition"></a></dt>
-<dd><p>Detects large features in an image based on a given threshold.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>image</strong> (<em>numpy.ndarray</em>) – Original image.</p></li>
-<li><p><strong>threshold1</strong> (<em>float</em>) – Threshold for determining features. Only this is
-used for the determination of large protein aggregates.</p></li>
-<li><p><strong>threshold2</strong> (<em>float</em>) – Threshold for determining cell features. If above
-0, gets used and cellular features are detected.</p></li>
-<li><p><strong>sigma1</strong> (<em>float</em>) – first gaussian blur width</p></li>
-<li><p><strong>sigma2</strong> (<em>float</em>) – second gaussian blur width</p></li>
-</ul>
-</dd>
-<dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p><strong>large_mask</strong> (<em>numpy.ndarray</em>) – Binary mask for the large features.</p>
 </dd>
 </dl>
 </dd></dl>
@@ -657,83 +523,19 @@ used for the determination of large protein aggregates.</p></li>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="AnalysisFunctions.Analysis_Functions.gen_CSRmats">
-<span class="sig-name descname"><span class="pre">gen_CSRmats</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">image_z_shape</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#AnalysisFunctions.Analysis_Functions.gen_CSRmats" title="Link to this definition"></a></dt>
-<dd><p>Generates empty matrices for the CSR</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>image_z_shape</strong> (<em>int</em>) – shape of new array</p>
-</dd>
-<dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><ul class="simple">
-<li><p><strong>clr</strong> (<em>ndarray</em>) – empty array</p></li>
-<li><p><strong>norm_std</strong> (<em>ndarray</em>) – empty array</p></li>
-<li><p><strong>norm_CSR</strong> (<em>ndarray</em>) – empty array</p></li>
-<li><p><strong>expected_spots</strong> (<em>ndarray</em>) – empty array</p></li>
-<li><p><strong>coincidence</strong> (<em>ndarray</em>) – empty array</p></li>
-<li><p><strong>chance_coincidence</strong> (<em>ndarray</em>) – empty array</p></li>
-<li><p><strong>raw_localisation</strong> (<em>dict</em>) – empty dict</p></li>
-<li><p><strong>n_iter</strong> (<em>ndarray</em>) – empty array</p></li>
-</ul>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="AnalysisFunctions.Analysis_Functions.generate_largeaggregate_indices">
-<span class="sig-name descname"><span class="pre">generate_largeaggregate_indices</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pil</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">image_size</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#AnalysisFunctions.Analysis_Functions.generate_largeaggregate_indices" title="Link to this definition"></a></dt>
-<dd><p>makes large aggregate indices from list of xy coordinates</p>
+<dt class="sig sig-object py" id="AnalysisFunctions.Analysis_Functions.generate_indices">
+<span class="sig-name descname"><span class="pre">generate_indices</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">image_size</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">is_mask</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">is_lo</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#AnalysisFunctions.Analysis_Functions.generate_indices" title="Link to this definition"></a></dt>
+<dd><p>Generate indices from coordinates.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>pil</strong> (<em>list</em>) – list of 2d arrays</p></li>
-<li><p><strong>image_size</strong> (<em>tuple</em>) – Image dimensions (height, width).</p></li>
+<li><p><strong>data</strong> (<em>np.ndarray</em>) – Array of coordinates or mask.</p></li>
+<li><p><strong>image_size</strong> (<em>tuple</em>) – Size of the image.</p></li>
+<li><p><strong>is_mask</strong> (<em>bool</em>) – Indicates if the data is a mask (default: False).</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p><strong>la_indices</strong> (<em>list</em>) – list of indices of large aggregates</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="AnalysisFunctions.Analysis_Functions.generate_mask_and_spot_indices">
-<span class="sig-name descname"><span class="pre">generate_mask_and_spot_indices</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mask</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">centroids</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">image_size</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#AnalysisFunctions.Analysis_Functions.generate_mask_and_spot_indices" title="Link to this definition"></a></dt>
-<dd><p>makes mask and spot indices from xy coordinates</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>mask</strong> (<em>2D array</em>) – boolean matrix</p></li>
-<li><p><strong>centroids</strong> (<em>2D array</em>) – xy centroid coordinates</p></li>
-<li><p><strong>image_size</strong> (<em>tuple</em>) – Image dimensions (height, width).</p></li>
-</ul>
-</dd>
-<dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><ul class="simple">
-<li><p><strong>mask_indices</strong> (<em>1D array</em>) – indices of mask</p></li>
-<li><p><strong>spot_indices</strong> (<em>1D array</em>) – indices of spots</p></li>
-</ul>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="AnalysisFunctions.Analysis_Functions.generate_spot_and_spot_indices">
-<span class="sig-name descname"><span class="pre">generate_spot_and_spot_indices</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">centroids1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">centroids2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">image_size</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#AnalysisFunctions.Analysis_Functions.generate_spot_and_spot_indices" title="Link to this definition"></a></dt>
-<dd><p>makes mask and spot indices from xy coordinates</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>centroids1</strong> (<em>2D array</em>) – xy centroid coordinates</p></li>
-<li><p><strong>centroids2</strong> (<em>2D array</em>) – xy centroid coordinates</p></li>
-<li><p><strong>image_size</strong> (<em>tuple</em>) – Image dimensions (height, width).</p></li>
-</ul>
-</dd>
-<dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><ul class="simple">
-<li><p><strong>spot1_indices</strong> (<em>1D array</em>) – indices of spots1</p></li>
-<li><p><strong>spot2_indices</strong> (<em>1D array</em>) – indices of spots2</p></li>
-</ul>
+<dd class="field-even"><p><strong>np.ndarray</strong> – Indices of the data.</p>
 </dd>
 </dl>
 </dd></dl>
@@ -776,76 +578,33 @@ used for the determination of large protein aggregates.</p></li>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="AnalysisFunctions.Analysis_Functions.make_datarray_cell">
-<span class="sig-name descname"><span class="pre">make_datarray_cell</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">clr</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">norm_std</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">norm_CSR</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">expected_spots</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">coincidence</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">chance_coincidence</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">coincidence_large</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">chance_coincidence_large</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_iter</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">columns</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">z_planes</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'none'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">analyse_clr</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#AnalysisFunctions.Analysis_Functions.make_datarray_cell" title="Link to this definition"></a></dt>
-<dd><p>makes a datarray in pandas for cell information</p>
+<dt class="sig sig-object py" id="AnalysisFunctions.Analysis_Functions.number_of_puncta_per_segmented_cell_with_threshold">
+<span class="sig-name descname"><span class="pre">number_of_puncta_per_segmented_cell_with_threshold</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">analysis_file</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">analysis_data_raw</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">threshold</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lower_cell_size_threshold</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">100</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">upper_cell_size_threshold</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">inf</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">blur_degree</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cell_string</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'C0'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">protein_string</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'C1'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">imtype</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'.tif'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">aboveT</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">z_project_first</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[True,</span> <span class="pre">True]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">median</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#AnalysisFunctions.Analysis_Functions.number_of_puncta_per_segmented_cell_with_threshold" title="Link to this definition"></a></dt>
+<dd><p>Does analysis of number of oligomers in a mask area per “segmented”
+cell area.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>clr</strong> (<em>ndarray</em>) – colocalisation likelihood ratios</p></li>
-<li><p><strong>norm_std</strong> (<em>np.1darray</em>) – array of standard deviations</p></li>
-<li><p><strong>norm_CSR</strong> (<em>np.1darray</em>) – array of CSRs</p></li>
-<li><p><strong>expected_spots</strong> (<em>np.1darray</em>) – array of expected spots</p></li>
-<li><p><strong>coincidence</strong> (<em>np.1darray</em>) – array of coincidence values</p></li>
-<li><p><strong>chance_coincidence</strong> (<em>np.1darray</em>) – array of chance coincidence values</p></li>
-<li><p><strong>coincidence_large</strong> (<em>np.1darray</em>) – array of coincidence values (large objects)</p></li>
-<li><p><strong>chance_coincidence_large</strong> (<em>np.1darray</em>) – array of chance coincidence values (large objects)</p></li>
-<li><p><strong>n_iter</strong> (<em>np.1darray</em>) – array of iteration muber</p></li>
-<li><p><strong>columns</strong> (<em>list</em><em> of </em><em>strings</em>) – column labels</p></li>
-<li><p><strong>z_planes</strong> – z_planes to put in array (if needed)</p></li>
-<li><p><strong>analyse_clr</strong> (<em>boolean</em>) – If true, save clr</p></li>
+<li><p><strong>analysis_file</strong> (<em>pl.DataFrame</em>) – The analysis file location of puncta set 1.</p></li>
+<li><p><strong>threshold</strong> (<em>float</em>) – The photon threshold for puncta set 1.</p></li>
+<li><p><strong>lower_cell_size_threshold</strong> (<em>float</em>) – lower cell size threshold</p></li>
+<li><p><strong>upper_cell_size_threshold</strong> (<em>float</em>) – upper cell size threshold</p></li>
+<li><p><strong>out_cell</strong> (<em>boolean</em>) – exclude puncta that are inside cells</p></li>
+<li><p><strong>pixel_size</strong> (<em>float</em>) – size of pixels</p></li>
+<li><p><strong>blur_degree</strong> (<em>int</em>) – degree to blur spots</p></li>
+<li><p><strong>cell_string</strong> (<em>string</em>) – will use this to find corresponding cell files</p></li>
+<li><p><strong>protein_string</strong> (<em>string</em>) – will use this to find corresponding files</p></li>
+<li><p><strong>imtype</strong> (<em>string</em>) – image type previously analysed</p></li>
+<li><p><strong>aboveT</strong> (<em>int</em>) – do the calculation above or below threshold</p></li>
+<li><p><strong>z_project_first</strong> (<em>boolean</em><em>, </em><em>boolean</em>) – if both True (default), does a z
+projection before
+thresholding cell size.
+If both false, does not z project and
+then does the analysis per z plane.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p><strong>to_save</strong> (<em>pandas DataArray</em>) – pandas array to save</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="AnalysisFunctions.Analysis_Functions.make_datarray_largeobjects">
-<span class="sig-name descname"><span class="pre">make_datarray_largeobjects</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">areas_large</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">centroids_large</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sumintensities_large</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">meanintensities_large</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">raw_coloc</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">columns</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">z_planes</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cell_analysis</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#AnalysisFunctions.Analysis_Functions.make_datarray_largeobjects" title="Link to this definition"></a></dt>
-<dd><p>makes a datarray in pandas for large object information</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>areas_large</strong> (<em>np.1darray</em>) – areas in pixels</p></li>
-<li><p><strong>centroids_large</strong> (<em>np.1darray</em>) – centroids of large objects</p></li>
-<li><p><strong>meanintensities_large</strong> (<em>np.1darray</em>) – mean intensities of large objects</p></li>
-<li><p><strong>raw_coloc</strong> (<em>np.1darray</em>) – if large spot is in cell or not</p></li>
-<li><p><strong>columns</strong> (<em>list</em><em> of </em><em>strings</em>) – column labels</p></li>
-<li><p><strong>z_planes</strong> – z_planes to put in array (if needed); if int, assumes only
-one z-plane</p></li>
-</ul>
-</dd>
-<dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><ul class="simple">
-<li><p><strong>to_save_largeobjects</strong> (<em>pandas DataArray</em>)</p></li>
-<li><p><strong>columns_large = [‘x’, ‘y’, ‘z’, ‘area’, ‘mean_intensity_in_photons’, ‘zi’, ‘zf’]</strong></p></li>
-</ul>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="AnalysisFunctions.Analysis_Functions.make_datarray_spot">
-<span class="sig-name descname"><span class="pre">make_datarray_spot</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">centroids</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">estimated_intensity</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">estimated_background</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">estimated_background_perpixel</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">raw_colocalisation</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">columns</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">z_planes</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cell_analysis</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#AnalysisFunctions.Analysis_Functions.make_datarray_spot" title="Link to this definition"></a></dt>
-<dd><p>makes a datarray in pandas for spot information</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>centroids</strong> (<em>ndarray</em>) – centroid positions</p></li>
-<li><p><strong>estimated_intensity</strong> (<em>ndarray</em>) – estimated intensities</p></li>
-<li><p><strong>estimated_background</strong> (<em>ndarray</em>) – estimated backgrounds per punctum</p></li>
-<li><p><strong>estimated_background_perpixel</strong> (<em>np.ndarray</em>) – estimated background per pixel</p></li>
-<li><p><strong>raw_colocalisation</strong> (<em>np.ndarray</em>) – if spot is in cell mask or not</p></li>
-<li><p><strong>columns</strong> (<em>list</em><em> of </em><em>strings</em>) – column labels</p></li>
-<li><p><strong>z_planes</strong> – z_planes to put in array (if needed); if int, assumes only
-one z-plane</p></li>
-</ul>
-</dd>
-<dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p><strong>to_save</strong> (<em>pd.DataFrame</em>)</p>
+<dd class="field-even"><p><strong>cell_punctum_analysis</strong> (<em>pl.DataFrame</em>) – polars datarray of the cell analysis</p>
 </dd>
 </dl>
 </dd></dl>
@@ -870,14 +629,17 @@ one z-plane</p></li>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="AnalysisFunctions.Analysis_Functions.rejectoutliers">
-<span class="sig-name descname"><span class="pre">rejectoutliers</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#AnalysisFunctions.Analysis_Functions.rejectoutliers" title="Link to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">rejectoutliers</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">k</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">4</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#AnalysisFunctions.Analysis_Functions.rejectoutliers" title="Link to this definition"></a></dt>
 <dd><p>rejectoutliers function
 # rejects outliers from data, does iqr method (i.e. anything below
 lower quartile (25 percent) or above upper quartile (75 percent)
 is rejected)</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>data</strong> (<em>np.1darray</em>) – data matrix</p>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>data</strong> (<em>np.1darray</em>) – data matrix</p></li>
+<li><p><strong>k</strong> (<em>float</em>) – value for IQR</p></li>
+</ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p><strong>newdata</strong> (<em>np.1darray</em>) – data matrix</p>
@@ -887,7 +649,7 @@ is rejected)</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="AnalysisFunctions.Analysis_Functions.rejectoutliers_ind">
-<span class="sig-name descname"><span class="pre">rejectoutliers_ind</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#AnalysisFunctions.Analysis_Functions.rejectoutliers_ind" title="Link to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">rejectoutliers_ind</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">k</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">3</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#AnalysisFunctions.Analysis_Functions.rejectoutliers_ind" title="Link to this definition"></a></dt>
 <dd><p>rejectoutliers function
 # gets indices to reject outliers from data, does iqr method (i.e. anything
 below lower quartile (25 percent) or above upper quartile (75 percent)
@@ -903,52 +665,74 @@ is rejected)</p>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="AnalysisFunctions.Analysis_Functions.ricker_wavelet">
-<span class="sig-name descname"><span class="pre">ricker_wavelet</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sigma</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#AnalysisFunctions.Analysis_Functions.ricker_wavelet" title="Link to this definition"></a></dt>
-<dd><p>Create a 2D Ricker wavelet.</p>
+<dt class="sig sig-object py" id="AnalysisFunctions.Analysis_Functions.rejectoutliers_value">
+<span class="sig-name descname"><span class="pre">rejectoutliers_value</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">k</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">4</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">q1</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">q2</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">IQR</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#AnalysisFunctions.Analysis_Functions.rejectoutliers_value" title="Link to this definition"></a></dt>
+<dd><p>rejectoutliers_value function
+# rejects outliers from data, does iqr method (i.e. anything below
+lower quartile (25 percent) or above upper quartile (75 percent)
+is rejected). If given q1, q2, and IQR, uses directly.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>sigma</strong> (<em>float</em>) – Standard deviation for the wavelet.</p>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>data</strong> (<em>pl.DataFrame</em>) – polars dataarray</p></li>
+<li><p><strong>q1</strong> (<em>float</em>) – if float, uses directly</p></li>
+<li><p><strong>q2</strong> (<em>float</em>) – if float, uses directly</p></li>
+<li><p><strong>IQR</strong> (<em>float</em>) – if float, uses directly</p></li>
+</ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p><strong>wavelet</strong> (<em>numpy.ndarray</em>) – 2D Ricker wavelet.</p>
+<dd class="field-even"><p><strong>newdata</strong> (<em>np.1darray</em>) – data matrix</p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="AnalysisFunctions.Analysis_Functions.small_feature_kernel">
-<span class="sig-name descname"><span class="pre">small_feature_kernel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">img</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">large_mask</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">img2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Gx</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Gy</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">k2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">thres</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">area_thres</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rdl</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">d</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#AnalysisFunctions.Analysis_Functions.small_feature_kernel" title="Link to this definition"></a></dt>
-<dd><p>Find small features in an image and determine diffraction-limited (dl) and non-diffraction-limited (ndl) features.</p>
+<dt class="sig sig-object py" id="AnalysisFunctions.Analysis_Functions.single_spot_channel_rdf_with_threshold">
+<span class="sig-name descname"><span class="pre">single_spot_channel_rdf_with_threshold</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">analysis_data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">threshold</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pixel_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.11</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dr</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">aboveT</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#AnalysisFunctions.Analysis_Functions.single_spot_channel_rdf_with_threshold" title="Link to this definition"></a></dt>
+<dd><p>Does rdf analysis of spots from an analysis file.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>img</strong> (<em>numpy.ndarray</em>) – Original image.</p></li>
-<li><p><strong>large_mask</strong> (<em>numpy.ndarray</em>) – Binary mask for large features.</p></li>
-<li><p><strong>img2</strong> (<em>numpy.ndarray</em>) – Smoothed image for background suppression.</p></li>
-<li><p><strong>Gx</strong> (<em>numpy.ndarray</em>) – Gradient image in x-direction.</p></li>
-<li><p><strong>Gy</strong> (<em>numpy.ndarray</em>) – Gradient image in y-direction.</p></li>
-<li><p><strong>k2</strong> (<em>numpy.ndarray</em>) – The kernel for blob feature enhancement.</p></li>
-<li><p><strong>thres</strong> (<em>float</em>) – Converting real-valued image into a binary mask.</p></li>
-<li><p><strong>area_thres</strong> (<em>float</em>) – The maximum area in pixels a diffraction-limited object can be.</p></li>
-<li><p><strong>rdl</strong> (<em>list</em>) – Radiality threshold [min_radiality, max_radiality, area].</p></li>
-<li><p><strong>d</strong> (<em>integer</em>) – pixel radius</p></li>
+<li><p><strong>analysis_data</strong> (<em>pl.DataFrame</em>) – The analysis data of puncta.</p></li>
+<li><p><strong>threshold</strong> (<em>float</em>) – The photon threshold for puncta.</p></li>
+<li><p><strong>pixel_size</strong> (<em>float</em>) – size of pixels</p></li>
+<li><p><strong>dr</strong> (<em>float</em>) – dr of rdf</p></li>
+<li><p><strong>aboveT</strong> (<em>int</em>) – do the calculation above or below threshold</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><ul class="simple">
-<li><p><strong>dl_mask</strong> (<em>numpy.ndarray</em>) – Binary mask for diffraction-limited (dl) features.</p></li>
-<li><p><strong>centroids</strong> (<em>numpy.ndarray</em>) – Centroids for dl features.</p></li>
-<li><p><strong>radiality</strong> (<em>numpy.ndarray</em>) – Radiality value for all features (before the filtering based on the radiality).</p></li>
-<li><p><strong>idxs</strong> (<em>numpy.ndarray</em>) – Indices for objects that satisfy the decision boundary.</p></li>
+<dd class="field-even"><p><strong>rdf</strong> (<em>pl.DataFrame</em>) – polars datarray of the rdf</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="AnalysisFunctions.Analysis_Functions.spot_mask_rdf_with_threshold">
+<span class="sig-name descname"><span class="pre">spot_mask_rdf_with_threshold</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">analysis_file</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">threshold</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">out_cell</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pixel_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.11</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dr</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cell_string</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'C0'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">protein_string</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'C1'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">imtype</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'.tif'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">aboveT</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#AnalysisFunctions.Analysis_Functions.spot_mask_rdf_with_threshold" title="Link to this definition"></a></dt>
+<dd><p>Does rdf analysis of spots wrt mask from an analysis file.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>analysis_file</strong> (<em>pl.DataFrame</em>) – The analysis file location of puncta set 1.</p></li>
+<li><p><strong>threshold</strong> (<em>float</em>) – The photon threshold for puncta set 1.</p></li>
+<li><p><strong>out_cell</strong> (<em>boolean</em>) – exclude puncta that are inside cells</p></li>
+<li><p><strong>pixel_size</strong> (<em>float</em>) – size of pixels</p></li>
+<li><p><strong>dr</strong> (<em>float</em>) – dr of rdf</p></li>
+<li><p><strong>cell_string</strong> (<em>string</em>) – will use this to find corresponding cell files</p></li>
+<li><p><strong>protein_string</strong> (<em>string</em>) – will use this to find corresponding files</p></li>
+<li><p><strong>imtype</strong> (<em>string</em>) – image type previously analysed</p></li>
+<li><p><strong>aboveT</strong> (<em>int</em>) – do the calculation above or below threshold</p></li>
 </ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>rdf</strong> (<em>pl.DataFrame</em>) – polars datarray of the rdf</p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="AnalysisFunctions.Analysis_Functions.spot_to_mask_rdf">
-<span class="sig-name descname"><span class="pre">spot_to_mask_rdf</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">coordinates_spot</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">coordinates_mask</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">out_cell</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pixel_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.11</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dr</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_radius</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_radius</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">60.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">image_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">(1200,</span> <span class="pre">1200)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_iter</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">3</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#AnalysisFunctions.Analysis_Functions.spot_to_mask_rdf" title="Link to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">spot_to_mask_rdf</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">coordinates_spot</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">coordinates_mask</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pixel_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.11</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dr</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">r_max</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">30.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">image_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">(1200,</span> <span class="pre">1200)</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#AnalysisFunctions.Analysis_Functions.spot_to_mask_rdf" title="Link to this definition"></a></dt>
 <dd><p>Generates spot_to_mask_rdf</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -957,17 +741,14 @@ is rejected)</p>
 <li><p><strong>coordinates_mask</strong> (<em>np.2darray</em>) – array of 2D mask coordinates</p></li>
 <li><p><strong>pixel_size</strong> (<em>np.float</em>) – pixel size in same units as dr (default: 0.11)</p></li>
 <li><p><strong>dr</strong> (<em>np.float</em>) – step for radial distribution function</p></li>
-<li><p><strong>min_radius</strong> (<em>np.float</em>) – minimum radius</p></li>
 <li><p><strong>max_radius</strong> (<em>np.float</em>) – maximum radius value</p></li>
 <li><p><strong>image_size</strong> (<em>array</em>) – maximum image size</p></li>
-<li><p><strong>n_iter</strong> (<em>int</em>) – number of iterations for error calculation</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><ul class="simple">
 <li><p><strong>g_r</strong> (<em>np.1darray</em>) – radial distribution function</p></li>
 <li><p><strong>radii</strong> (<em>np.1darray</em>) – radius vector</p></li>
-<li><p><strong>g_r_std</strong> (<em>np.1darray</em>) – std of rdf</p></li>
 </ul>
 </dd>
 </dl>
@@ -1050,6 +831,50 @@ is rejected)</p>
 </dl>
 </dd></dl>
 
+<dl class="py method">
+<dt class="sig sig-object py" id="AnalysisFunctions.Analysis_Functions.threshold_cell_areas">
+<span class="sig-name descname"><span class="pre">threshold_cell_areas</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cell_mask_raw</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lower_cell_size_threshold</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">100</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">upper_cell_size_threshold</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">inf</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">z_project</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[True,</span> <span class="pre">True]</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#AnalysisFunctions.Analysis_Functions.threshold_cell_areas" title="Link to this definition"></a></dt>
+<dd><p>Removes small and/or large objects from a cell mask.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>cell_mask_raw</strong> (<em>np.ndarray</em>) – Cell mask object</p></li>
+<li><p><strong>lower_cell_size_threshold</strong> (<em>float</em>) – Lower size threshold</p></li>
+<li><p><strong>upper_cell_size_threshold</strong> (<em>float</em>) – Upper size threshold</p></li>
+<li><p><strong>z_project</strong> (<em>bool</em>) – If True, z-projects cell mask</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>tuple</strong> – Processed cell mask, pixel image locations, centroids, areas</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="AnalysisFunctions.Analysis_Functions.two_puncta_channels_rdf_with_thresholds">
+<span class="sig-name descname"><span class="pre">two_puncta_channels_rdf_with_thresholds</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">analysis_data_p1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">analysis_data_p2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">threshold_p1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">threshold_p2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pixel_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.11</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dr</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">protein_string_1</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'C0'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">protein_string_2</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'C1'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">imtype</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'.tif'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">aboveT</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">image_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">(1200.0,</span> <span class="pre">1200.0)</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#AnalysisFunctions.Analysis_Functions.two_puncta_channels_rdf_with_thresholds" title="Link to this definition"></a></dt>
+<dd><p>Does rdf analysis of spots wrt mask from an analysis file.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>analysis_data_p1</strong> (<em>pl.DataFrame</em>) – The analysis data of puncta set 1.</p></li>
+<li><p><strong>analysis_data_p2</strong> (<em>pl.DataFrame</em>) – The analysis data of puncta set 2.</p></li>
+<li><p><strong>threshold_p1</strong> (<em>float</em>) – The photon threshold for puncta set 1.</p></li>
+<li><p><strong>threshold_p2</strong> (<em>float</em>) – The photon threshold for puncta set 2.</p></li>
+<li><p><strong>pixel_size</strong> (<em>float</em>) – size of pixels</p></li>
+<li><p><strong>dr</strong> (<em>float</em>) – dr of rdf</p></li>
+<li><p><strong>protein_string_1</strong> (<em>string</em>) – will use this to find corresponding other punctum files</p></li>
+<li><p><strong>protein_string_2</strong> (<em>string</em>) – will use this to find corresponding other punctum files</p></li>
+<li><p><strong>imtype</strong> (<em>string</em>) – image type previously analysed</p></li>
+<li><p><strong>aboveT</strong> (<em>int</em>) – do the calculation above or below threshold</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>rdf</strong> (<em>pl.DataFrame</em>) – polars datarray of the rdf</p>
+</dd>
+</dl>
+</dd></dl>
+
 </dd></dl>
 
 </section>
@@ -1059,7 +884,7 @@ is rejected)</p>
           </div>
           <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
         <a href="modules.html" class="btn btn-neutral float-left" title="src" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
-        <a href="IOFunctions.html" class="btn btn-neutral float-right" title="IOFunctions module" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="HelperFunctions.html" class="btn btn-neutral float-right" title="HelperFunctions module" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 
   <hr/>

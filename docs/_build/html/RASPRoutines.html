@@ -48,20 +48,25 @@
 <li class="toctree-l1"><a class="reference internal" href="getting-started.html">Introduction</a></li>
 <li class="toctree-l1 current"><a class="reference internal" href="modules.html">src</a><ul class="current">
 <li class="toctree-l2"><a class="reference internal" href="AnalysisFunctions.html">AnalysisFunctions module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="HelperFunctions.html">HelperFunctions module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="IOFunctions.html">IOFunctions module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="Image_Analysis_Functions.html">Image_Analysis_Functions module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="MultiD_RD_functions.html">MultiD_RD_functions module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="PlottingFunctions.html">PlottingFunctions module</a></li>
 <li class="toctree-l2 current"><a class="current reference internal" href="#">RASPRoutines module</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#RASPRoutines.RASP_Routines"><code class="docutils literal notranslate"><span class="pre">RASP_Routines</span></code></a><ul>
 <li class="toctree-l4"><a class="reference internal" href="#RASPRoutines.RASP_Routines.analyse_images"><code class="docutils literal notranslate"><span class="pre">RASP_Routines.analyse_images()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#RASPRoutines.RASP_Routines.calculate_spot_mask_rdf_with_threshold"><code class="docutils literal notranslate"><span class="pre">RASP_Routines.calculate_spot_mask_rdf_with_threshold()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#RASPRoutines.RASP_Routines.calculate_spot_rdf_with_threshold"><code class="docutils literal notranslate"><span class="pre">RASP_Routines.calculate_spot_rdf_with_threshold()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#RASPRoutines.RASP_Routines.calculate_two_puncta_channels_rdf_with_thresholds"><code class="docutils literal notranslate"><span class="pre">RASP_Routines.calculate_two_puncta_channels_rdf_with_thresholds()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#RASPRoutines.RASP_Routines.calibrate_area"><code class="docutils literal notranslate"><span class="pre">RASP_Routines.calibrate_area()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#RASPRoutines.RASP_Routines.calibrate_radiality"><code class="docutils literal notranslate"><span class="pre">RASP_Routines.calibrate_radiality()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="#RASPRoutines.RASP_Routines.colocalise_spots_with_threshold"><code class="docutils literal notranslate"><span class="pre">RASP_Routines.colocalise_spots_with_threshold()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="#RASPRoutines.RASP_Routines.colocalise_with_threshold"><code class="docutils literal notranslate"><span class="pre">RASP_Routines.colocalise_with_threshold()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#RASPRoutines.RASP_Routines.count_puncta_in_individual_cells_threshold"><code class="docutils literal notranslate"><span class="pre">RASP_Routines.count_puncta_in_individual_cells_threshold()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#RASPRoutines.RASP_Routines.file_search"><code class="docutils literal notranslate"><span class="pre">RASP_Routines.file_search()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#RASPRoutines.RASP_Routines.get_infocus_planes"><code class="docutils literal notranslate"><span class="pre">RASP_Routines.get_infocus_planes()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#RASPRoutines.RASP_Routines.lo_colocalise_wrapper"><code class="docutils literal notranslate"><span class="pre">RASP_Routines.lo_colocalise_wrapper()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#RASPRoutines.RASP_Routines.single_image_analysis"><code class="docutils literal notranslate"><span class="pre">RASP_Routines.single_image_analysis()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#RASPRoutines.RASP_Routines.spot_colocalisation_wrapper"><code class="docutils literal notranslate"><span class="pre">RASP_Routines.spot_colocalisation_wrapper()</span></code></a></li>
 </ul>
 </li>
 </ul>
@@ -105,7 +110,7 @@ jsb92, 2024/02/08</p>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <dl class="py method">
 <dt class="sig sig-object py" id="RASPRoutines.RASP_Routines.analyse_images">
-<span class="sig-name descname"><span class="pre">analyse_images</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">folder</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">imtype</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'.tif'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">thres</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.05</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">large_thres</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">200.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gsigma</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.4</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rwave</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">protein_string</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'C1'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cell_string</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'C0'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">if_filter</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">im_start</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cell_analysis</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">one_savefile</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">disp</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">analyse_clr</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#RASPRoutines.RASP_Routines.analyse_images" title="Link to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">analyse_images</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">folder</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">imtype</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'.tif'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">thres</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.05</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">large_thres</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">200.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gsigma</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.4</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rwave</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">protein_string</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'C1'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cell_string</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'C0'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">if_filter</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">im_start</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cell_analysis</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">one_savefile</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">disp</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">folder_recursive</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">error_reduction</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#RASPRoutines.RASP_Routines.analyse_images" title="Link to this definition"></a></dt>
 <dd><p>analyses data from images in a specified folder,
 saves spots, locations, intensities and backgrounds in a folder created
 next to the folder analysed with _analysis string attached
@@ -124,12 +129,11 @@ used for particular experiment</p>
 <li><p><strong>cell_string</strong> (<em>np.1darray</em>) – strings for cell-containing data. Default C0.</p></li>
 <li><p><strong>if_filter</strong> (<em>boolean</em>) – Filter images for focus. Default True.</p></li>
 <li><p><strong>im_start</strong> (<em>integer</em>) – Images to start from. Default 0.</p></li>
-<li><p><strong>cell_analysis</strong> (<em>boolean</em>) – Parameter where script also analyses cell
-images and computes colocalisation likelihood ratios. Default True.</p></li>
-<li><p><strong>one_savefile</strong> (<em>boolean</em>) – Parameter that, if true, doesn’t save a file. Default True.
-per image but amalgamates them into one file. Default True.</p></li>
+<li><p><strong>cell_analysis</strong> (<em>boolean</em>) – Parameter where script also analyses cell images. Default True.</p></li>
+<li><p><strong>one_savefile</strong> (<em>boolean</em>) – Parameter that, if true, amalgamates analyisis into one file. Default True.</p></li>
 <li><p><strong>disp</strong> (<em>boolean</em>) – If true, prints when analysed an image stack. Default True.</p></li>
-<li><p><strong>analyse_clr</strong> (<em>boolean</em>) – If true, calculates the clr. If not, just coincidence. Default True.</p></li>
+<li><p><strong>folder_recursion</strong> (<em>boolean</em>) – If true, recursively finds folders and analyses each separately.</p></li>
+<li><p><strong>error_reduction</strong> (<em>boolean</em>) – If true, reduces error on the oligomer image using Huang’s code</p></li>
 </ul>
 </dd>
 </dl>
@@ -137,7 +141,7 @@ per image but amalgamates them into one file. Default True.</p></li>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="RASPRoutines.RASP_Routines.calculate_spot_mask_rdf_with_threshold">
-<span class="sig-name descname"><span class="pre">calculate_spot_mask_rdf_with_threshold</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">analysis_file</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">threshold</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">out_cell</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pixel_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.11</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dr</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_iter</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cell_string</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'C0'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">protein_string</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'C1'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">imtype</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'.tif'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#RASPRoutines.RASP_Routines.calculate_spot_mask_rdf_with_threshold" title="Link to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">calculate_spot_mask_rdf_with_threshold</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">analysis_file</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">threshold</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">out_cell</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pixel_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.11</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dr</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cell_string</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'C0'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">protein_string</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'C1'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">imtype</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'.tif'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#RASPRoutines.RASP_Routines.calculate_spot_mask_rdf_with_threshold" title="Link to this definition"></a></dt>
 <dd><p>Does rdf analysis of spots wrt mask from an analysis file.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -161,14 +165,15 @@ per image but amalgamates them into one file. Default True.</p></li>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="RASPRoutines.RASP_Routines.calculate_spot_rdf_with_threshold">
-<span class="sig-name descname"><span class="pre">calculate_spot_rdf_with_threshold</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">analysis_file</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">threshold</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pixel_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.11</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dr</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#RASPRoutines.RASP_Routines.calculate_spot_rdf_with_threshold" title="Link to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">calculate_spot_rdf_with_threshold</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">analysis_file</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">analysis_data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">threshold</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pixel_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.11</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dr</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#RASPRoutines.RASP_Routines.calculate_spot_rdf_with_threshold" title="Link to this definition"></a></dt>
 <dd><p>Does rdf analysis of spots above a photon threshold in an
 analysis file.</p>
 <p>Uses code from 10.5281/zenodo.4625675, please cite this software if used in a paper.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>analysis_file</strong> (<em>str</em>) – The analysis file to be re-done.</p></li>
+<li><p><strong>analysis_file</strong> (<em>str</em>) – Analysis file name.</p></li>
+<li><p><strong>analysis_data</strong> (<em>pl.DataFrame</em>) – The analysis data to be re-done.</p></li>
 <li><p><strong>threshold</strong> (<em>float</em>) – The photon threshold</p></li>
 <li><p><strong>pixel_size</strong> (<em>float</em>) – size of pixels</p></li>
 <li><p><strong>dr</strong> (<em>float</em>) – dr of rdf</p></li>
@@ -181,18 +186,42 @@ analysis file.</p>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="RASPRoutines.RASP_Routines.calibrate_area">
-<span class="sig-name descname"><span class="pre">calibrate_area</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">folder</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">imtype</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'.tif'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gsigma</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.4</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rwave</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">large_thres</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">10000.0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#RASPRoutines.RASP_Routines.calibrate_area" title="Link to this definition"></a></dt>
-<dd><p>Calibrates area threshold. Given a folder of bead images,
-analyses them and saves the radiality parameter to the .json file, as
-well as writing it to the current class radiality and flatness values</p>
+<dt class="sig sig-object py" id="RASPRoutines.RASP_Routines.calculate_two_puncta_channels_rdf_with_thresholds">
+<span class="sig-name descname"><span class="pre">calculate_two_puncta_channels_rdf_with_thresholds</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">analysis_file_p1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">analysis_file_p2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">threshold_p1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">threshold_p2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pixel_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.11</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dr</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">protein_string_1</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'C0'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">protein_string_2</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'C1'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">imtype</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'.tif'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#RASPRoutines.RASP_Routines.calculate_two_puncta_channels_rdf_with_thresholds" title="Link to this definition"></a></dt>
+<dd><p>Does rdf analysis of spots wrt mask from an analysis file.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>folder</strong> (<em>string</em>) – Folder containing bead (bright) control tifs</p></li>
-<li><p><strong>imtype</strong> (<em>string</em>) – Type of images being analysed, default tif</p></li>
-<li><p><strong>gisgma</strong> (<em>float</em>) – gaussian blurring parameter (default 1.4)</p></li>
-<li><p><strong>rwave</strong> (<em>float</em>) – Ricker wavelent sigma (default 2.)</p></li>
+<li><p><strong>analysis_file_p1</strong> (<em>str</em>) – The analysis file of puncta set 1.</p></li>
+<li><p><strong>analysis_file_p2</strong> (<em>str</em>) – The analysis file of puncta set 2.</p></li>
+<li><p><strong>threshold_p1</strong> (<em>float</em>) – The photon threshold for puncta set 1.</p></li>
+<li><p><strong>threshold_p2</strong> (<em>float</em>) – The photon threshold for puncta set 2.</p></li>
+<li><p><strong>pixel_size</strong> (<em>float</em>) – size of pixels</p></li>
+<li><p><strong>dr</strong> (<em>float</em>) – dr of rdf</p></li>
+<li><p><strong>n_iter</strong> (<em>int</em>) – number of CSR iterations</p></li>
+<li><p><strong>protein_string_1</strong> (<em>string</em>) – will use this to find corresponding other punctum files</p></li>
+<li><p><strong>protein_string_2</strong> (<em>string</em>) – will use this to find corresponding other punctum files</p></li>
+<li><p><strong>imtype</strong> (<em>string</em>) – image type previously analysed</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>rdf</strong> (<em>pl.DataArray</em>) – polars datarray of the rdf</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="RASPRoutines.RASP_Routines.calibrate_area">
+<span class="sig-name descname"><span class="pre">calibrate_area</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">folder</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">imtype</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'.tif'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gsigma</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.4</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rwave</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">large_thres</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">10000.0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#RASPRoutines.RASP_Routines.calibrate_area" title="Link to this definition"></a></dt>
+<dd><p>Calibrates area threshold. Analyzes bead images in a folder and saves
+the radiality parameter and class radiality/flatness values.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>folder</strong> (<em>string</em>) – Folder containing bead (bright) control tifs.</p></li>
+<li><p><strong>imtype</strong> (<em>string</em>) – Type of images being analyzed, default .tif.</p></li>
+<li><p><strong>gsigma</strong> (<em>float</em>) – Gaussian blurring parameter (default 1.4).</p></li>
+<li><p><strong>rwave</strong> (<em>float</em>) – Ricker wavelet sigma (default 2.0).</p></li>
 </ul>
 </dd>
 </dl>
@@ -200,48 +229,25 @@ well as writing it to the current class radiality and flatness values</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="RASPRoutines.RASP_Routines.calibrate_radiality">
-<span class="sig-name descname"><span class="pre">calibrate_radiality</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">folder</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">imtype</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'.tif'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gsigma</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.4</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rwave</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">accepted_ratio</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#RASPRoutines.RASP_Routines.calibrate_radiality" title="Link to this definition"></a></dt>
-<dd><p>Calibrates radility parameters. Given a folder of negative controls,
-analyses them and saves the radiality parameter to the .json file, as
-well as writing it to the current class radiality and flatness values</p>
+<span class="sig-name descname"><span class="pre">calibrate_radiality</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">folder</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">imtype</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'.tif'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">protein_string</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'C0'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gsigma</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.4</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rwave</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">accepted_ratio</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#RASPRoutines.RASP_Routines.calibrate_radiality" title="Link to this definition"></a></dt>
+<dd><p>Calibrates radiality parameters efficiently using NumPy vectorization.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>folder</strong> (<em>string</em>) – Folder containing negative control tifs</p></li>
-<li><p><strong>imtype</strong> (<em>string</em>) – Type of images being analysed, default tif</p></li>
-<li><p><strong>gsigma</strong> (<em>float</em>) – gaussian blurring parameter (default 1.4)</p></li>
-<li><p><strong>rwave</strong> (<em>float</em>) – Ricker wavelent sigma (default 2.)</p></li>
-<li><p><strong>accepted_ratio</strong> (<em>float</em>) – Percentage accepted of false positives</p></li>
+<li><p><strong>folder</strong> (<em>str</em>) – Folder containing negative control tifs</p></li>
+<li><p><strong>imtype</strong> (<em>str</em>) – Image file type</p></li>
+<li><p><strong>protein_string</strong> (<em>str</em>) – Image identifier</p></li>
+<li><p><strong>gsigma</strong> (<em>float</em>) – Gaussian blurring parameter</p></li>
+<li><p><strong>rwave</strong> (<em>float</em>) – Ricker wavelet sigma</p></li>
+<li><p><strong>accepted_ratio</strong> (<em>float</em>) – Percentage of accepted data points</p></li>
 </ul>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="RASPRoutines.RASP_Routines.colocalise_spots_with_threshold">
-<span class="sig-name descname"><span class="pre">colocalise_spots_with_threshold</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">analysis_file_1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">analysis_file_2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">threshold_1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">threshold_2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">spot_1_string</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">spot_2_string</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">imtype</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'.tif'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">image_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">(1200,</span> <span class="pre">1200)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">blur_degree</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#RASPRoutines.RASP_Routines.colocalise_spots_with_threshold" title="Link to this definition"></a></dt>
-<dd><p>Redo colocalisation analayses of spots above a photon threshold in an
-analysis file, to spots above a second threshold in a separate analysis file.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>analysis_1_file</strong> (<em>str</em>) – Analysis file (channel 1) to be re-done.</p></li>
-<li><p><strong>analysis_2_file</strong> (<em>str</em>) – Analysis file (channel 2) to be re-done.</p></li>
-<li><p><strong>threshold_1</strong> (<em>float</em>) – The photon threshold for channel 1</p></li>
-<li><p><strong>threshold_2</strong> (<em>float</em>) – The photon threshold for channel 2</p></li>
-<li><p><strong>spot_1_string</strong> (<em>str</em>) – string of spot 1</p></li>
-<li><p><strong>spot_2_string</strong> (<em>str</em>) – string of spot 2</p></li>
-<li><p><strong>imtype</strong> (<em>str</em>) – image type</p></li>
-<li><p><strong>image_size</strong> (<em>list</em>) – original image size</p></li>
-<li><p><strong>blur_degree</strong> (<em>int</em>) – blur degree for colocalisation analysis</p></li>
-</ul>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="RASPRoutines.RASP_Routines.colocalise_with_threshold">
-<span class="sig-name descname"><span class="pre">colocalise_with_threshold</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">analysis_file</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">threshold</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">protein_string</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cell_string</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">imtype</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'.tif'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">blur_degree</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">calc_clr</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#RASPRoutines.RASP_Routines.colocalise_with_threshold" title="Link to this definition"></a></dt>
+<dt class="sig sig-object py" id="RASPRoutines.RASP_Routines.count_puncta_in_individual_cells_threshold">
+<span class="sig-name descname"><span class="pre">count_puncta_in_individual_cells_threshold</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">analysis_data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">analysis_file</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">threshold</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cell_string</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">protein_string</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lower_cell_size_threshold</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2000</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">upper_cell_size_threshold</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">inf</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">imtype</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'.tif'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">blur_degree</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">z_project_first</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">replace_files</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">q1</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">q2</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">IQR</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">median</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">k</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">4</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">end_string</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'HC_threshold'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#RASPRoutines.RASP_Routines.count_puncta_in_individual_cells_threshold" title="Link to this definition"></a></dt>
 <dd><p>Redo colocalisation analayses of spots above a photon threshold in an
 analysis file.</p>
 <dl class="field-list simple">
@@ -249,11 +255,25 @@ analysis file.</p>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>analysis_file</strong> (<em>str</em>) – The analysis file to be re-done.</p></li>
 <li><p><strong>threshold</strong> (<em>float</em>) – The photon threshold</p></li>
-<li><p><strong>protein_string</strong> (<em>str</em>) – string of analysed protein</p></li>
 <li><p><strong>cell_string</strong> (<em>str</em>) – string of cell to analyse</p></li>
+<li><p><strong>protein_string</strong> (<em>str</em>) – string of analysed protein</p></li>
+<li><p><strong>lower_cell_size_threshold</strong> (<em>float</em>) – lower cell size threshold</p></li>
+<li><p><strong>upper_cell_size_threshold</strong> (<em>float</em>) – upper cell size threshold</p></li>
 <li><p><strong>imtype</strong> (<em>str</em>) – image type</p></li>
 <li><p><strong>blur_degree</strong> (<em>int</em>) – blur degree for colocalisation analysis</p></li>
-<li><p><strong>calc_clr</strong> (<em>boolean</em>) – Calculate the clr, yes/no.</p></li>
+<li><p><strong>z_project_first</strong> (<em>boolean</em>) – if True (default), does a z projection before
+thresholding cell size. If false, does the opposite.</p></li>
+<li><p><strong>replace_files</strong> (<em>boolean</em>) – if False, looks for files first and if it’s already analysed, does nothing</p></li>
+<li><p><strong>q1</strong> (<em>float</em>) – if float, adds in IQR filter</p></li>
+<li><p><strong>q2</strong> (<em>float</em>) – if float, adds in IQR filter</p></li>
+<li><p><strong>IQR</strong> (<em>Float</em>) – if float, adds in IQR filter</p></li>
+<li><p><strong>median</strong> (<em>float</em>) – if float, does cell protein load</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>cell_punctum_analysis_AT</strong> (<em>pl.DataFrame</em>) – dataframe of cell analysis above threshold</p></li>
+<li><p><strong>cell_punctum_analysis_UT</strong> (<em>pl.DataFrame</em>) – dataframe of cell analysis below threshold</p></li>
 </ul>
 </dd>
 </dl>
@@ -296,8 +316,32 @@ and then filter the results to include only those containing ‘string2’.</p>
 </dd></dl>
 
 <dl class="py method">
+<dt class="sig sig-object py" id="RASPRoutines.RASP_Routines.lo_colocalise_wrapper">
+<span class="sig-name descname"><span class="pre">lo_colocalise_wrapper</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">analysis_file</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">threshold</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">protein_string</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lo_string</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cell_string</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">coloc_type</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">imtype</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'.tif'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">blur_degree</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">calc_clr</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lower_cell_size_threshold</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">upper_cell_size_threshold</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">inf</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#RASPRoutines.RASP_Routines.lo_colocalise_wrapper" title="Link to this definition"></a></dt>
+<dd><p>Redo colocalisation analyses of spots above a photon threshold in an
+analysis file.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>analysis_file</strong> (<em>str</em>) – The analysis file to be re-done.</p></li>
+<li><p><strong>threshold</strong> (<em>float</em>) – The photon threshold</p></li>
+<li><p><strong>protein_string</strong> (<em>str</em>) – string of analysed protein</p></li>
+<li><p><strong>lo_string</strong> (<em>str</em>) – string of large object to analyse</p></li>
+<li><p><strong>coloc_typ</strong> (<em>boolean</em>) – if 1 (default), for cells. if 0, for large protein objects.
+if 2, between cell mask and large protein objects.</p></li>
+<li><p><strong>imtype</strong> (<em>str</em>) – image type</p></li>
+<li><p><strong>blur_degree</strong> (<em>int</em>) – blur degree for colocalisation analysis</p></li>
+<li><p><strong>calc_clr</strong> (<em>boolean</em>) – Calculate the clr, yes/no.</p></li>
+<li><p><strong>lower_cell_size_threshold</strong> (<em>float</em>) – lower threshold of cell size</p></li>
+<li><p><strong>upper_cell_size_threshold</strong> (<em>float</em>) – upper threshold of cell size</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
 <dt class="sig sig-object py" id="RASPRoutines.RASP_Routines.single_image_analysis">
-<span class="sig-name descname"><span class="pre">single_image_analysis</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">protein_file</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">thres</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.05</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">large_thres</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">100.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gsigma</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.4</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rwave</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">image_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">200</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">save_figure</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cell_analysis</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cell_file</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#RASPRoutines.RASP_Routines.single_image_analysis" title="Link to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">single_image_analysis</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">protein_file</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">thres</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.05</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">large_thres</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">100.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gsigma</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.4</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rwave</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">image_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">200</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">save_figure</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cell_file</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#RASPRoutines.RASP_Routines.single_image_analysis" title="Link to this definition"></a></dt>
 <dd><p>analyses data from specified image,
 presents spots, locations, intensities in a figure, with the option of
 saving this figure</p>
@@ -315,6 +359,38 @@ chunk of an image to give you an idea, can scale up</p></li>
 <li><p><strong>cell_analysis</strong> (<em>boolean</em>) – Parameter where script also analyses cell
 images and computes colocalisation likelihood ratios.</p></li>
 <li><p><strong>cell_file</strong> (<em>string</em>) – cell image location</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="RASPRoutines.RASP_Routines.spot_colocalisation_wrapper">
+<span class="sig-name descname"><span class="pre">spot_colocalisation_wrapper</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">analysis_file_1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">analysis_file_2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">threshold_1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">threshold_2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">spot_1_string</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">spot_2_string</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">imtype</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'.tif'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">image_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">(1200,</span> <span class="pre">1200)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">blur_degree</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#RASPRoutines.RASP_Routines.spot_colocalisation_wrapper" title="Link to this definition"></a></dt>
+<dd><p>Redo colocalisation analayses of spots above a photon threshold in an
+analysis file, to spots above a second threshold in a separate analysis file.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>analysis_1_file</strong> (<em>str</em>) – Analysis file (channel 1) to be re-done.</p></li>
+<li><p><strong>analysis_2_file</strong> (<em>str</em>) – Analysis file (channel 2) to be re-done.</p></li>
+<li><p><strong>threshold_1</strong> (<em>float</em>) – The photon threshold for channel 1</p></li>
+<li><p><strong>threshold_2</strong> (<em>float</em>) – The photon threshold for channel 2</p></li>
+<li><p><strong>spot_1_string</strong> (<em>str</em>) – string of spot 1</p></li>
+<li><p><strong>spot_2_string</strong> (<em>str</em>) – string of spot 2</p></li>
+<li><p><strong>imtype</strong> (<em>str</em>) – image type</p></li>
+<li><p><strong>image_size</strong> (<em>list</em>) – original image size</p></li>
+<li><p><strong>blur_degree</strong> (<em>int</em>) – blur degree for colocalisation analysis</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>channel_1_analysis</strong> (<em>pl.DataFrame</em>) – channel 1 type above and below threshold</p></li>
+<li><p><strong>channel_2_analysis</strong> (<em>pl.DataFrame</em>) – channel 2 type above and below threshold</p></li>
+<li><p><strong>spot_1_analysis_AT</strong> (<em>pl.DataFrame</em>) – channel 1 type above threshold</p></li>
+<li><p><strong>spot_2_analysis_AT</strong> (<em>pl.DataFrame</em>) – channel 2 type above threshold</p></li>
+<li><p><strong>spot_1_analysis_UT</strong> (<em>pl.DataFrame</em>) – channel 1 type below threshold</p></li>
+<li><p><strong>spot_2_analysis_UT</strong> (<em>pl.DataFrame</em>) – channel 2 type below threshold</p></li>
 </ul>
 </dd>
 </dl>

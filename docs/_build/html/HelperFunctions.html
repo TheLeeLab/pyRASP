@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>HelperFunctions module &mdash; pyRASP v0.6.1 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=19f00094" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="_static/jquery.js?v=5d32c60e"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script src="_static/documentation_options.js?v=d064d8df"></script>
+        <script src="_static/doctools.js?v=888ff710"></script>
+        <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="IOFunctions module" href="IOFunctions.html" />
+    <link rel="prev" title="AnalysisFunctions module" href="AnalysisFunctions.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            pyRASP
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="getting-started.html">Introduction</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="modules.html">src</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="AnalysisFunctions.html">AnalysisFunctions module</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">HelperFunctions module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#HelperFunctions.Helper_Functions"><code class="docutils literal notranslate"><span class="pre">Helper_Functions</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#HelperFunctions.Helper_Functions.gen_CSRmats"><code class="docutils literal notranslate"><span class="pre">Helper_Functions.gen_CSRmats()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#HelperFunctions.Helper_Functions.make_datarray_cell"><code class="docutils literal notranslate"><span class="pre">Helper_Functions.make_datarray_cell()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#HelperFunctions.Helper_Functions.make_datarray_largeobjects"><code class="docutils literal notranslate"><span class="pre">Helper_Functions.make_datarray_largeobjects()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#HelperFunctions.Helper_Functions.make_datarray_spot"><code class="docutils literal notranslate"><span class="pre">Helper_Functions.make_datarray_spot()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="IOFunctions.html">IOFunctions module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="Image_Analysis_Functions.html">Image_Analysis_Functions module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="MultiD_RD_functions.html">MultiD_RD_functions module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="PlottingFunctions.html">PlottingFunctions module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="RASPRoutines.html">RASPRoutines module</a></li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">pyRASP</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="modules.html">src</a></li>
+      <li class="breadcrumb-item active">HelperFunctions module</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/HelperFunctions.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="module-HelperFunctions">
+<span id="helperfunctions-module"></span><h1>HelperFunctions module<a class="headerlink" href="#module-HelperFunctions" title="Link to this heading"></a></h1>
+<p>This class contains helper functions pertaining to analysis of images based on their
+radiality, relating to the RASP concept.
+jsb92, 2024/01/02</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="HelperFunctions.Helper_Functions">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">HelperFunctions.</span></span><span class="sig-name descname"><span class="pre">Helper_Functions</span></span><a class="headerlink" href="#HelperFunctions.Helper_Functions" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="HelperFunctions.Helper_Functions.gen_CSRmats">
+<span class="sig-name descname"><span class="pre">gen_CSRmats</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">image_z_shape</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#HelperFunctions.Helper_Functions.gen_CSRmats" title="Link to this definition"></a></dt>
+<dd><p>Generates empty matrices for the CSR</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>image_z_shape</strong> (<em>int</em>) – shape of new array</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>clr</strong> (<em>ndarray</em>) – empty array</p></li>
+<li><p><strong>norm_std</strong> (<em>ndarray</em>) – empty array</p></li>
+<li><p><strong>norm_CSR</strong> (<em>ndarray</em>) – empty array</p></li>
+<li><p><strong>expected_spots</strong> (<em>ndarray</em>) – empty array</p></li>
+<li><p><strong>coincidence</strong> (<em>ndarray</em>) – empty array</p></li>
+<li><p><strong>chance_coincidence</strong> (<em>ndarray</em>) – empty array</p></li>
+<li><p><strong>raw_localisation</strong> (<em>dict</em>) – empty dict</p></li>
+<li><p><strong>n_iter</strong> (<em>ndarray</em>) – empty array</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="HelperFunctions.Helper_Functions.make_datarray_cell">
+<span class="sig-name descname"><span class="pre">make_datarray_cell</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">clr</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">norm_std</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">norm_CSR</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">expected_spots</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">coincidence</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">chance_coincidence</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">coincidence_large</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">chance_coincidence_large</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_iter</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">columns</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">z_planes</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'none'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">analyse_clr</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#HelperFunctions.Helper_Functions.make_datarray_cell" title="Link to this definition"></a></dt>
+<dd><p>makes a datarray in pandas for cell information</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>clr</strong> (<em>ndarray</em>) – colocalisation likelihood ratios</p></li>
+<li><p><strong>norm_std</strong> (<em>np.1darray</em>) – array of standard deviations</p></li>
+<li><p><strong>norm_CSR</strong> (<em>np.1darray</em>) – array of CSRs</p></li>
+<li><p><strong>expected_spots</strong> (<em>np.1darray</em>) – array of expected spots</p></li>
+<li><p><strong>coincidence</strong> (<em>np.1darray</em>) – array of coincidence values</p></li>
+<li><p><strong>chance_coincidence</strong> (<em>np.1darray</em>) – array of chance coincidence values</p></li>
+<li><p><strong>coincidence_large</strong> (<em>np.1darray</em>) – array of coincidence values (large objects)</p></li>
+<li><p><strong>chance_coincidence_large</strong> (<em>np.1darray</em>) – array of chance coincidence values (large objects)</p></li>
+<li><p><strong>n_iter</strong> (<em>np.1darray</em>) – array of iteration muber</p></li>
+<li><p><strong>columns</strong> (<em>list</em><em> of </em><em>strings</em>) – column labels</p></li>
+<li><p><strong>z_planes</strong> – z_planes to put in array (if needed)</p></li>
+<li><p><strong>analyse_clr</strong> (<em>boolean</em>) – If true, save clr</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>to_save</strong> (<em>pandas DataArray</em>) – pandas array to save</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="HelperFunctions.Helper_Functions.make_datarray_largeobjects">
+<span class="sig-name descname"><span class="pre">make_datarray_largeobjects</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">areas_large</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">centroids_large</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sumintensities_large</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">meanintensities_large</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">columns</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">z_planes</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#HelperFunctions.Helper_Functions.make_datarray_largeobjects" title="Link to this definition"></a></dt>
+<dd><p>makes a datarray in pandas for large object information</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>areas_large</strong> (<em>np.1darray</em>) – areas in pixels</p></li>
+<li><p><strong>centroids_large</strong> (<em>np.1darray</em>) – centroids of large objects</p></li>
+<li><p><strong>meanintensities_large</strong> (<em>np.1darray</em>) – mean intensities of large objects</p></li>
+<li><p><strong>columns</strong> (<em>list</em><em> of </em><em>strings</em>) – column labels</p></li>
+<li><p><strong>z_planes</strong> – z_planes to put in array (if needed); if int, assumes only
+one z-plane</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>to_save_largeobjects</strong> (<em>polars DataArray</em>)</p></li>
+<li><p><strong>columns_large = [‘x’, ‘y’, ‘z’, ‘area’, ‘mean_intensity_in_photons’, ‘zi’, ‘zf’]</strong></p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="HelperFunctions.Helper_Functions.make_datarray_spot">
+<span class="sig-name descname"><span class="pre">make_datarray_spot</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">centroids</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">estimated_intensity</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">estimated_background</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">estimated_background_perpixel</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">columns</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">z_planes</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#HelperFunctions.Helper_Functions.make_datarray_spot" title="Link to this definition"></a></dt>
+<dd><p>makes a datarray in pandas for spot information</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>centroids</strong> (<em>ndarray</em>) – centroid positions</p></li>
+<li><p><strong>estimated_intensity</strong> (<em>ndarray</em>) – estimated intensities</p></li>
+<li><p><strong>estimated_background</strong> (<em>ndarray</em>) – estimated backgrounds per punctum</p></li>
+<li><p><strong>estimated_background_perpixel</strong> (<em>np.ndarray</em>) – estimated background per pixel</p></li>
+<li><p><strong>raw_colocalisation</strong> (<em>np.ndarray</em>) – if spot is in cell mask or not</p></li>
+<li><p><strong>columns</strong> (<em>list</em><em> of </em><em>strings</em>) – column labels</p></li>
+<li><p><strong>z_planes</strong> – z_planes to put in array (if needed); if int, assumes only
+one z-plane</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>to_save</strong> (<em>pl.DataFrame</em>)</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="AnalysisFunctions.html" class="btn btn-neutral float-left" title="AnalysisFunctions module" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="IOFunctions.html" class="btn btn-neutral float-right" title="IOFunctions module" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, Joseph S. Beckwith, Bin Fu, Steven F. Lee.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

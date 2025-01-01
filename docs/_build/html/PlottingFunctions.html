@@ -22,7 +22,7 @@
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="RASPRoutines module" href="RASPRoutines.html" />
-    <link rel="prev" title="IOFunctions module" href="IOFunctions.html" /> 
+    <link rel="prev" title="MultiD_RD_functions module" href="MultiD_RD_functions.html" /> 
 </head>
 
 <body class="wy-body-for-nav"> 
@@ -49,14 +49,19 @@
 <li class="toctree-l1"><a class="reference internal" href="getting-started.html">Introduction</a></li>
 <li class="toctree-l1 current"><a class="reference internal" href="modules.html">src</a><ul class="current">
 <li class="toctree-l2"><a class="reference internal" href="AnalysisFunctions.html">AnalysisFunctions module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="HelperFunctions.html">HelperFunctions module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="IOFunctions.html">IOFunctions module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="Image_Analysis_Functions.html">Image_Analysis_Functions module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="MultiD_RD_functions.html">MultiD_RD_functions module</a></li>
 <li class="toctree-l2 current"><a class="current reference internal" href="#">PlottingFunctions module</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#PlottingFunctions.Plotter"><code class="docutils literal notranslate"><span class="pre">Plotter</span></code></a><ul>
-<li class="toctree-l4"><a class="reference internal" href="#PlottingFunctions.Plotter.bincalculator"><code class="docutils literal notranslate"><span class="pre">Plotter.bincalculator()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#PlottingFunctions.Plotter.cell_punctum_analysis_plot"><code class="docutils literal notranslate"><span class="pre">Plotter.cell_punctum_analysis_plot()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#PlottingFunctions.Plotter.histogram_plot"><code class="docutils literal notranslate"><span class="pre">Plotter.histogram_plot()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#PlottingFunctions.Plotter.image_plot"><code class="docutils literal notranslate"><span class="pre">Plotter.image_plot()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#PlottingFunctions.Plotter.image_scatter_plot"><code class="docutils literal notranslate"><span class="pre">Plotter.image_scatter_plot()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#PlottingFunctions.Plotter.line_plot"><code class="docutils literal notranslate"><span class="pre">Plotter.line_plot()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#PlottingFunctions.Plotter.one_column_plot"><code class="docutils literal notranslate"><span class="pre">Plotter.one_column_plot()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#PlottingFunctions.Plotter.scatter_plot"><code class="docutils literal notranslate"><span class="pre">Plotter.scatter_plot()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#PlottingFunctions.Plotter.two_column_plot"><code class="docutils literal notranslate"><span class="pre">Plotter.two_column_plot()</span></code></a></li>
 </ul>
 </li>
@@ -108,50 +113,54 @@ annotations and legends are 6 point font.</p>
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">PlottingFunctions.</span></span><span class="sig-name descname"><span class="pre">Plotter</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">poster</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#PlottingFunctions.Plotter" title="Link to this definition"></a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <dl class="py method">
-<dt class="sig sig-object py" id="PlottingFunctions.Plotter.bincalculator">
-<span class="sig-name descname"><span class="pre">bincalculator</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#PlottingFunctions.Plotter.bincalculator" title="Link to this definition"></a></dt>
-<dd><p>bincalculator function
-reads in data and generates bins according to Freedman-Diaconis rule</p>
+<dt class="sig sig-object py" id="PlottingFunctions.Plotter.cell_punctum_analysis_plot">
+<span class="sig-name descname"><span class="pre">cell_punctum_analysis_plot</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">folder_tosave</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cell_punctum_analysis_file</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">spot_analysis_file</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lower_pcl</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">upper_pcl</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">inf</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">z_project</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">protein_string</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'C1'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cell_string</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'C0'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#PlottingFunctions.Plotter.cell_punctum_analysis_plot" title="Link to this definition"></a></dt>
+<dd><p>Plots cells in a specified puncta_cell_likelihood range using analysis data.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>data</strong> (<em>np.1darray</em>) – data to calculate bins</p>
-</dd>
-<dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p><strong>bins</strong> (<em>np.1darray</em>) – bins for histogram according to Freedman-Diaconis rule</p>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>folder_tosave</strong> (<em>str</em>) – Directory to save output figures.</p></li>
+<li><p><strong>cell_punctum_analysis_file</strong> (<em>str</em>) – Path to cell punctum analysis file.</p></li>
+<li><p><strong>spot_analysis_file</strong> (<em>str</em>) – Path to spot analysis file.</p></li>
+<li><p><strong>lower_pcl</strong> (<em>float</em>) – Lower bound for puncta_cell_likelihood.</p></li>
+<li><p><strong>upper_pcl</strong> (<em>float</em>) – Upper bound for puncta_cell_likelihood.</p></li>
+<li><p><strong>z_project</strong> (<em>bool</em>) – Whether to z-project the cell mask.</p></li>
+<li><p><strong>protein_string</strong> (<em>str</em>) – Protein identifier in file names.</p></li>
+<li><p><strong>cell_string</strong> (<em>str</em>) – Cell identifier in file names.</p></li>
+</ul>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="PlottingFunctions.Plotter.histogram_plot">
-<span class="sig-name descname"><span class="pre">histogram_plot</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">axs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bins</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">xlim</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ylim</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">histcolor</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'gray'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">xaxislabel</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'x</span> <span class="pre">axis'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">alpha</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">histtype</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'bar'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">density</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">label</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#PlottingFunctions.Plotter.histogram_plot" title="Link to this definition"></a></dt>
-<dd><p>histogram_plot function
-takes data and makes a histogram</p>
+<span class="sig-name descname"><span class="pre">histogram_plot</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">axs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bins</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">xlim</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ylim</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">histcolor</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'gray'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">xaxislabel</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'x</span> <span class="pre">axis'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">alpha</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">histtype</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'bar'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">density</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">label</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#PlottingFunctions.Plotter.histogram_plot" title="Link to this definition"></a></dt>
+<dd><p>Creates a histogram on the provided axis.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>axs</strong> (<em>axis</em>) – axis object</p></li>
-<li><p><strong>data</strong> (<em>np.1darray</em>) – data array</p></li>
-<li><p><strong>bins</strong> (<em>np.1darray</em>) – bin array</p></li>
-<li><p><strong>xlim</strong> (<em>boolean</em><em> or </em><em>list</em><em> of </em><em>two floats</em>) – default is None (which computes min/max of x), otherwise provide a min/max</p></li>
-<li><p><strong>ylim</strong> (<em>boolean</em><em> or </em><em>list</em><em> of </em><em>two floats</em>) – default is None (which computes min/max of y), otherwise provide a min/max</p></li>
-<li><p><strong>histcolor</strong> (<em>string</em>) – histogram colour (default is gray)</p></li>
-<li><p><strong>xaxislabel</strong> (<em>string</em>) – x axis label (default is ‘x axis’)</p></li>
-<li><p><strong>alpha</strong> (<em>float</em>) – histogram transparency (default 1)</p></li>
-<li><p><strong>histtype</strong> (<em>string</em>) – histogram type, default bar</p></li>
-<li><p><strong>density</strong> (<em>boolean</em>) – if to plot as pdf, default True</p></li>
-<li><p><strong>label</strong> (<em>string</em>) – label for histogram</p></li>
+<li><p><strong>axs</strong> (<em>Axes</em>) – Matplotlib axis object.</p></li>
+<li><p><strong>data</strong> (<em>np.ndarray</em>) – Data array for the histogram.</p></li>
+<li><p><strong>bins</strong> (<em>np.ndarray</em><em> or </em><em>int</em>) – Bin edges or number of bins.</p></li>
+<li><p><strong>xlim</strong> (<em>list</em><em>[</em><em>float</em><em>]</em><em>, </em><em>optional</em>) – X-axis limits [min, max]. Defaults to data min/max.</p></li>
+<li><p><strong>ylim</strong> (<em>list</em><em>[</em><em>float</em><em>]</em><em>, </em><em>optional</em>) – Y-axis limits [min, max]. Defaults to None.</p></li>
+<li><p><strong>histcolor</strong> (<em>str</em>) – Histogram color. Default is ‘gray’.</p></li>
+<li><p><strong>xaxislabel</strong> (<em>str</em>) – Label for the X-axis. Default is ‘x axis’.</p></li>
+<li><p><strong>alpha</strong> (<em>float</em>) – Transparency of the histogram. Default is 1.0.</p></li>
+<li><p><strong>histtype</strong> (<em>str</em>) – Type of histogram (e.g., ‘bar’, ‘step’). Default is ‘bar’.</p></li>
+<li><p><strong>density</strong> (<em>bool</em>) – Normalize to probability density. Default is True.</p></li>
+<li><p><strong>label</strong> (<em>str</em>) – Label for the histogram legend. Default is ‘’.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p><strong>axs</strong> (<em>axis</em>) – axis object</p>
+<dd class="field-even"><p><strong>axs</strong> (<em>Axes</em>) – The modified axis object.</p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="PlottingFunctions.Plotter.image_plot">
-<span class="sig-name descname"><span class="pre">image_plot</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">axs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">vmin</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">vmax</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cmap</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'gist_gray'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cbar</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'on'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cbarlabel</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'photons'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">label</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">labelcolor</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'white'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pixelsize</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">110</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scalebarsize</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">5000</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scalebarlabel</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'5$\\,\\mu$m'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">alpha</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">plotmask</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mask</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#PlottingFunctions.Plotter.image_plot" title="Link to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">image_plot</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">axs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">vmin</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">vmax</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cmap</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'gist_gray'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cbar</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'on'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cbarlabel</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'photons'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">label</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">labelcolor</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'white'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pixelsize</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">110</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scalebarsize</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">10000</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scalebarlabel</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'10$\\,\\mu$m'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">alpha</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">plotmask</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mask</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">maskcolor</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'white'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#PlottingFunctions.Plotter.image_plot" title="Link to this definition"></a></dt>
 <dd><p>image_plot function
 takes image data and makes an image plot</p>
 <dl class="field-list simple">
@@ -178,7 +187,7 @@ takes image data and makes an image plot</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="PlottingFunctions.Plotter.image_scatter_plot">
-<span class="sig-name descname"><span class="pre">image_scatter_plot</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">axs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">xdata</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ydata</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">vmin</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">vmax</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cmap</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'gist_gray'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cbar</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'on'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cbarlabel</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'photons'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">label</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">labelcolor</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'white'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pixelsize</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">110</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scalebarsize</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">5000</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scalebarlabel</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'5$\\,\\mu$m'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">alpha</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scattercolor</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'red'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">s</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">20</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lws</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.75</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#PlottingFunctions.Plotter.image_scatter_plot" title="Link to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">image_scatter_plot</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">axs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">xdata</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ydata</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">vmin</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">vmax</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cmap</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'gist_gray'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cbar</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'on'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cbarlabel</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'photons'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">label</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">labelcolor</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'white'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pixelsize</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">110</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scalebarsize</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">10000</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scalebarlabel</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'10$\\,\\mu$m'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">alpha</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scattercolor</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'red'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">s</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">20</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lws</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.75</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#PlottingFunctions.Plotter.image_scatter_plot" title="Link to this definition"></a></dt>
 <dd><p>image_plot function
 takes image data and makes an image plot</p>
 <dl class="field-list simple">
@@ -206,48 +215,100 @@ takes image data and makes an image plot</p>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="PlottingFunctions.Plotter.one_column_plot">
-<span class="sig-name descname"><span class="pre">one_column_plot</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">npanels</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ratios</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[1]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">height</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#PlottingFunctions.Plotter.one_column_plot" title="Link to this definition"></a></dt>
-<dd><p>one_column_plot function
-takes data and makes a one-column width figure</p>
+<dt class="sig sig-object py" id="PlottingFunctions.Plotter.line_plot">
+<span class="sig-name descname"><span class="pre">line_plot</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">axs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">xlim</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ylim</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">color</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'k'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lw</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.75</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">label</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">xaxislabel</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'x</span> <span class="pre">axis'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">yaxislabel</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'y</span> <span class="pre">axis'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ls</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'-'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#PlottingFunctions.Plotter.line_plot" title="Link to this definition"></a></dt>
+<dd><p>Creates a line plot with specified parameters.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>nrows</strong> (<em>int</em>) – number of rows</p></li>
-<li><p><strong>npanels</strong> (<em>int</em>) – number of panels</p></li>
-<li><p><strong>ratios</strong> (<em>list</em>) – list of heights of same length as nrows</p></li>
-<li><p><strong>height</strong> (<em>float</em>) – overridden height of figure</p></li>
+<li><p><strong>axs</strong> (<em>Axes</em>) – Matplotlib axis object to plot on.</p></li>
+<li><p><strong>x</strong> (<em>array-like</em>) – x data.</p></li>
+<li><p><strong>y</strong> (<em>array-like</em>) – y data.</p></li>
+<li><p><strong>xlim</strong> (<em>tuple</em><em>, </em><em>optional</em>) – x-axis limits (min, max). Defaults to computed range.</p></li>
+<li><p><strong>ylim</strong> (<em>tuple</em><em>, </em><em>optional</em>) – y-axis limits (min, max). Defaults to computed range.</p></li>
+<li><p><strong>color</strong> (<em>str</em>) – Line color. Defaults to ‘k’ (black).</p></li>
+<li><p><strong>lw</strong> (<em>float</em>) – Line width. Defaults to 0.75.</p></li>
+<li><p><strong>label</strong> (<em>str</em>) – Plot label. Defaults to ‘’.</p></li>
+<li><p><strong>xaxislabel</strong> (<em>str</em>) – Label for the x-axis. Defaults to ‘x axis’.</p></li>
+<li><p><strong>yaxislabel</strong> (<em>str</em>) – Label for the y-axis. Defaults to ‘y axis’.</p></li>
+<li><p><strong>ls</strong> (<em>str</em>) – Line style. Defaults to ‘-’ (solid line).</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>Axes</strong> – Updated axis object.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="PlottingFunctions.Plotter.one_column_plot">
+<span class="sig-name descname"><span class="pre">one_column_plot</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">npanels</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ratios</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">height</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">width</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#PlottingFunctions.Plotter.one_column_plot" title="Link to this definition"></a></dt>
+<dd><p>Creates a one-column width figure with specified configurations.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>npanels</strong> (<em>int</em>) – Number of panels (rows).</p></li>
+<li><p><strong>ratios</strong> (<em>list</em>) – List of height ratios for the panels.</p></li>
+<li><p><strong>height</strong> (<em>float</em>) – Override for figure height.</p></li>
+<li><p><strong>width</strong> (<em>float</em>) – Override for figure width.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><ul class="simple">
-<li><p><strong>fig</strong> (<em>figure</em>) – figure object</p></li>
-<li><p><strong>ax</strong> (<em>axes</em>) – axes object</p></li>
+<li><p><strong>fig</strong> (<em>Figure</em>) – Figure object.</p></li>
+<li><p><strong>axs</strong> (<em>Axes or array of Axes</em>) – Axes object(s).</p></li>
 </ul>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py method">
+<dt class="sig sig-object py" id="PlottingFunctions.Plotter.scatter_plot">
+<span class="sig-name descname"><span class="pre">scatter_plot</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">axs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">xlim</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ylim</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">label</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">edgecolor</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'k'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">facecolor</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'white'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">s</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lw</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.75</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">xaxislabel</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'x</span> <span class="pre">axis'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">yaxislabel</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'y</span> <span class="pre">axis'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">alpha</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#PlottingFunctions.Plotter.scatter_plot" title="Link to this definition"></a></dt>
+<dd><p>scatter_plot function
+takes data and makes a scatter plot
+:param x is x data:
+:param y os y data:
+:param xlim is x limits; default is None:
+:type xlim is x limits; default is None: which computes max/min
+:param ylim is y limits; default is None:
+:type ylim is y limits; default is None: which computes max/min
+:param label is label; default is nothing:
+:param edgecolor is edge colour; default is black:
+:param facecolor is face colour; default is white:
+:param s is size of scatter point; default is 5:
+:param lw is line width:
+:type lw is line width: default 0.75
+:param xaxislabel is x axis label:
+:type xaxislabel is x axis label: default is ‘x axis’
+:param yaxislabel is y axis label:
+:type yaxislabel is y axis label: default is ‘y axis’</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>axs is axis object</strong></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
 <dt class="sig sig-object py" id="PlottingFunctions.Plotter.two_column_plot">
-<span class="sig-name descname"><span class="pre">two_column_plot</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">nrows</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ncolumns</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">heightratio</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[1]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">widthratio</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[1]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">height</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">big</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#PlottingFunctions.Plotter.two_column_plot" title="Link to this definition"></a></dt>
-<dd><p>two_column_plot function
-takes data and makes a two-column width figure</p>
+<span class="sig-name descname"><span class="pre">two_column_plot</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">nrows</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ncolumns</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">heightratio</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">widthratio</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">height</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">big</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#PlottingFunctions.Plotter.two_column_plot" title="Link to this definition"></a></dt>
+<dd><p>Creates a two-column width figure with specified configurations.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>nrows</strong> (<em>int</em>) – number of rows</p></li>
-<li><p><strong>ncolumns</strong> (<em>int</em>) – number of columns</p></li>
-<li><p><strong>heightratio</strong> (<em>list</em>) – list of heights of same length as nrows</p></li>
-<li><p><strong>widthratio</strong> (<em>list</em>) – list of widths of same length as ncolumns</p></li>
-<li><p><strong>height</strong> (<em>float</em>) – overridden height of figure</p></li>
-<li><p><strong>big</strong> (<em>boolean</em>) – if big is True, uses larger font sizes</p></li>
+<li><p><strong>nrows</strong> (<em>int</em>) – Number of rows.</p></li>
+<li><p><strong>ncolumns</strong> (<em>int</em>) – Number of columns.</p></li>
+<li><p><strong>heightratio</strong> (<em>list</em>) – List of heights, length must match nrows.</p></li>
+<li><p><strong>widthratio</strong> (<em>list</em>) – List of widths, length must match ncolumns.</p></li>
+<li><p><strong>height</strong> (<em>float</em>) – Overridden height of the figure.</p></li>
+<li><p><strong>big</strong> (<em>bool</em>) – If True, uses larger font sizes.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><ul class="simple">
-<li><p><strong>fig</strong> (<em>figure</em>) – figure object</p></li>
-<li><p><strong>ax</strong> (<em>axes</em>) – axes object</p></li>
+<li><p><strong>fig</strong> (<em>Figure</em>) – Figure object.</p></li>
+<li><p><strong>axs</strong> (<em>Axes or array of Axes</em>) – Axes object(s).</p></li>
 </ul>
 </dd>
 </dl>
@@ -261,7 +322,7 @@ takes data and makes a two-column width figure</p>
            </div>
           </div>
           <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
-        <a href="IOFunctions.html" class="btn btn-neutral float-left" title="IOFunctions module" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="MultiD_RD_functions.html" class="btn btn-neutral float-left" title="MultiD_RD_functions module" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
         <a href="RASPRoutines.html" class="btn btn-neutral float-right" title="RASPRoutines module" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 

@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MultiD_RD_functions module &mdash; pyRASP v0.6.1 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=19f00094" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="_static/jquery.js?v=5d32c60e"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script src="_static/documentation_options.js?v=d064d8df"></script>
+        <script src="_static/doctools.js?v=888ff710"></script>
+        <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="PlottingFunctions module" href="PlottingFunctions.html" />
+    <link rel="prev" title="Image_Analysis_Functions module" href="Image_Analysis_Functions.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            pyRASP
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="getting-started.html">Introduction</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="modules.html">src</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="AnalysisFunctions.html">AnalysisFunctions module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="HelperFunctions.html">HelperFunctions module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="IOFunctions.html">IOFunctions module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="Image_Analysis_Functions.html">Image_Analysis_Functions module</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">MultiD_RD_functions module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#MultiD_RD_functions.multid_rdf"><code class="docutils literal notranslate"><span class="pre">multid_rdf()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#MultiD_RD_functions.paralell_hist_loop"><code class="docutils literal notranslate"><span class="pre">paralell_hist_loop()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="PlottingFunctions.html">PlottingFunctions module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="RASPRoutines.html">RASPRoutines module</a></li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">pyRASP</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="modules.html">src</a></li>
+      <li class="breadcrumb-item active">MultiD_RD_functions module</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/MultiD_RD_functions.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="module-MultiD_RD_functions">
+<span id="multid-rd-functions-module"></span><h1>MultiD_RD_functions module<a class="headerlink" href="#module-MultiD_RD_functions" title="Link to this heading"></a></h1>
+<dl class="py function">
+<dt class="sig sig-object py" id="MultiD_RD_functions.multid_rdf">
+<span class="sig-prename descclassname"><span class="pre">MultiD_RD_functions.</span></span><span class="sig-name descname"><span class="pre">multid_rdf</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">particles_1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">particles_2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">r_max</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dr</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">boxdims</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[[0.0,</span> <span class="pre">0.0],</span> <span class="pre">[132.0,</span> <span class="pre">132.0]]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rho</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">eps</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1e-15</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parallel</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">progress</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#MultiD_RD_functions.multid_rdf" title="Link to this definition"></a></dt>
+<dd><p>Computes 2D or 3D radial distribution function g(r) of a set of particle
+coordinates of shape (N, d). Particle must be placed in a 2D or 3D cuboidal
+box of dimensions [width x height (x depth)].</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>particles_1</strong> (<em>(</em><em>N</em><em>, </em><em>d</em><em>) </em><em>np.array</em>) – Set of particles from which to compute the radial distribution function
+g(r) with respect to particles_2.
+Must be of shape (N, 2) or (N, 3) for 2D and 3D coordinates
+repsectively.</p></li>
+<li><p><strong>particles_2</strong> (<em>(</em><em>N</em><em>, </em><em>d</em><em>) </em><em>np.array</em>) – Set of particles from which the rdf will be computed with respect to
+particles_1.
+Must be of shape (N, 2) or (N, 3) for 2D and 3D coordinates
+repsectively.</p></li>
+<li><p><strong>r_max</strong> (<em>float</em>) – Max radius over which g(r) is computed.</p></li>
+<li><p><strong>dr</strong> (<em>float</em>) – dr over which g(r) steps are computed</p></li>
+<li><p><strong>boxdims</strong> (<em>(</em><em>n</em><em>, </em><em>2</em><em>) </em><em>np.array</em>) – Dimensions of box, default ([[0., 132.], [0., 132.]])</p></li>
+<li><p><strong>rho</strong> (<em>float</em><em>, </em><em>optional</em>) – Number density. If left as None, box dimensions will be inferred from
+the particles and the number density will be calculated accordingly.</p></li>
+<li><p><strong>eps</strong> (<em>float</em><em>, </em><em>optional</em>) – Epsilon value used to find particles less than or equal to a distance
+in KDTree.</p></li>
+<li><p><strong>parallel</strong> (<em>bool</em><em>, </em><em>optional</em>) – Option to enable or disable multiprocessing. Enabling this affords
+significant increases in speed.</p></li>
+<li><p><strong>progress</strong> (<em>bool</em><em>, </em><em>optional</em>) – Set to False to disable progress readout (only valid when
+parallel=False).</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>g_r</strong> (<em>(n_radii) np.array</em>) – radial distribution function values g(r).</p></li>
+<li><p><strong>radii</strong> (<em>(n_radii) np.array</em>) – radii over which g(r) is computed</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="MultiD_RD_functions.paralell_hist_loop">
+<span class="sig-prename descclassname"><span class="pre">MultiD_RD_functions.</span></span><span class="sig-name descname"><span class="pre">paralell_hist_loop</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">radii_and_indices</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">kdtree</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">particles</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mins</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">maxs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">N_radii</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dr</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">eps</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rho</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#MultiD_RD_functions.paralell_hist_loop" title="Link to this definition"></a></dt>
+<dd><p>RDF histogram loop process for multiprocessing</p>
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="Image_Analysis_Functions.html" class="btn btn-neutral float-left" title="Image_Analysis_Functions module" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="PlottingFunctions.html" class="btn btn-neutral float-right" title="PlottingFunctions module" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, Joseph S. Beckwith, Bin Fu, Steven F. Lee.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
