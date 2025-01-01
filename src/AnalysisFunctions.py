@@ -160,6 +160,97 @@ class Analysis_Functions:
         spot_indices = np.ravel_multi_index(centroids.T, image_size, order="F")
         return spot_indices
 
+    def calculate_cell_protein_load(
+        self,
+        spot_indices,
+        mask_indices,
+        spot_intensities,
+        median_intensity,
+        image_size,
+        n_iter=100,
+        blur_degree=1,
+        analytical_solution=True,
+    ):
+        """
+        gets cell analysis likelihood, as well as reporting error
+        bounds on the likelihood ratio for one image
+
+        Args:
+            spot_indices (1D array): indices of spots
+            mask_indices (1D array): indices of pixels in mask
+            image_size (tuple): Image dimensions (height, width).
+            n_iter (int): default 100; number of iterations to start with
+            blur_degree (int): number of pixels to blur spot indices with
+                                (i.e. number of pixels surrounding centroid to
+                                consider part of spot). Default 1
+
+        Returns:
+            olig_cell_ratio (float): coincidence per cell, normalised to chance
+            raw_colocalisation (np.1darray): binary yes/no of coincidence per spot
+            n_iter (int): how many iterations it took to converge
+        """
+        original_n_spots = len(spot_indices)  # get number of spots
+
+        if original_n_spots == 0:
+            n_iter_rec = 0
+            coincidence = np.NAN
+            chance_coincidence = np.NAN
+            raw_colocalisation = np.full_like(spot_indices, np.NAN)
+            return coincidence, chance_coincidence, raw_colocalisation, n_iter_rec
+
+        if blur_degree > 0:
+            spot_indices = self.dilate_pixels(
+                spot_indices, image_size, width=blur_degree + 1, edge=blur_degree
+            )
+        n_iter_rec = n_iter
+        possible_indices = np.arange(
+            0, np.prod(image_size)
+        )  # get list of where is possible to exist in an image
+
+        raw_colocalisation = self.test_spot_spot_overlap(
+            spot_indices, mask_indices, original_n_spots, raw=True
+        )
+
+        n_olig_in_cell = np.sum(
+            raw_colocalisation
+        )  # generate number of oligomers in cell
+        if analytical_solution == True:
+            n_olig_in_cell_random = original_n_spots * (
+                len(mask_indices.ravel()) / len(possible_indices)
+            )
+        else:
+            random_spot_locations = np.random.choice(
+                possible_indices, size=(n_iter, original_n_spots)
+            )  # get random spot locations
+            if blur_degree > 0:
+                random_spot_locations = self.dilate_pixel_matrix(
+                    random_spot_locations,
+                    image_size,
+                    width=blur_degree + 1,
+                    edge=blur_degree,
+                )
+            n_olig_in_cell_random = np.zeros([n_iter])  # generate CSR array to fill in
+            for i in np.arange(n_iter):
+                n_olig_in_cell_random[i] = np.sum(
+                    self.test_spot_spot_overlap(
+                        random_spot_locations[i, :],
+                        mask_indices,
+                        original_n_spots,
+                        raw=True,
+                    )
+                )
+        if (n_olig_in_cell == 0) or (np.nanmean(n_olig_in_cell_random) == 0):
+            olig_cell_ratio = np.NAN
+        else:
+            cell_brightness = np.median(
+                spot_intensities[np.where(raw_colocalisation)[0]]
+            )
+            olig_cell_ratio = np.divide(
+                np.multiply(n_olig_in_cell, cell_brightness),
+                np.multiply(np.nanmean(n_olig_in_cell_random), median_intensity),
+            )
+        return olig_cell_ratio, n_olig_in_cell, n_iter_rec
+
     def calculate_spot_to_cell_numbers(
         self,
         spot_indices,
@@ -1815,9 +1906,7 @@ class Analysis_Functions:
         imtype=".tif",
         aboveT=1,
         z_project_first=[True, True],
-        q1=None,
-        q2=None,
-        IQR=None,
+        median=None,
     ):
         """
         Does analysis of number of oligomers in a mask area per "segmented"
@@ -1840,9 +1929,6 @@ class Analysis_Functions:
                                     thresholding cell size.
                                     If both false, does not z project and
                                     then does the analysis per z plane.
-            q1 (float): if float, adds in IQR filter
-            q2 (float): if float, adds in IQR filter
-            IQR (Float): if float, adds in IQR filter
 
         Returns:
             cell_punctum_analysis (pl.DataFrame): polars datarray of the cell analysis
@@ -1858,6 +1944,11 @@ class Analysis_Functions:
                 pl.col("sum_intensity_in_photons") <= threshold
             )
             typestr = "<= threshold"
+
+        if median is not None:
+            analysis_string = " protein cell load "
+        else:
+            analysis_string = " puncta cell likelihood "
 
         analysis_directory = os.path.split(analysis_file)[0]
         start = time.time()
@@ -1892,7 +1983,7 @@ class Analysis_Functions:
                     )
                     image_size = (
                         cell_mask.shape
-                        if len(cell_mask.shape) < 2
+                        if len(cell_mask.shape) < 3
                         else cell_mask.shape[:-1]
                     )
 
@@ -1906,9 +1997,14 @@ class Analysis_Functions:
                     x = x[bounds]
                     y = y[bounds]
                     centroids_puncta = np.asarray(np.vstack([x, y]), dtype=int)
-                    spot_indices = np.unique(
-                        np.ravel_multi_index(centroids_puncta, image_size, order="F")
+                    spot_indices, filter_array = np.unique(
+                        np.ravel_multi_index(centroids_puncta, image_size, order="F"),
+                        return_index=True,
                     )
+                    if median is not None:
+                        intensity = subset["sum_intensity_in_photons"].to_numpy()
+                        intensity = intensity[bounds]
+                        intensity = intensity[filter_array]
                     filename_tosave = np.full_like(x_m, file, dtype="object")
 
                     def areaanalysis(coords):
@@ -1924,15 +2020,28 @@ class Analysis_Functions:
                             mask_indices = np.ravel_multi_index(
                                 coordinates_mask, image_size, order="F"
                             )
-                            olig_cell_ratio, n_olig_in_cell, n_iter_rec = (
-                                self.calculate_spot_to_cell_numbers(
-                                    spot_indices,
-                                    mask_indices,
-                                    image_size,
-                                    n_iter=1,
-                                    blur_degree=1,
+                            if median is None:
+                                olig_cell_ratio, n_olig_in_cell, n_iter_rec = (
+                                    self.calculate_spot_to_cell_numbers(
+                                        spot_indices,
+                                        mask_indices,
+                                        image_size,
+                                        n_iter=1,
+                                        blur_degree=1,
+                                    )
                                 )
-                            )
+                            else:
+                                olig_cell_ratio, n_olig_in_cell, n_iter_rec = (
+                                    self.calculate_cell_protein_load(
+                                        spot_indices,
+                                        mask_indices,
+                                        intensity,
+                                        median,
+                                        image_size,
+                                        n_iter=1,
+                                        blur_degree=1,
+                                    )
+                                )
                             n_cell_ratios = olig_cell_ratio
                             n_spots_in_object = n_olig_in_cell
                         return n_cell_ratios, n_spots_in_object
@@ -1947,14 +2056,25 @@ class Analysis_Functions:
                     n_spots_in_object = np.array([i[1] for i in results])
 
                     if len(areas) > 0:
-                        data = {
-                            "area/pixels": areas,
-                            "x_centre": x_m,
-                            "y_centre": y_m,
-                            "puncta_cell_likelihood": n_cell_ratios,
-                            "n_puncta_in_cell": n_spots_in_object,
-                            "image_filename": filename_tosave,
-                        }
+                        if median is None:
+                            data = {
+                                "area/pixels": areas,
+                                "x_centre": x_m,
+                                "y_centre": y_m,
+                                "puncta_cell_likelihood": n_cell_ratios,
+                                "n_puncta_in_cell": n_spots_in_object,
+                                "image_filename": filename_tosave,
+                            }
+                        else:
+                            data = {
+                                "area/pixels": areas,
+                                "x_centre": x_m,
+                                "y_centre": y_m,
+                                "cell_protein_load": n_cell_ratios,
+                                "n_puncta_in_cell": n_spots_in_object,
+                                "image_filename": filename_tosave,
+                            }
+
                         if isinstance(cell_punctum_analysis, type(None)):
                             cell_punctum_analysis = pl.DataFrame(data)
                         else:
@@ -1964,7 +2084,8 @@ class Analysis_Functions:
                 print(
                     "Computing "
                     + typestr
-                    + " spots in cells     File {}/{}    Time elapsed: {:.3f} s".format(
+                    + analysis_string
+                    + +" File {}/{}    Time elapsed: {:.3f} s".format(
                         i + 1, len(files), time.time() - start
                     ),
                     end="\r",

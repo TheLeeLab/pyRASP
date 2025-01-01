@@ -1074,8 +1074,9 @@ class RASP_Routines:
         q1=None,
         q2=None,
         IQR=None,
+        median=None,
         k=4,
-        end_string='HC_threshold',
+        end_string="HC_threshold",
     ):
         """
         Redo colocalisation analayses of spots above a photon threshold in an
@@ -1096,6 +1097,7 @@ class RASP_Routines:
             q1 (float): if float, adds in IQR filter
             q2 (float): if float, adds in IQR filter
             IQR (Float): if float, adds in IQR filter
+            median (float): if float, does cell protein load
 
 
         Returns:
@@ -1117,6 +1119,11 @@ class RASP_Routines:
                 threshold_str + "_k_" + str(k).replace(".", "p") + "_outliersremoved"
             )
 
+        if median is not None:
+            start_string = "cell_protein_load_"
+        else:
+            start_string = "single_cell_coincidence_"
+
         if int(lower_cell_size_threshold) == lower_cell_size_threshold:
             lc_str = str(int(lower_cell_size_threshold))
         else:
@@ -1125,13 +1132,13 @@ class RASP_Routines:
         if np.isinf(upper_cell_size_threshold):
             savecell_string = os.path.join(
                 os.path.split(analysis_file)[0],
-                "single_cell_coincidence_"
+                start_string
                 + "mincellsize_"
                 + lc_str
                 + "_photonthreshold_"
                 + threshold_str
                 + "_photons"
-                + '_'
+                + "_"
                 + end_string,
             )
             above_string = savecell_string + "_abovethreshold.csv"
@@ -1144,7 +1151,7 @@ class RASP_Routines:
 
             savecell_string = os.path.join(
                 os.path.split(analysis_file)[0],
-                "single_cell_coincidence_"
+                start_string
                 + "mincellsize_"
                 + lc_str
                 + "_maxcellsize_"
@@ -1152,7 +1159,7 @@ class RASP_Routines:
                 + "_photonthreshold_"
                 + threshold_str
                 + "_photons"
-                + '_'
+                + "_"
                 + end_string,
             )
             above_string = savecell_string + "_abovethreshold.csv"
@@ -1176,9 +1183,7 @@ class RASP_Routines:
                 imtype=imtype,
                 aboveT=1,
                 z_project_first=z_project_first,
-                q1=q1,
-                q2=q2,
-                IQR=IQR,
+                median=median,
             )
         )
         cell_punctum_analysis_UT = None
