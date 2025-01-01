@@ -45,7 +45,10 @@ class Analysis_Functions:
         """
         if threshold is None:
             z_planes = np.sort(np.unique(database["z"]))
-            spots_per_plane = [len(database.filter(pl.col("z") == z)["sum_intensity_in_photons"]) for z in z_planes]
+            spots_per_plane = [
+                len(database.filter(pl.col("z") == z)["sum_intensity_in_photons"])
+                for z in z_planes
+            ]
             data = {"z": z_planes, "n_spots": spots_per_plane}
         else:
             results = []

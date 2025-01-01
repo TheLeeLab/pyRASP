@@ -117,8 +117,7 @@ class IO_Functions:
                     to_save_largeobjects["z"].to_numpy(), files[i], dtype="object"
                 )
             )
-            n_largeobjects = A_F.count_spots(
-                to_save_largeobjects)
+            n_largeobjects = A_F.count_spots(to_save_largeobjects)
             n_largeobjects = n_largeobjects.with_columns(
                 image_filename=np.full_like(
                     n_largeobjects["z"].to_numpy(), files[i], dtype="object"
