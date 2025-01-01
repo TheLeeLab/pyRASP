@@ -32,21 +32,21 @@ class Analysis_Functions:
         self = self
         return
 
-    def count_spots(self, database, z_planes, threshold=None):
+    def count_spots(self, database, threshold=None):
         """
         Counts spots per z plane, optionally with a threshold.
 
         Args:
             database (polars DataFrame): DataFrame of spots.
-            z_planes (np.ndarray): Range of z-planes.
             threshold (float, optional): Intensity threshold.
 
         Returns:
             polars.DataFrame: DataFrame with number of spots per z-plane.
         """
         if threshold is None:
-            spots_per_plane = [np.sum(database["z"] == z + 1) for z in z_planes]
-            data = {"z": z_planes + 1, "n_spots": spots_per_plane}
+            z_planes = np.sort(np.unique(database["z"]))
+            spots_per_plane = [len(database.filter(pl.col("z") == z)["sum_intensity_in_photons"]) for z in z_planes]
+            data = {"z": z_planes, "n_spots": spots_per_plane}
         else:
             results = []
             for filename in np.unique(database["image_filename"]):

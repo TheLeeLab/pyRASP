@@ -102,7 +102,7 @@ class IO_Functions:
                     to_save["z"].to_numpy(), files[i], dtype="object"
                 )
             )
-            n_spots = A_F.count_spots(to_save, np.arange(z_planes[0], z_planes[1]))
+            n_spots = A_F.count_spots(to_save)
             n_spots = n_spots.with_columns(
                 image_filename=np.full_like(
                     n_spots["z"].to_numpy(), files[i], dtype="object"
@@ -118,8 +118,7 @@ class IO_Functions:
                 )
             )
             n_largeobjects = A_F.count_spots(
-                to_save_largeobjects, np.arange(z_planes[0], z_planes[1])
-            )
+                to_save_largeobjects)
             n_largeobjects = n_largeobjects.with_columns(
                 image_filename=np.full_like(
                     n_largeobjects["z"].to_numpy(), files[i], dtype="object"
