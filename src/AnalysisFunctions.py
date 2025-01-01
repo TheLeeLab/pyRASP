@@ -1117,7 +1117,7 @@ class Analysis_Functions:
         HWHMarray = HWHMarray[~np.isnan(HWHMarray)]
         return HWHMarray
 
-    def rejectoutliers(self, data, k=3):
+    def rejectoutliers(self, data, k=4):
         """rejectoutliers function
         # rejects outliers from data, does iqr method (i.e. anything below
         lower quartile (25 percent) or above upper quartile (75 percent)
@@ -1138,7 +1138,7 @@ class Analysis_Functions:
         newdata = nd1[nd1 >= q1 - (k * IQR)]
         return newdata
 
-    def rejectoutliers_value(self, data, k=3, q1=None, q2=None, IQR=None):
+    def rejectoutliers_value(self, data, k=4, q1=None, q2=None, IQR=None):
         """rejectoutliers_value function
         # rejects outliers from data, does iqr method (i.e. anything below
         lower quartile (25 percent) or above upper quartile (75 percent)
@@ -1720,7 +1720,7 @@ class Analysis_Functions:
             return np.NAN
 
     def single_spot_channel_rdf_with_threshold(
-        self, analysis_file, threshold, pixel_size=0.11, dr=1.0, aboveT=1
+        self, analysis_data, threshold, pixel_size=0.11, dr=1.0, aboveT=1
     ):
         """
         Does rdf analysis of spots from an analysis file.
@@ -1736,7 +1736,6 @@ class Analysis_Functions:
             rdf (pl.DataFrame): polars datarray of the rdf
         """
 
-        analysis_data = pl.read_csv(analysis_file)
         if aboveT == 1:
             analysis_data = analysis_data.filter(
                 pl.col("sum_intensity_in_photons") > threshold

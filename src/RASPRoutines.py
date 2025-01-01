@@ -1022,6 +1022,7 @@ class RASP_Routines:
     def calculate_spot_rdf_with_threshold(
         self,
         analysis_file,
+        analysis_data,
         threshold,
         pixel_size=0.11,
         dr=1.0,
@@ -1033,7 +1034,8 @@ class RASP_Routines:
         Uses code from 10.5281/zenodo.4625675, please cite this software if used in a paper.
 
         Args:
-            analysis_file (str): The analysis file to be re-done.
+            analysis_file (str): Analysis file name.
+            analysis_data (pl.DataFrame): The analysis data to be re-done.
             threshold (float): The photon threshold
             pixel_size (float): size of pixels
             dr (float): dr of rdf
@@ -1046,10 +1048,7 @@ class RASP_Routines:
         else:
             thesholdsavestr = str(threshold).replace(".", "p")
         rdf_AT = A_F.single_spot_channel_rdf_with_threshold(
-            analysis_file, threshold, pixel_size=pixel_size, dr=dr, aboveT=1
-        )
-        rdf_UT = A_F.single_spot_channel_rdf_with_threshold(
-            analysis_file, threshold, pixel_size=pixel_size, dr=dr, aboveT=0
+            analysis_data, threshold, pixel_size=pixel_size, dr=dr, aboveT=1
         )
         to_save_name = os.path.join(
             os.path.split(analysis_file)[0], "spot_to_spot_threshold_" + thesholdsavestr
@@ -1057,9 +1056,7 @@ class RASP_Routines:
 
         if isinstance(rdf_AT, pl.DataFrame):
             rdf_AT.write_csv(to_save_name + "_abovethreshold_rdf.csv")
-        if isinstance(rdf_UT, pl.DataFrame):
-            rdf_UT.write_csv(to_save_name + "_belowthreshold_rdf.csv")
-        return rdf_AT, rdf_UT
+        return rdf_AT
 
     def count_puncta_in_individual_cells_threshold(
         self,
@@ -1077,7 +1074,8 @@ class RASP_Routines:
         q1=None,
         q2=None,
         IQR=None,
-        k=3,
+        k=4,
+        end_string='HC_threshold',
     ):
         """
         Redo colocalisation analayses of spots above a photon threshold in an
@@ -1132,7 +1130,9 @@ class RASP_Routines:
                 + lc_str
                 + "_photonthreshold_"
                 + threshold_str
-                + "_photons",
+                + "_photons"
+                + '_'
+                + end_string,
             )
             above_string = savecell_string + "_abovethreshold.csv"
             below_string = savecell_string + "_belowthreshold.csv"
@@ -1151,7 +1151,9 @@ class RASP_Routines:
                 + uc_str
                 + "_photonthreshold_"
                 + threshold_str
-                + "_photons",
+                + "_photons"
+                + '_'
+                + end_string,
             )
             above_string = savecell_string + "_abovethreshold.csv"
             below_string = savecell_string + "_belowthreshold.csv"
@@ -1179,25 +1181,25 @@ class RASP_Routines:
                 IQR=IQR,
             )
         )
-
-        cell_punctum_analysis_UT = (
-            A_F.number_of_puncta_per_segmented_cell_with_threshold(
-                analysis_file,
-                analysis_data,
-                threshold,
-                lower_cell_size_threshold=lower_cell_size_threshold,
-                upper_cell_size_threshold=upper_cell_size_threshold,
-                blur_degree=blur_degree,
-                cell_string=cell_string,
-                protein_string=protein_string,
-                imtype=imtype,
-                aboveT=0,
-                z_project_first=z_project_first,
-                q1=q1,
-                q2=q2,
-                IQR=IQR,
-            )
-        )
+        cell_punctum_analysis_UT = None
+        # cell_punctum_analysis_UT = (
+        #     A_F.number_of_puncta_per_segmented_cell_with_threshold(
+        #         analysis_file,
+        #         analysis_data,
+        #         threshold,
+        #         lower_cell_size_threshold=lower_cell_size_threshold,
+        #         upper_cell_size_threshold=upper_cell_size_threshold,
+        #         blur_degree=blur_degree,
+        #         cell_string=cell_string,
+        #         protein_string=protein_string,
+        #         imtype=imtype,
+        #         aboveT=0,
+        #         z_project_first=z_project_first,
+        #         q1=q1,
+        #         q2=q2,
+        #         IQR=IQR,
+        #     )
+        # )
 
         if isinstance(cell_punctum_analysis_AT, pl.DataFrame) and isinstance(
             cell_punctum_analysis_UT, pl.DataFrame
