@@ -31,111 +31,65 @@ class Analysis_Functions:
     def __init__(self):
         self = self
         return
-
-    def count_spots(self, database, z_planes):
+    
+    def count_spots(self, database, z_planes, threshold=None):
         """
-        Counts spots per z plane.
-
+        Counts spots per z plane, optionally with a threshold.
+    
         Args:
             database (polars DataFrame): DataFrame of spots.
             z_planes (np.ndarray): Range of z-planes.
-
+            threshold (float, optional): Intensity threshold.
+    
         Returns:
             polars.DataFrame: DataFrame with number of spots per z-plane.
         """
-        spots_per_plane = [np.sum(database["z"] == z + 1) for z in z_planes]
-        data = {"z": z_planes + 1, "n_spots": spots_per_plane}
+        if threshold is None:
+            spots_per_plane = [np.sum(database["z"] == z + 1) for z in z_planes]
+            data = {"z": z_planes + 1, "n_spots": spots_per_plane}
+        else:
+            results = []
+            for filename in np.unique(database["image_filename"]):
+                dataslice = database.filter(pl.col("image_filename") == filename)
+                z_planes = np.unique(dataslice["z"])
+                for z in z_planes:
+                    spots_above = np.sum(
+                        dataslice.filter(pl.col("z") == z)["sum_intensity_in_photons"]
+                        > threshold
+                    )
+                    spots_below = np.sum(
+                        dataslice.filter(pl.col("z") == z)["sum_intensity_in_photons"]
+                        <= threshold
+                    )
+                    results.append([z, spots_above, spots_below, filename, threshold])
+            data = results
         return pl.DataFrame(data)
-
-    def count_spots_withthreshold(self, database, threshold):
+    
+    def generate_indices(self, data, image_size, is_mask=False, is_lo=False):
         """
-        Counts spots per z plane with a threshold.
-
+        Generate indices from coordinates.
+    
         Args:
-            database (polars DataFrame): DataFrame of spots.
-            threshold (float): Intensity threshold.
-
+            data (np.ndarray): Array of coordinates or mask.
+            image_size (tuple): Size of the image.
+            is_mask (bool): Indicates if the data is a mask (default: False).
+    
         Returns:
-            polars.DataFrame: DataFrame with number of spots above and below threshold.
+            np.ndarray: Indices of the data.
         """
-        columns = [
-            "z",
-            "n_spots_abovethreshold",
-            "n_spots_belowthreshold",
-            "filename",
-            "threshold",
-        ]
-        results = []
-
-        for filename in np.unique(database["image_filename"]):
-            dataslice = database.filter(pl.col("image_filename") == filename)
-            z_planes = np.unique(dataslice["z"])
-            for z in z_planes:
-                spots_above = np.sum(
-                    dataslice.filter(pl.col("z") == z)["sum_intensity_in_photons"]
-                    > threshold
-                )
-                spots_below = np.sum(
-                    dataslice.filter(pl.col("z") == z)["sum_intensity_in_photons"]
-                    <= threshold
-                )
-                results.append([z, spots_above, spots_below, filename, threshold])
-
-        return pl.DataFrame(data=results, schema=columns)
-
-    def generate_lo_indices(self, mask, image_size):
-        """
-        makes mask indices from xy coordinates
-
-        Args:
-            mask (2D array): boolean matrix
-            centroids (2D array): xy centroid coordinates
-            image_size (tuple): Image dimensions (height, width).
-
-        Returns:
-            mask_indices (1D array): indices of mask
-            spot_indices (1D array): indices of spots
-        """
-        pil, _, _ = self.calculate_region_properties(mask)
-        for i in np.arange(len(pil)):
-            pil[i] = np.ravel_multi_index(
-                [pil[i][:, 0], pil[i][:, 1]], image_size, order="F"
-            )
-        return pil, len(pil)
-
-    def generate_mask_indices(self, mask, image_size):
-        """
-        makes mask indices from xy coordinates
-
-        Args:
-            mask (2D array): boolean matrix
-            centroids (2D array): xy centroid coordinates
-            image_size (tuple): Image dimensions (height, width).
-
-        Returns:
-            mask_indices (1D array): indices of mask
-            spot_indices (1D array): indices of spots
-        """
-        mask_coords = np.transpose((mask > 0).nonzero())
-        return np.ravel_multi_index(
-            [mask_coords[:, 0], mask_coords[:, 1]], image_size, order="F"
-        )
-
-    def generate_spot_indices(self, centroids, image_size):
-        """
-        makes spot indices from xy coordinates
-
-        Args:
-            centroids1 (2D array): xy centroid coordinates
-            centroids2 (2D array): xy centroid coordinates
-            image_size (tuple): Image dimensions (height, width).
-
-        Returns:
-            spot1_indices (1D array): indices of spots1
-            spot2_indices (1D array): indices of spots2
-        """
-        spot_indices = np.ravel_multi_index(centroids.T, image_size, order="F")
-        return spot_indices
+        if is_mask:
+            if is_lo:
+                pil, _, _ = self.calculate_region_properties(data)
+                for i in np.arange(len(pil)):
+                    pil[i] = np.ravel_multi_index(
+                        [pil[i][:, 0], pil[i][:, 1]], image_size, order="F"
+                    )
+                return pil, len(pil)
+            else:
+                coords = np.column_stack(np.nonzero(data))
+        else:
+            coords = data
+        return np.ravel_multi_index(coords.T, image_size, order="F")
 
     def calculate_cell_protein_load(
         self,
@@ -1439,8 +1393,8 @@ class Analysis_Functions:
 
                 def parallel_coloc_per_z_clr_spot(xcoords, ycoords, mask):
                     centroids = np.asarray(np.vstack([xcoords, ycoords]), dtype=int).T
-                    mask_indices = self.generate_mask_indices(mask, image_size)
-                    spot_indices = self.generate_spot_indices(centroids, image_size)
+                    mask_indices = self.generate_indices(mask, image_size, is_mask=True)
+                    spot_indices = self.generate_indices(centroids, image_size)
                     (
                         clr,
                         norm_std,
@@ -1466,8 +1420,8 @@ class Analysis_Functions:
 
                 def parallel_coloc_per_z_noclr_spot(xcoords, ycoords, mask):
                     centroids = np.asarray(np.vstack([xcoords, ycoords]), dtype=int).T
-                    mask_indices = self.generate_mask_indices(mask, image_size)
-                    spot_indices = self.generate_spot_indices(centroids, image_size)
+                    mask_indices = self.generate_indices(mask, image_size, is_mask=True)
+                    spot_indices = self.generate_indices(centroids, image_size)
                     (
                         coincidence,
                         chance_coincidence,
@@ -1482,11 +1436,11 @@ class Analysis_Functions:
                     return coincidence, chance_coincidence, raw_colocalisation, n_iter
 
                 def parallel_coloc_per_z_los(mask_lo, mask_cell):
-                    mask_lo_indices, n_largeobjs = self.generate_lo_indices(
-                        mask_lo, image_size
+                    mask_lo_indices, n_largeobjs = self.generate_indices(
+                        mask_lo, image_size, is_mask=True, is_lo=True,
                     )
-                    mask_cell_indices = self.generate_mask_indices(
-                        mask_cell, image_size
+                    mask_cell_indices = self.generate_indices(
+                        mask_cell, image_size, is_mask=True, is_lo=False
                     )
                     (
                         coincidence,
@@ -2298,8 +2252,8 @@ class Analysis_Functions:
                         np.vstack([x_2_coords, y_2_coords]), dtype=int
                     ).T
 
-                    spot_1_indices = self.generate_spot_indices(centroids1, image_size)
-                    spot_2_indices = self.generate_spot_indices(centroids2, image_size)
+                    spot_1_indices = self.generate_indices(centroids1, image_size)
+                    spot_2_indices = self.generate_indices(centroids2, image_size)
                     (
                         temp_1_pl[j, 0],
                         temp_1_pl[j, 1],
