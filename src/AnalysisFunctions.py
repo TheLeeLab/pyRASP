@@ -34,34 +34,29 @@ class Analysis_Functions:
 
     def count_spots(self, database, z_planes):
         """
-        Counts spots per z plane
+        Counts spots per z plane.
 
         Args:
-            database (polars DataFrame): pandas array of spots
-            z_planes (np.1darray): is range of zplanes
+            database (polars DataFrame): DataFrame of spots.
+            z_planes (np.ndarray): Range of z-planes.
 
         Returns:
-            n_spots (polars DataFrame)
+            polars.DataFrame: DataFrame with number of spots per z-plane.
         """
-
-        spots_per_plane = np.zeros_like(z_planes)
-        for z in enumerate(z_planes):
-            spots_per_plane[z[0]] = sum(1 * (database["z"].to_numpy() == (z[1] + 1)))
-
+        spots_per_plane = [np.sum(database["z"] == z + 1) for z in z_planes]
         data = {"z": z_planes + 1, "n_spots": spots_per_plane}
-        n_spots = pl.DataFrame(data)
-        return n_spots
+        return pl.DataFrame(data)
 
     def count_spots_withthreshold(self, database, threshold):
         """
-        Counts spots per z plane
+        Counts spots per z plane with a threshold.
 
         Args:
-            database (pandas array): pandas array of spots
-            threshold (float): intensity threshold
+            database (polars DataFrame): DataFrame of spots.
+            threshold (float): Intensity threshold.
 
         Returns:
-            n_spots (pandas array)
+            polars.DataFrame: DataFrame with number of spots above and below threshold.
         """
         columns = [
             "z",
@@ -70,40 +65,23 @@ class Analysis_Functions:
             "filename",
             "threshold",
         ]
+        results = []
 
-        for i, filename in enumerate(np.unique(database.image_filename)):
+        for filename in np.unique(database["image_filename"]):
             dataslice = database.filter(pl.col("image_filename") == filename)
-            z_planes = np.unique(dataslice["z"].to_numpy())
-            spots_per_plane = np.zeros([2, len(z_planes)])
-            for z in enumerate(z_planes):
-                spots_per_plane[0, z[0]] = sum(
-                    dataslice.filter(pl.col("z") == z[1])[
-                        "sum_intensity_in_photons"
-                    ].to_numpy()
+            z_planes = np.unique(dataslice["z"])
+            for z in z_planes:
+                spots_above = np.sum(
+                    dataslice.filter(pl.col("z") == z)["sum_intensity_in_photons"]
                     > threshold
                 )
-                spots_per_plane[1, z[0]] = sum(
-                    dataslice.filter(pl.col("z") == z[1])[
-                        "sum_intensity_in_photons"
-                    ].to_numpy()
+                spots_below = np.sum(
+                    dataslice.filter(pl.col("z") == z)["sum_intensity_in_photons"]
                     <= threshold
                 )
+                results.append([z, spots_above, spots_below, filename, threshold])
 
-            stack = np.vstack(
-                [
-                    z_planes,
-                    spots_per_plane[0, :],
-                    spots_per_plane[1, :],
-                    np.full_like(z_planes, filename, dtype="object"),
-                    np.full_like(z_planes, threshold),
-                ]
-            ).T
-            if i == 0:
-                data = stack
-            else:
-                data = np.vstack([data, stack])
-        n_spots = pl.DataFrame(data=data, schema=columns)
-        return n_spots
+        return pl.DataFrame(data=results, schema=columns)
 
     def generate_lo_indices(self, mask, image_size):
         """
@@ -139,10 +117,9 @@ class Analysis_Functions:
             spot_indices (1D array): indices of spots
         """
         mask_coords = np.transpose((mask > 0).nonzero())
-        mask_indices = np.ravel_multi_index(
+        return np.ravel_multi_index(
             [mask_coords[:, 0], mask_coords[:, 1]], image_size, order="F"
         )
-        return mask_indices
 
     def generate_spot_indices(self, centroids, image_size):
         """
@@ -172,84 +149,64 @@ class Analysis_Functions:
         analytical_solution=True,
     ):
         """
-        gets cell analysis likelihood, as well as reporting error
-        bounds on the likelihood ratio for one image
+        Calculate the protein load in a cell.
 
         Args:
-            spot_indices (1D array): indices of spots
-            mask_indices (1D array): indices of pixels in mask
-            image_size (tuple): Image dimensions (height, width).
-            n_iter (int): default 100; number of iterations to start with
-            blur_degree (int): number of pixels to blur spot indices with
-                                (i.e. number of pixels surrounding centroid to
-                                consider part of spot). Default 1
+            spot_indices (np.ndarray): Indices of spots.
+            mask_indices (np.ndarray): Indices of mask pixels.
+            spot_intensities (np.ndarray): Intensities of spots.
+            median_intensity (float): Median intensity of spots.
+            image_size (tuple): Size of the image.
+            n_iter (int): Number of iterations for randomization.
+            blur_degree (int): Degree of blur to apply.
+            analytical_solution (bool): Use analytical solution for randomization.
 
         Returns:
-            olig_cell_ratio (float): coincidence per cell, normalised to chance
-            raw_colocalisation (np.1darray): binary yes/no of coincidence per spot
-            n_iter (int): how many iterations it took to converge
+            tuple: Oligomer to cell ratio, number of oligomers in cell, number of iterations.
         """
-        original_n_spots = len(spot_indices)  # get number of spots
-
-        if original_n_spots == 0:
-            n_iter_rec = 0
-            coincidence = np.NAN
-            chance_coincidence = np.NAN
-            raw_colocalisation = np.full_like(spot_indices, np.NAN)
-            return coincidence, chance_coincidence, raw_colocalisation, n_iter_rec
+        if len(spot_indices) == 0:
+            return np.nan, np.nan, np.full_like(spot_indices, np.nan), 0
 
         if blur_degree > 0:
             spot_indices = self.dilate_pixels(
-                spot_indices, image_size, width=blur_degree + 1, edge=blur_degree
+                spot_indices, image_size, blur_degree + 1, blur_degree
             )
-        n_iter_rec = n_iter
-        possible_indices = np.arange(
-            0, np.prod(image_size)
-        )  # get list of where is possible to exist in an image
 
         raw_colocalisation = self.test_spot_spot_overlap(
-            spot_indices, mask_indices, original_n_spots, raw=True
+            spot_indices, mask_indices, len(spot_indices), raw=True
+        )
+        n_olig_in_cell = np.sum(raw_colocalisation)
+
+        if analytical_solution:
+            n_olig_in_cell_random = len(spot_indices) * (
+                len(mask_indices.ravel()) / np.prod(image_size)
+            )
+        else:
+            n_olig_in_cell_random = np.mean(
+                [
+                    np.sum(
+                        self.test_spot_spot_overlap(
+                            np.random.choice(
+                                np.arange(np.prod(image_size)), len(spot_indices)
+                            ).reshape(-1, 1),
+                            mask_indices,
+                            len(spot_indices),
+                            raw=True,
+                        )
+                    )
+                    for _ in range(n_iter)
+                ]
+            )
+
+        if n_olig_in_cell == 0 or n_olig_in_cell_random == 0:
+            return np.nan, n_olig_in_cell, n_iter
+
+        cell_brightness = np.median(spot_intensities[np.where(raw_colocalisation)[0]])
+        olig_cell_ratio = (n_olig_in_cell * cell_brightness) / (
+            n_olig_in_cell_random * median_intensity
         )
 
-        n_olig_in_cell = np.sum(
-            raw_colocalisation
-        )  # generate number of oligomers in cell
-        if analytical_solution == True:
-            n_olig_in_cell_random = original_n_spots * (
-                len(mask_indices.ravel()) / len(possible_indices)
-            )
-        else:
-            random_spot_locations = np.random.choice(
-                possible_indices, size=(n_iter, original_n_spots)
-            )  # get random spot locations
-            if blur_degree > 0:
-                random_spot_locations = self.dilate_pixel_matrix(
-                    random_spot_locations,
-                    image_size,
-                    width=blur_degree + 1,
-                    edge=blur_degree,
-                )
-            n_olig_in_cell_random = np.zeros([n_iter])  # generate CSR array to fill in
-            for i in np.arange(n_iter):
-                n_olig_in_cell_random[i] = np.sum(
-                    self.test_spot_spot_overlap(
-                        random_spot_locations[i, :],
-                        mask_indices,
-                        original_n_spots,
-                        raw=True,
-                    )
-                )
-        if (n_olig_in_cell == 0) or (np.nanmean(n_olig_in_cell_random) == 0):
-            olig_cell_ratio = np.NAN
-        else:
-            cell_brightness = np.median(
-                spot_intensities[np.where(raw_colocalisation)[0]]
-            )
-            olig_cell_ratio = np.divide(
-                np.multiply(n_olig_in_cell, cell_brightness),
-                np.multiply(np.nanmean(n_olig_in_cell_random), median_intensity),
-            )
-        return olig_cell_ratio, n_olig_in_cell, n_iter_rec
+        return olig_cell_ratio, n_olig_in_cell, n_iter
 
     def calculate_spot_to_cell_numbers(
         self,

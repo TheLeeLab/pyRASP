@@ -271,12 +271,6 @@ class IO_Functions:
         offset_map=0.0,
         variance_map=1.0,
         frame=None,
-        error_correction=False,
-        NA=1.45,
-        wavelength=0.6,
-        pixelsize=0.11,
-        alpha=0.2,
-        R=40,
     ):
         """
         Read a TIFF file using the skimage library.
@@ -288,12 +282,6 @@ class IO_Functions:
             gain_map (matrix, or float): gain map. Assumes units of ADU/photoelectrons
             offset_map (matrix, or float): offset map. Assumes units of ADU
             frame (int, optional): if not None, loads a single frame
-            error_correction (boolean): if True, uses Huang's error correction
-            NA (float): if using Huang's error correction, needed
-            wavelength (float): if using Huang's error correction, needed (same units as pixel size)
-            pixelsize (float): pixel size if error correcting
-            alpha (float): weighting parameter for error correction (typically 0.2)
-            iterationN (int): number of iterations for the error correction
 
 
         Returns:
@@ -316,39 +304,19 @@ class IO_Functions:
                 gain_map = 1.0
                 offset_map = 0.0
 
-        if error_correction == True:
-            for z in np.arange(data.shape[-1]):
-                data[:, :, z] = np.squeeze(
-                    ncs.reducenoise(
-                        R,
-                        np.expand_dims(data[:, :, z], 0),
-                        variance_map,
-                        gain_map,
-                        int(data.shape[0]),
-                        pixelsize,
-                        NA,
-                        wavelength,
-                        alpha,
-                        15,
-                        Type="OTFweighted",
-                    )
+        if type(gain_map) is not float:
+            if len(data.shape) > 2:
+                data = np.divide(
+                    np.divide(
+                        np.subtract(data, offset_map[:, :, np.newaxis]),
+                        gain_map[:, :, np.newaxis],
+                    ),
+                    QE,
                 )
-        else:
-            if type(gain_map) is not float:
-                if len(data.shape) > 2:
-                    data = np.divide(
-                        np.divide(
-                            np.subtract(data, offset_map[:, :, np.newaxis]),
-                            gain_map[:, :, np.newaxis],
-                        ),
-                        QE,
-                    )
-                else:
-                    data = np.divide(
-                        np.divide(np.subtract(data, offset_map), gain_map), QE
-                    )
             else:
                 data = np.divide(np.divide(np.subtract(data, offset_map), gain_map), QE)
+        else:
+            data = np.divide(np.divide(np.subtract(data, offset_map), gain_map), QE)
         return data
 
     def write_tiff(self, volume, file_path, bit=np.uint16, pixel_size=0.11):
@@ -408,7 +376,7 @@ class IO_Functions:
         threshold2_str,
     ):
         """
-        saves analysis of above and below threshold.
+        Saves analysis of above and below threshold.
 
         Args:
             plane_1_analysis_AT (pl.DataFrame): polars dataframe.
@@ -427,132 +395,123 @@ class IO_Functions:
             threshold2_str (str): string of threshold 2.
         """
 
-        def _generate_filename(
-            base_file,
-            spot_str,
-            threshold1,
-            spot1_str,
-            threshold2,
-            spot2_str,
-            prefix="",
-            suffix="",
+        def save_analysis(
+            plane_analysis_AT,
+            plane_analysis_UT,
+            analysis_file,
+            spot_string_1,
+            spot_string_2,
+            threshold1_str,
+            threshold2_str,
         ):
-            return f"{base_file.split('.')[0]}{prefix}_colocalisationwith_{spot_str}_{threshold1}_{spot1_str}_photonthreshold_{threshold2}_{spot2_str}_photonthreshold{suffix}.csv"
+            if isinstance(plane_analysis_AT, pl.DataFrame) and isinstance(
+                plane_analysis_UT, pl.DataFrame
+            ):
+                above_str = f"coincidence_above_{threshold1_str}"
+                above_cc_str = f"chance_coincidence_above_{threshold1_str}"
+                below_str = f"coincidence_below_{threshold1_str}"
+                below_cc_str = f"chance_coincidence_below_{threshold1_str}"
 
-        def _save_dataframe(dataframe, filename):
-            if isinstance(dataframe, pl.DataFrame):
-                dataframe.write_csv(filename)
+                plane_analysis = plane_analysis_AT.rename(
+                    {"coincidence": above_str, "chance_coincidence": above_cc_str}
+                )
+                plane_analysis = plane_analysis.with_columns(
+                    channelcol=plane_analysis_UT["coincidence"]
+                ).rename({"channelcol": below_str})
+                plane_analysis = plane_analysis.with_columns(
+                    channelcol=plane_analysis_UT["chance_coincidence"]
+                ).rename({"channelcol": below_cc_str})
+                plane_analysis = plane_analysis[
+                    above_str,
+                    above_cc_str,
+                    below_str,
+                    below_cc_str,
+                    "z",
+                    "image_filename",
+                ]
 
-        _save_dataframe(
+                plane_analysis.write_csv(
+                    f"{analysis_file.split('.')[0]}_colocalisationwith_{spot_string_2}_{threshold1_str}_{spot_string_1}_photonthreshold_{threshold2_str}_{spot_string_2}_photonthreshold.csv"
+                )
+            else:
+                if isinstance(plane_analysis_AT, pl.DataFrame):
+                    plane_analysis_AT.write_csv(
+                        f"{analysis_file.split('.')[0]}_colocalisationwith_{spot_string_2}_{threshold1_str}_{spot_string_1}_photonthreshold_{threshold2_str}_{spot_string_2}_photonthreshold_abovethreshold.csv"
+                    )
+                if isinstance(plane_analysis_UT, pl.DataFrame):
+                    plane_analysis_UT.write_csv(
+                        f"{analysis_file.split('.')[0]}_colocalisationwith_{spot_string_2}_{threshold1_str}_{spot_string_1}_photonthreshold_{threshold2_str}_{spot_string_2}_photonthreshold_belowthreshold.csv"
+                    )
+
+        save_analysis(
             plane_1_analysis_AT,
-            _generate_filename(
-                analysis_file_1,
-                spot_2_string,
-                threshold1_str,
-                spot_1_string,
-                threshold2_str,
-                spot_2_string,
-                suffix="_abovethreshold",
-            ),
-        )
-        _save_dataframe(
             plane_1_analysis_UT,
-            _generate_filename(
-                analysis_file_1,
-                spot_2_string,
-                threshold1_str,
-                spot_1_string,
-                threshold2_str,
-                spot_2_string,
-                suffix="_belowthreshold",
-            ),
+            analysis_file_1,
+            spot_1_string,
+            spot_2_string,
+            threshold1_str,
+            threshold2_str,
         )
-
-        _save_dataframe(
+        save_analysis(
             plane_2_analysis_AT,
-            _generate_filename(
-                analysis_file_2,
-                spot_1_string,
-                threshold2_str,
-                spot_2_string,
-                threshold1_str,
-                spot_1_string,
-                suffix="_abovethreshold",
-            ),
-        )
-        _save_dataframe(
-            plane_1_analysis_UT,
-            _generate_filename(
-                analysis_file_2,
-                spot_1_string,
-                threshold2_str,
-                spot_2_string,
-                threshold1_str,
-                spot_1_string,
-                suffix="_belowthreshold",
-            ),
+            plane_2_analysis_UT,
+            analysis_file_2,
+            spot_2_string,
+            spot_1_string,
+            threshold2_str,
+            threshold1_str,
         )
 
-        # Save spot analyses
-        _save_dataframes = [
-            (
-                spot_1_analysis_AT,
-                analysis_file_1,
-                spot_2_string,
-                threshold1_str,
-                spot_1_string,
-                threshold2_str,
-                "abovethreshold",
-            ),
-            (
-                spot_1_analysis_UT,
-                analysis_file_1,
-                spot_2_string,
-                threshold1_str,
-                spot_1_string,
-                threshold2_str,
-                "belowthreshold",
-            ),
-            (
-                spot_2_analysis_AT,
-                analysis_file_2,
-                spot_1_string,
-                threshold2_str,
-                spot_2_string,
-                threshold1_str,
-                "abovethreshold",
-            ),
-            (
-                spot_2_analysis_UT,
-                analysis_file_2,
-                spot_1_string,
-                threshold2_str,
-                spot_2_string,
-                threshold1_str,
-                "belowthreshold",
-            ),
-        ]
+        def save_spot_analysis(
+            spot_analysis,
+            analysis_file,
+            spot_string_1,
+            spot_string_2,
+            threshold1_str,
+            threshold2_str,
+            above=True,
+        ):
+            if isinstance(spot_analysis, pl.DataFrame):
+                suffix = "abovethreshold" if above else "belowthreshold"
+                spot_analysis.write_csv(
+                    f"{analysis_file.split('.')[0]}_rawcolocalisationwith_{spot_string_2}_{threshold1_str}_{spot_string_1}_photonthreshold_{threshold2_str}_{spot_string_2}_photonthreshold_{suffix}.csv"
+                )
 
-        for (
-            dataframe,
-            file,
-            spot_str1,
-            threshold1,
-            spot_str2,
-            threshold2,
-            threshold_type,
-        ) in _save_dataframes:
-            _save_dataframe(
-                dataframe,
-                _generate_filename(
-                    file,
-                    spot_str1,
-                    threshold1,
-                    spot_str2,
-                    threshold2,
-                    spot_str1,
-                    prefix="_rawcolocalisationwith",
-                    suffix=f"_{threshold_type}",
-                ),
-            )
+        save_spot_analysis(
+            spot_1_analysis_AT,
+            analysis_file_1,
+            spot_1_string,
+            spot_2_string,
+            threshold1_str,
+            threshold2_str,
+            above=True,
+        )
+        save_spot_analysis(
+            spot_1_analysis_UT,
+            analysis_file_1,
+            spot_1_string,
+            spot_2_string,
+            threshold1_str,
+            threshold2_str,
+            above=False,
+        )
+        save_spot_analysis(
+            spot_2_analysis_AT,
+            analysis_file_2,
+            spot_2_string,
+            spot_1_string,
+            threshold2_str,
+            threshold1_str,
+            above=True,
+        )
+        save_spot_analysis(
+            spot_2_analysis_UT,
+            analysis_file_2,
+            spot_2_string,
+            spot_1_string,
+            threshold2_str,
+            threshold1_str,
+            above=False,
+        )
+
         return
