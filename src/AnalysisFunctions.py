@@ -31,16 +31,16 @@ class Analysis_Functions:
     def __init__(self):
         self = self
         return
-    
+
     def count_spots(self, database, z_planes, threshold=None):
         """
         Counts spots per z plane, optionally with a threshold.
-    
+
         Args:
             database (polars DataFrame): DataFrame of spots.
             z_planes (np.ndarray): Range of z-planes.
             threshold (float, optional): Intensity threshold.
-    
+
         Returns:
             polars.DataFrame: DataFrame with number of spots per z-plane.
         """
@@ -64,16 +64,16 @@ class Analysis_Functions:
                     results.append([z, spots_above, spots_below, filename, threshold])
             data = results
         return pl.DataFrame(data)
-    
+
     def generate_indices(self, data, image_size, is_mask=False, is_lo=False):
         """
         Generate indices from coordinates.
-    
+
         Args:
             data (np.ndarray): Array of coordinates or mask.
             image_size (tuple): Size of the image.
             is_mask (bool): Indicates if the data is a mask (default: False).
-    
+
         Returns:
             np.ndarray: Indices of the data.
         """
@@ -1437,7 +1437,10 @@ class Analysis_Functions:
 
                 def parallel_coloc_per_z_los(mask_lo, mask_cell):
                     mask_lo_indices, n_largeobjs = self.generate_indices(
-                        mask_lo, image_size, is_mask=True, is_lo=True,
+                        mask_lo,
+                        image_size,
+                        is_mask=True,
+                        is_lo=True,
                     )
                     mask_cell_indices = self.generate_indices(
                         mask_cell, image_size, is_mask=True, is_lo=False
