@@ -2002,7 +2002,7 @@ class Analysis_Functions:
                     "Computing "
                     + typestr
                     + analysis_string
-                    +" File {}/{}    Time elapsed: {:.3f} s".format(
+                    + " File {}/{}    Time elapsed: {:.3f} s".format(
                         i + 1, len(files), time.time() - start
                     ),
                     end="\r",
