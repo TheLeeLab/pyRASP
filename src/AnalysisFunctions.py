@@ -24,12 +24,11 @@ import IOFunctions
 import MultiD_RD_functions
 
 IO = IOFunctions.IO_Functions()
-cpu_number = int(pathos.helpers.cpu_count() * 0.8)
 
 
 class Analysis_Functions:
-    def __init__(self):
-        self = self
+    def __init__(self, cpu_load=0.8):
+        self.cpu_number = int(pathos.helpers.cpu_count() * cpu_load)
         return
 
     def count_spots(self, database, threshold=None):
@@ -94,52 +93,99 @@ class Analysis_Functions:
             coords = data
         return np.ravel_multi_index(coords.T, image_size, order="F")
 
-    def calculate_cell_protein_load(
+    def calculate_spot_metrics(
         self,
         spot_indices,
         mask_indices,
-        spot_intensities,
-        median_intensity,
         image_size,
+        spot_intensities=None,
+        median_intensity=None,
         n_iter=100,
         blur_degree=1,
         analytical_solution=True,
     ):
         """
-        Calculate the protein load in a cell.
+        Calculate specified spot metrics for specified mask.
 
         Args:
             spot_indices (np.ndarray): Indices of spots.
             mask_indices (np.ndarray): Indices of mask pixels.
             spot_intensities (np.ndarray): Intensities of spots.
-            median_intensity (float): Median intensity of spots.
-            image_size (tuple): Size of the image.
+            image_size (tuple): image size
+            spot_intensity (np.ndarray): if given, spot intensities
+            median_intensity (float): Median intensity of spots. If None, gives puncta cell likelihood.
             n_iter (int): Number of iterations for randomization.
             blur_degree (int): Degree of blur to apply.
             analytical_solution (bool): Use analytical solution for randomization.
 
         Returns:
-            tuple: Oligomer to cell ratio, number of oligomers in cell, number of iterations.
+            tuple: spot metric, number of spots in cell, number of iterations.
         """
         if len(spot_indices) == 0:
-            return np.nan, np.nan, np.full_like(spot_indices, np.nan), 0
+            return self._handle_empty_spots(spot_indices)
+        original_n_spots = len(spot_indices)
+        spot_indices = self._apply_blur(spot_indices, image_size, blur_degree)
+        raw_colocalisation, n_olig_in_cell = self._compute_colocalisation(
+            spot_indices, mask_indices, original_n_spots
+        )
 
+        n_olig_in_cell_random = self._calculate_random_colocalisation(
+            spot_indices,
+            mask_indices,
+            image_size,
+            n_iter,
+            analytical_solution,
+            original_n_spots,
+        )
+
+        if n_olig_in_cell == 0 or n_olig_in_cell_random == 0:
+            return np.nan, n_olig_in_cell, n_iter
+
+        if spot_intensities is not None and median_intensity is not None:
+            olig_cell_ratio = self._compute_protein_load_ratio(
+                n_olig_in_cell,
+                n_olig_in_cell_random,
+                raw_colocalisation,
+                spot_intensities,
+                median_intensity,
+            )
+        else:
+            olig_cell_ratio = self._compute_olig_cell_ratio(
+                n_olig_in_cell, n_olig_in_cell_random
+            )
+
+        return olig_cell_ratio, n_olig_in_cell, n_iter
+
+    def _handle_empty_spots(self, spot_indices):
+        return np.nan, np.nan, np.full_like(spot_indices, np.nan), 0
+
+    def _apply_blur(self, spot_indices, image_size, blur_degree):
         if blur_degree > 0:
             spot_indices = self.dilate_pixels(
                 spot_indices, image_size, blur_degree + 1, blur_degree
             )
+        return spot_indices
 
+    def _compute_colocalisation(self, spot_indices, mask_indices, original_n_spots):
         raw_colocalisation = self.test_spot_spot_overlap(
-            spot_indices, mask_indices, len(spot_indices), raw=True
+            spot_indices, mask_indices, original_n_spots, raw=True
         )
         n_olig_in_cell = np.sum(raw_colocalisation)
+        return raw_colocalisation, n_olig_in_cell
 
+    def _calculate_random_colocalisation(
+        self,
+        spot_indices,
+        mask_indices,
+        image_size,
+        n_iter,
+        analytical_solution,
+        original_n_spots,
+    ):
         if analytical_solution:
-            n_olig_in_cell_random = len(spot_indices) * (
-                len(mask_indices.ravel()) / np.prod(image_size)
-            )
+            return original_n_spots * (len(mask_indices.ravel()) / np.prod(image_size))
         else:
-            n_olig_in_cell_random = np.mean(
+            return np.mean(
                 [
                     np.sum(
                         self.test_spot_spot_overlap(
@@ -147,7 +193,7 @@ class Analysis_Functions:
                                 np.arange(np.prod(image_size)), len(spot_indices)
                             ).reshape(-1, 1),
                             mask_indices,
-                            len(spot_indices),
+                            original_n_spots,
                             raw=True,
                         )
                     )
@@ -155,100 +201,22 @@ class Analysis_Functions:
                 ]
             )
 
-        if n_olig_in_cell == 0 or n_olig_in_cell_random == 0:
-            return np.nan, n_olig_in_cell, n_iter
-
+    @staticmethod
+    @jit(nopython=True)
+    def _compute_protein_load_ratio(
+        n_olig_in_cell,
+        n_olig_in_cell_random,
+        raw_colocalisation,
+        spot_intensities,
+        median_intensity,
+    ):
         cell_brightness = np.median(spot_intensities[np.where(raw_colocalisation)[0]])
-        olig_cell_ratio = (n_olig_in_cell * cell_brightness) / (
+        return (n_olig_in_cell * cell_brightness) / (
             n_olig_in_cell_random * median_intensity
         )
 
-        return olig_cell_ratio, n_olig_in_cell, n_iter
-
-    def calculate_spot_to_cell_numbers(
-        self,
-        spot_indices,
-        mask_indices,
-        image_size,
-        n_iter=100,
-        blur_degree=1,
-        analytical_solution=True,
-    ):
-        """
-        gets cell analysis likelihood, as well as reporting error
-        bounds on the likelihood ratio for one image
-
-        Args:
-            spot_indices (1D array): indices of spots
-            mask_indices (1D array): indices of pixels in mask
-            image_size (tuple): Image dimensions (height, width).
-            n_iter (int): default 100; number of iterations to start with
-            blur_degree (int): number of pixels to blur spot indices with
-                                (i.e. number of pixels surrounding centroid to
-                                consider part of spot). Default 1
-
-        Returns:
-            olig_cell_ratio (float): coincidence per cell, normalised to chance
-            raw_colocalisation (np.1darray): binary yes/no of coincidence per spot
-            n_iter (int): how many iterations it took to converge
-        """
-        original_n_spots = len(spot_indices)  # get number of spots
-
-        if original_n_spots == 0:
-            n_iter_rec = 0
-            coincidence = np.NAN
-            chance_coincidence = np.NAN
-            raw_colocalisation = np.full_like(spot_indices, np.NAN)
-            return coincidence, chance_coincidence, raw_colocalisation, n_iter_rec
-
-        if blur_degree > 0:
-            spot_indices = self.dilate_pixels(
-                spot_indices, image_size, width=blur_degree + 1, edge=blur_degree
-            )
-        n_iter_rec = n_iter
-        possible_indices = np.arange(
-            0, np.prod(image_size)
-        )  # get list of where is possible to exist in an image
-
-        raw_colocalisation = self.test_spot_spot_overlap(
-            spot_indices, mask_indices, original_n_spots, raw=True
-        )
-
-        n_olig_in_cell = np.sum(
-            raw_colocalisation
-        )  # generate number of oligomers in cell
-        if analytical_solution == True:
-            n_olig_in_cell_random = original_n_spots * (
-                len(mask_indices.ravel()) / len(possible_indices)
-            )
-        else:
-            random_spot_locations = np.random.choice(
-                possible_indices, size=(n_iter, original_n_spots)
-            )  # get random spot locations
-            if blur_degree > 0:
-                random_spot_locations = self.dilate_pixel_matrix(
-                    random_spot_locations,
-                    image_size,
-                    width=blur_degree + 1,
-                    edge=blur_degree,
-                )
-            n_olig_in_cell_random = np.zeros([n_iter])  # generate CSR array to fill in
-            for i in np.arange(n_iter):
-                n_olig_in_cell_random[i] = np.sum(
-                    self.test_spot_spot_overlap(
-                        random_spot_locations[i, :],
-                        mask_indices,
-                        original_n_spots,
-                        raw=True,
-                    )
-                )
-        if (n_olig_in_cell == 0) or (np.nanmean(n_olig_in_cell_random) == 0):
-            olig_cell_ratio = np.NAN
-        else:
-            olig_cell_ratio = np.divide(
-                n_olig_in_cell, np.nanmean(n_olig_in_cell_random)
-            )
-        return olig_cell_ratio, n_olig_in_cell, n_iter_rec
+    def _compute_olig_cell_ratio(self, n_olig_in_cell, n_olig_in_cell_random):
+        return np.divide(n_olig_in_cell, np.nanmean(n_olig_in_cell_random))
 
     def calculate_spot_to_mask_coincidence(
         self, spot_indices, mask_indices, image_size, n_iter=100, blur_degree=1
@@ -686,7 +654,6 @@ class Analysis_Functions:
         Returns:
             mask_fill (float): proportion of image filled by mask.
         """
-
         mask_fill = np.divide(len(mask_indices), np.prod(np.array(image_size)))
         return mask_fill
 
@@ -1477,7 +1444,7 @@ class Analysis_Functions:
                     else:
                         masks = [lo_mask[:, :, j] for j in np.arange(len(z_planes))]
                     if calc_clr == False:
-                        pool = Pool(nodes=cpu_number)
+                        pool = Pool(nodes=self.cpu_number)
                         pool.restart()
                         results = pool.map(
                             parallel_coloc_per_z_noclr_spot,
@@ -1495,7 +1462,7 @@ class Analysis_Functions:
                             [coincidence, chance_coincidence, n_iter, z_planes]
                         )
                     else:
-                        pool = Pool(nodes=cpu_number)
+                        pool = Pool(nodes=self.cpu_number)
                         pool.restart()
                         results = pool.map(
                             parallel_coloc_per_z_clr_spot,
@@ -1538,7 +1505,7 @@ class Analysis_Functions:
                         masks_cell = [
                             cell_mask[:, :, j] for j in np.arange(len(z_planes))
                         ]
-                    pool = Pool(nodes=cpu_number)
+                    pool = Pool(nodes=self.cpu_number)
                     pool.restart()
                     results = pool.map(
                         parallel_coloc_per_z_los,
@@ -1922,6 +1889,8 @@ class Analysis_Functions:
                         intensity = subset["sum_intensity_in_photons"].to_numpy()
                         intensity = intensity[bounds]
                         intensity = intensity[filter_array]
+                    else:
+                        intensity = None
                     filename_tosave = np.full_like(x_m, file, dtype="object")
 
                     def areaanalysis(coords):
@@ -1937,33 +1906,22 @@ class Analysis_Functions:
                             mask_indices = np.ravel_multi_index(
                                 coordinates_mask, image_size, order="F"
                             )
-                            if median is None:
-                                olig_cell_ratio, n_olig_in_cell, n_iter_rec = (
-                                    self.calculate_spot_to_cell_numbers(
-                                        spot_indices,
-                                        mask_indices,
-                                        image_size,
-                                        n_iter=1,
-                                        blur_degree=1,
-                                    )
+                            olig_cell_ratio, n_olig_in_cell, n_iter_rec = (
+                                self.calculate_spot_metrics(
+                                    spot_indices=spot_indices,
+                                    mask_indices=mask_indices,
+                                    spot_intensities=intensity,
+                                    median_intensity=median,
+                                    image_size=image_size,
+                                    n_iter=1,
+                                    blur_degree=1,
                                 )
-                            else:
-                                olig_cell_ratio, n_olig_in_cell, n_iter_rec = (
-                                    self.calculate_cell_protein_load(
-                                        spot_indices,
-                                        mask_indices,
-                                        intensity,
-                                        median,
-                                        image_size,
-                                        n_iter=1,
-                                        blur_degree=1,
-                                    )
-                                )
+                            )
                             n_cell_ratios = olig_cell_ratio
                             n_spots_in_object = n_olig_in_cell
                         return n_cell_ratios, n_spots_in_object
 
-                    pool = Pool(nodes=cpu_number)
+                    pool = Pool(nodes=self.cpu_number)
                     pool.restart()
                     results = pool.map(areaanalysis, pil_mask)
                     pool.close()
