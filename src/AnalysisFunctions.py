@@ -22,6 +22,7 @@ module_dir = os.path.dirname(__file__)
 sys.path.append(module_dir)
 import IOFunctions
 import MultiD_RD_functions
+import CoincidenceFunctions
 
 IO = IOFunctions.IO_Functions()
 
@@ -92,744 +93,6 @@ class Analysis_Functions:
         else:
             coords = data
         return np.ravel_multi_index(coords.T, image_size, order="F")
-
-    def calculate_spot_metrics(
-        self,
-        spot_indices,
-        mask_indices,
-        image_size,
-        spot_intensities=None,
-        median_intensity=None,
-        n_iter=100,
-        blur_degree=1,
-        analytical_solution=True,
-    ):
-        """
-        Calculate specified spot metrics for specified mask.
-
-        Args:
-            spot_indices (np.ndarray): Indices of spots.
-            mask_indices (np.ndarray): Indices of mask pixels.
-            spot_intensities (np.ndarray): Intensities of spots.
-            image_size (tuple): image size
-            spot_intensity (np.ndarray): if given, spot intensities
-            median_intensity (float): Median intensity of spots. If None, gives puncta cell likelihood.
-            n_iter (int): Number of iterations for randomization.
-            blur_degree (int): Degree of blur to apply.
-            analytical_solution (bool): Use analytical solution for randomization.
-
-        Returns:
-            tuple: spot metric, number of spots in cell, number of iterations.
-        """
-        if len(spot_indices) == 0:
-            return self._handle_empty_spots(spot_indices)
-        original_n_spots = len(spot_indices)
-        spot_indices = self._apply_blur(spot_indices, image_size, blur_degree)
-        raw_colocalisation, n_olig_in_cell = self._compute_colocalisation(
-            spot_indices, mask_indices, original_n_spots
-        )
-
-        n_olig_in_cell_random = self._calculate_random_colocalisation(
-            spot_indices,
-            mask_indices,
-            image_size,
-            n_iter,
-            analytical_solution,
-            original_n_spots,
-        )
-
-        if n_olig_in_cell == 0 or n_olig_in_cell_random == 0:
-            return np.nan, n_olig_in_cell, n_iter
-
-        if spot_intensities is not None and median_intensity is not None:
-            olig_cell_ratio = self._compute_protein_load_ratio(
-                n_olig_in_cell,
-                n_olig_in_cell_random,
-                raw_colocalisation,
-                spot_intensities,
-                median_intensity,
-            )
-        else:
-            olig_cell_ratio = self._compute_olig_cell_ratio(
-                n_olig_in_cell, n_olig_in_cell_random
-            )
-
-        return olig_cell_ratio, n_olig_in_cell, n_iter
-
-    def _handle_empty_spots(self, spot_indices):
-        return np.nan, np.nan, np.full_like(spot_indices, np.nan), 0
-
-    def _apply_blur(self, spot_indices, image_size, blur_degree):
-        if blur_degree > 0:
-            spot_indices = self.dilate_pixels(
-                spot_indices, image_size, blur_degree + 1, blur_degree
-            )
-        return spot_indices
-
-    def _compute_colocalisation(self, spot_indices, mask_indices, original_n_spots):
-        raw_colocalisation = self.test_spot_spot_overlap(
-            spot_indices, mask_indices, original_n_spots, raw=True
-        )
-        n_olig_in_cell = np.sum(raw_colocalisation)
-        return raw_colocalisation, n_olig_in_cell
-
-    def _calculate_random_colocalisation(
-        self,
-        spot_indices,
-        mask_indices,
-        image_size,
-        n_iter,
-        analytical_solution,
-        original_n_spots,
-    ):
-        if analytical_solution:
-            return original_n_spots * (len(mask_indices.ravel()) / np.prod(image_size))
-        else:
-            return np.mean(
-                [
-                    np.sum(
-                        self.test_spot_spot_overlap(
-                            np.random.choice(
-                                np.arange(np.prod(image_size)), len(spot_indices)
-                            ).reshape(-1, 1),
-                            mask_indices,
-                            original_n_spots,
-                            raw=True,
-                        )
-                    )
-                    for _ in range(n_iter)
-                ]
-            )
-
-    @staticmethod
-    @jit(nopython=True)
-    def _compute_protein_load_ratio(
-        n_olig_in_cell,
-        n_olig_in_cell_random,
-        raw_colocalisation,
-        spot_intensities,
-        median_intensity,
-    ):
-        cell_brightness = np.median(spot_intensities[np.where(raw_colocalisation)[0]])
-        return (n_olig_in_cell * cell_brightness) / (
-            n_olig_in_cell_random * median_intensity
-        )
-
-    def _compute_olig_cell_ratio(self, n_olig_in_cell, n_olig_in_cell_random):
-        return np.divide(n_olig_in_cell, np.nanmean(n_olig_in_cell_random))
-
-    def calculate_spot_to_mask_coincidence(
-        self, spot_indices, mask_indices, image_size, n_iter=100, blur_degree=1
-    ):
-        """
-        gets spot colocalisation likelihood ratio, as well as reporting error
-        bounds on the likelihood ratio for one image
-
-        Args:
-            spot_indices (1D array): indices of spots
-            mask_indices (1D array): indices of pixels in mask
-            image_size (tuple): Image dimensions (height, width).
-            n_iter (int): default 100; number of iterations to start with
-            blur_degree (int): number of pixels to blur spot indices with
-                                (i.e. number of pixels surrounding centroid to
-                                consider part of spot). Default 1
-
-        Returns:
-            coincidence (float): coincidence FoV
-            chance_coincidence (float): chance coincidence
-            raw_colocalisation (np.1darray): binary yes/no of coincidence per spot
-            n_iter (int): how many iterations it took to converge
-        """
-        original_n_spots = len(spot_indices)  # get number of spots
-
-        if original_n_spots == 0:
-            n_iter_rec = 0
-            coincidence = np.NAN
-            chance_coincidence = np.NAN
-            raw_colocalisation = np.full_like(spot_indices, np.NAN)
-            return coincidence, chance_coincidence, raw_colocalisation, n_iter_rec
-
-        if blur_degree > 0:
-            spot_indices = self.dilate_pixels(
-                spot_indices, image_size, width=blur_degree + 1, edge=blur_degree
-            )
-        n_iter_rec = n_iter
-        possible_indices = np.arange(
-            0, np.prod(image_size)
-        )  # get list of where is possible to exist in an image
-
-        raw_colocalisation = self.test_spot_spot_overlap(
-            spot_indices, mask_indices, original_n_spots, raw=True
-        )
-
-        coincidence = np.divide(
-            np.sum(raw_colocalisation), original_n_spots
-        )  # generate coincidence
-
-        random_spot_locations = np.random.choice(
-            possible_indices, size=(n_iter, original_n_spots)
-        )  # get random spot locations
-        if blur_degree > 0:
-            random_spot_locations = self.dilate_pixel_matrix(
-                random_spot_locations,
-                image_size,
-                width=blur_degree + 1,
-                edge=blur_degree,
-            )
-        chance_coincidence_raw = np.zeros([n_iter])  # generate CSR array to fill in
-        for i in np.arange(n_iter):
-            chance_coincidence_raw[i] = np.divide(
-                np.sum(
-                    self.test_spot_spot_overlap(
-                        random_spot_locations[i, :],
-                        mask_indices,
-                        original_n_spots,
-                        raw=True,
-                    )
-                ),
-                original_n_spots,
-            )
-
-        chance_coincidence = np.nanmean(chance_coincidence_raw)
-        return coincidence, chance_coincidence, raw_colocalisation, n_iter_rec
-
-    def calculate_spot_to_spot_coincidence(
-        self, spot_1_indices, spot_2_indices, image_size, n_iter=1000, blur_degree=1
-    ):
-        """
-        gets spot to spot coincidence between two channels
-
-        Args:
-            spot_1_indices (1D array): indices of spots 1
-            spot_2_indices (1D array): indices of spots 2
-            image_size (tuple): Image dimensions (height, width).
-            n_iter (int): default 1000; number of iterations to get chance coincidence
-            blur_degree (int): number of pixels to blur spot indices with
-                                (i.e. number of pixels surrounding centroid to
-                                consider part of spot). Default 1
-
-        Returns:
-            coincidence_1 (float): coincidence from 1 to 2 FoV
-            chance_coincidence_1 (float): chance coincidence from 1 to 2
-            coincidence_2 (float): coincidence from 2 to 1 FoV
-            chance_coincidence_2 (float): chance coincidence from 2 to 1
-            raw_coincidence_1 (np.1darray): raw colocalisation values per spot 1 to 2
-            raw_coincidence_2 (np.1darray): raw colocalisation values per spot 2 to 1
-        """
-        original_n_spots_1 = len(spot_1_indices)  # get number of spots 1
-        original_n_spots_2 = len(spot_2_indices)  # get number of spots 2
-
-        if (original_n_spots_1 == 0) or (original_n_spots_2 == 0):
-            coincidence_1 = np.NAN
-            chance_coincidence_1 = np.NAN
-            coincidence_2 = np.NAN
-            chance_coincidence_2 = np.NAN
-            raw_coincidence_1 = np.full_like(spot_1_indices, np.NAN)
-            raw_coincidence_2 = np.full_like(spot_1_indices, np.NAN)
-            return (
-                coincidence_1,
-                chance_coincidence_1,
-                coincidence_2,
-                chance_coincidence_2,
-                raw_coincidence_1,
-                raw_coincidence_2,
-            )
-
-        if blur_degree > 0:
-            spot_1_indices = self.dilate_pixels(
-                spot_1_indices, image_size, width=blur_degree + 1, edge=blur_degree
-            )
-            spot_2_indices = self.dilate_pixels(
-                spot_2_indices, image_size, width=blur_degree + 1, edge=blur_degree
-            )
-
-        possible_indices = np.arange(
-            0, np.prod(image_size)
-        )  # get list of where is possible to exist in an image
-        raw_coincidence_1 = self.test_spot_spot_overlap(
-            spot_1_indices, spot_2_indices, original_n_spots_1
-        )  # get nspots in mask
-        raw_coincidence_1[raw_coincidence_1 >= 1.0] = 1.0
-        raw_coincidence_2 = self.test_spot_spot_overlap(
-            spot_2_indices, spot_1_indices, original_n_spots_2
-        )  # get nspots in mask
-        raw_coincidence_2[raw_coincidence_2 >= 1.0] = 1.0
-
-        coincidence_1 = np.divide(
-            np.sum(raw_coincidence_1), original_n_spots_1
-        )  # generate coincidence
-        coincidence_2 = np.divide(
-            np.sum(raw_coincidence_2), original_n_spots_2
-        )  # generate coincidence
-
-        random_spot_locations_1 = np.random.choice(
-            possible_indices, size=(n_iter, original_n_spots_1)
-        )  # get random spot locations
-        random_spot_locations_2 = np.random.choice(
-            possible_indices, size=(n_iter, original_n_spots_2)
-        )  # get random spot locations
-
-        if blur_degree > 0:
-            random_spot_locations_1 = self.dilate_pixel_matrix(
-                random_spot_locations_1,
-                image_size,
-                width=blur_degree + 1,
-                edge=blur_degree,
-            )
-            random_spot_locations_2 = self.dilate_pixel_matrix(
-                random_spot_locations_2,
-                image_size,
-                width=blur_degree + 1,
-                edge=blur_degree,
-            )
-
-        CC_1 = np.zeros([n_iter])  # generate CSR array to fill in
-        CC_2 = np.zeros([n_iter])  # generate CSR array to fill in
-        for i in np.arange(n_iter):
-            rc_1 = self.test_spot_spot_overlap(
-                random_spot_locations_1[i, :],
-                spot_2_indices,
-                original_n_spots_1,
-            )
-            rc_1[rc_1 >= 1.0] = 1.0
-            CC_1[i] = np.divide(
-                np.sum(rc_1),
-                original_n_spots_1,
-            )
-            rc_2 = self.test_spot_spot_overlap(
-                random_spot_locations_2[i, :],
-                spot_1_indices,
-                original_n_spots_2,
-            )
-            rc_2[rc_2 >= 1.0] = 1.0
-            CC_2[i] = np.divide(
-                np.sum(rc_2),
-                original_n_spots_2,
-            )
-
-        chance_coincidence_1 = np.nanmean(CC_1)
-        chance_coincidence_2 = np.nanmean(CC_2)
-
-        return (
-            coincidence_1,
-            chance_coincidence_1,
-            coincidence_2,
-            chance_coincidence_2,
-            raw_coincidence_1,
-            raw_coincidence_2,
-        )
-
-    def calculate_largeobj_coincidence(
-        self, largeobj_indices, mask_indices, n_largeobjs, image_size
-    ):
-        """
-        gets spot colocalisation likelihood ratio, as well as reporting error
-        bounds on the likelihood ratio for one image
-
-        Args:
-            largeobj_indices (1D array): indices of large objects
-            mask_indices (1D array): indices of pixels in mask
-            image_size (tuple): Image dimensions (height, width).
-
-        Returns:
-            coincidence (float): coincidence FoV
-            chance_coincidence (float): chance coincidence
-            raw_colocalisation (np.1darray): binary yes/no of coincidence per spot
-        """
-
-        if n_largeobjs == 0:
-            coincidence = 0.0
-            chance_coincidence = 0.0
-            raw_colocalisation = np.array([0.0])
-            return coincidence, chance_coincidence, raw_colocalisation
-
-        highest_index = np.prod(image_size)
-        mask_fill = self.calculate_mask_fill(mask_indices, image_size)  # get mask_fill
-        expected_spots = np.multiply(
-            mask_fill, n_largeobjs
-        )  # get expected number of spots
-        if np.isclose(expected_spots, 0.0, atol=1e-4):
-            coincidence = 0
-            chance_coincidence = 0
-            raw_colocalisation = np.zeros(n_largeobjs)
-            return coincidence, chance_coincidence, raw_colocalisation
-        else:
-            raw_colocalisation = self.test_largeobj_mask_overlap(
-                largeobj_indices, mask_indices, n_largeobjs, raw=True
-            )
-            nspots_in_mask = np.sum(raw_colocalisation)
-            coincidence = np.divide(nspots_in_mask, n_largeobjs)  # generate coincidence
-
-            n_iter = 100
-            random_spot_locations = self.random_largeobj_locations(
-                largeobj_indices, highest_index, n_iter
-            )  # need to write large aggregate randomisation function
-            chance_coincidence_raw = np.zeros(n_iter)
-            for i in np.arange(n_iter):
-                chance_coincidence_raw[i] = np.divide(
-                    self.test_largeobj_mask_overlap(
-                        random_spot_locations[i], mask_indices, n_largeobjs, raw=False
-                    ),
-                    n_largeobjs,
-                )
-            return coincidence, np.mean(chance_coincidence_raw), raw_colocalisation
-
-    def calculate_spot_colocalisation_likelihood_ratio(
-        self,
-        spot_indices,
-        mask_indices,
-        image_size,
-        tol=0.01,
-        n_iter=100,
-        blur_degree=1,
-        max_iter=1000,
-    ):
-        """
-        gets spot colocalisation likelihood ratio, as well as reporting error
-        bounds on the likelihood ratio for one image
-
-        Args:
-            spot_indices (1D array): indices of spots
-            mask_indices (1D array): indices of pixels in mask
-            image_size (tuple): Image dimensions (height, width).
-            tol (float): default 0.01; tolerance for convergence
-            n_iter (int): default 100; number of iterations to start with
-            blur_degree (int): number of pixels to blur spot indices with
-                                (i.e. number of pixels surrounding centroid to
-                                consider part of spot). Default 1
-
-        Returns:
-            colocalisation_likelihood_ratio (float): likelihood ratio of spots for mask
-            perc_std (float): standard deviation on this CLR based on bootstrapping
-            meanCSR (float): mean of randomised spot data
-            expected_spots (float): number of spots we expect based on mask % of image
-            coincidence (float): coincidence FoV
-            chance_coincidence (float): chance coincidence
-            raw_colocalisation (np.1darray): binary yes/no of coincidence per spot
-            n_iter (int): how many iterations it took to converge
-        """
-        original_n_spots = len(spot_indices)  # get number of spots
-
-        if original_n_spots == 0:
-            n_iter_rec = 0
-            colocalisation_likelihood_ratio = np.NAN
-            norm_CSR = np.NAN
-            norm_std = np.NAN
-            coincidence = np.NAN
-            chance_coincidence = np.NAN
-            raw_colocalisation = np.full(original_n_spots, np.NAN)
-            return (
-                colocalisation_likelihood_ratio,
-                norm_std,
-                norm_CSR,
-                0,
-                coincidence,
-                chance_coincidence,
-                raw_colocalisation,
-                n_iter_rec,
-            )
-
-        if blur_degree > 0:
-            spot_indices = self.dilate_pixels(
-                spot_indices, image_size, width=blur_degree + 1, edge=blur_degree
-            )
-        n_spots = len(spot_indices)
-        n_iter_rec = n_iter
-        possible_indices = np.arange(
-            0, np.prod(image_size)
-        )  # get list of where is possible to exist in an image
-        mask_fill = self.calculate_mask_fill(mask_indices, image_size)  # get mask_fill
-        expected_spots_iter = np.multiply(
-            mask_fill, n_spots
-        )  # get expected number of spots
-        expected_spots = np.multiply(
-            mask_fill, original_n_spots
-        )  # get expected number of spots
-        if np.isclose(expected_spots_iter, 0.0, atol=1e-4):
-            n_iter_rec = 0
-            colocalisation_likelihood_ratio = np.NAN
-            norm_CSR = np.NAN
-            norm_std = np.NAN
-            coincidence = np.NAN
-            chance_coincidence = np.NAN
-            raw_colocalisation = np.full(original_n_spots, np.NAN)
-            return (
-                colocalisation_likelihood_ratio,
-                norm_std,
-                norm_CSR,
-                expected_spots,
-                coincidence,
-                chance_coincidence,
-                raw_colocalisation,
-                n_iter_rec,
-            )
-        else:
-            raw_colocalisation = self.test_spot_spot_overlap(
-                spot_indices, mask_indices, original_n_spots, raw=True
-            )
-            nspots_in_mask = self.test_spot_mask_overlap(
-                spot_indices, mask_indices
-            )  # get nspots in mask
-            colocalisation_likelihood_ratio = np.divide(
-                nspots_in_mask, expected_spots_iter
-            )  # generate colocalisation likelihood ratio
-            coincidence = np.divide(nspots_in_mask, n_spots)  # generate coincidence
-
-            random_spot_locations = np.random.choice(
-                possible_indices, size=(n_iter, original_n_spots)
-            )  # get random spot locations
-            if blur_degree > 0:
-                random_spot_locations = self.dilate_pixel_matrix(
-                    random_spot_locations,
-                    image_size,
-                    width=blur_degree + 1,
-                    edge=blur_degree,
-                )
-            CSR = np.zeros([n_iter])  # generate CSR array to fill in
-            for i in np.arange(n_iter):
-                CSR[i] = self.test_spot_mask_overlap(
-                    random_spot_locations[i, :], mask_indices
-                )
-
-            meanCSR = np.divide(
-                np.nanmean(CSR), expected_spots_iter
-            )  # should be close to 1
-            chance_coincidence = np.divide(np.nanmean(CSR), n_spots)
-            CSR_diff = np.abs(meanCSR - 1.0)
-            while (CSR_diff > tol) and (
-                n_iter_rec < max_iter
-            ):  # do n_iter more tests iteratively until convergence
-                n_iter_rec = n_iter_rec + n_iter  # add n_iter iterations
-                CSR_new = np.zeros([n_iter])
-                random_spot_locations = np.random.choice(
-                    possible_indices, size=(n_iter, original_n_spots)
-                )  # get random spot locations
-                if blur_degree > 0:
-                    random_spot_locations = self.dilate_pixel_matrix(
-                        random_spot_locations,
-                        image_size,
-                        width=blur_degree + 1,
-                        edge=blur_degree,
-                    )
-                for i in np.arange(n_iter):
-                    CSR_new[i] = self.test_spot_mask_overlap(
-                        random_spot_locations[i, :], mask_indices
-                    )
-                CSR = np.hstack([CSR, CSR_new])  # stack
-                meanCSR = np.divide(
-                    np.nanmean(CSR), expected_spots_iter
-                )  # should be close to 1
-                CSR_diff = np.abs(meanCSR - 1.0)
-            if (expected_spots > 0) and (np.mean(CSR) > 0):
-                norm_CSR = np.divide(
-                    np.nanmean(CSR), expected_spots_iter
-                )  # should be close to 1
-                norm_std = np.divide(
-                    np.nanstd(CSR), np.nanmean(CSR)
-                )  # std dev (normalised)
-            else:
-                norm_CSR = np.NAN
-                norm_std = np.NAN
-            return (
-                colocalisation_likelihood_ratio,
-                norm_std,
-                norm_CSR,
-                expected_spots,
-                coincidence,
-                chance_coincidence,
-                raw_colocalisation,
-                n_iter_rec,
-            )
-
-    @staticmethod
-    @jit(nopython=True)
-    def calculate_mask_fill(mask_indices, image_size):
-        """
-        calculate amount of image filled by mask.
-
-        Args:
-            mask_indices (1D array): indices of pixels in mask
-            image_size (tuple): Image dimensions (height, width).
-
-        Returns:
-            mask_fill (float): proportion of image filled by mask.
-        """
-        mask_fill = np.divide(len(mask_indices), np.prod(np.array(image_size)))
-        return mask_fill
-
-    def random_largeobj_locations(self, largeobj_indices, possible_index_high, n_iter):
-        """
-        Randomises large object locations.
-
-        Args:
-            largeobj_indices (list): indices of large objects
-            possible_index_high (int): highest possible index
-            n_iter (int): number of random permutations to make
-
-        Returns:
-            largeobj_locations (dict): dict of n_iter in size of randomised large object locations.
-        """
-        largeobj_locations = {}
-
-        for i in np.arange(n_iter):
-            largeobj_locations[i] = []
-            for j in np.arange(len(largeobj_indices)):
-                if j == 0:
-                    high = possible_index_high - np.max(largeobj_indices[j])
-                    low = -np.min(largeobj_indices[j])
-                    largeobj_locations[i] = [
-                        largeobj_indices[j]
-                        + np.random.randint(low=low, high=high, size=1)
-                    ]
-                else:
-                    high = possible_index_high - np.max(largeobj_indices[j])
-                    low = -np.min(largeobj_indices[j])
-                    largeobj_locations[i].append(
-                        largeobj_indices[j]
-                        + np.random.randint(low=low, high=high, size=1)
-                    )
-        return largeobj_locations
-
-    def test_largeobj_mask_overlap(
-        self, largeobj_indices, mask_indices, n_largeobjects, raw=False
-    ):
-        """
-        Tests which spots overlap with a given mask.
-
-        Args:
-            largeobj_indices (list): indices of large objects
-            mask_indices (1D array): indices of mask
-            n_largeobjects (int): n large objects
-            raw (boolean): if raw is true, will report "per object" overlap
-
-        Returns:
-            n_large_objects_in_mask (float): number of spots that overlap with the other spots.
-        """
-        n_large_objects_in_mask = np.zeros(n_largeobjects)
-        for i in np.arange(n_largeobjects):
-            n_large_objects_in_mask[i] = np.asarray(
-                np.sum(np.isin(largeobj_indices[i], mask_indices)), dtype=bool
-            )
-        if raw == True:
-            return n_large_objects_in_mask
-        else:
-            return np.sum(n_large_objects_in_mask)
-
-    def test_spot_spot_overlap(
-        self, spot_1_indices, spot_2_indices, n_spot1, raw=False
-    ):
-        """
-        Tests which spots overlap with a given mask.
-
-        Args:
-            spot_1_indices (1D array): indices of spots 1
-            spot_2_indices (1D array): indices of spots 2
-            n_spots1_in_spots2 (int): n spots in spot 1 array
-            raw (boolean): if raw is true, will report "per spot" overlap
-
-        Returns:
-            n_spots1_in_spots2 (float): number of spots that overlap with the other spots.
-        """
-        newdims = (n_spot1, int(len(spot_1_indices) / n_spot1))
-        if raw == False:
-            n_spots1_in_spots2 = np.sum(
-                np.isin(spot_1_indices.reshape(newdims), spot_2_indices), axis=1
-            )
-        else:
-            n_spots1_in_spots2 = np.asarray(
-                np.sum(
-                    np.isin(spot_1_indices.reshape(newdims), spot_2_indices), axis=1
-                ),
-                dtype=bool,
-            )
-        return n_spots1_in_spots2
-
-    def test_spot_mask_overlap(self, spot_indices, mask_indices):
-        """
-        Tests which spots overlap with a given mask.
-
-        Args:
-            spot_indices (1D array): indices of spots
-            mask_indices (1D array): indices of pixels in mask
-
-        Returns:
-            n_spots_in_mask (float): number of spots that overlap with the mask.
-        """
-
-        n_spots_in_mask = np.sum(np.isin(mask_indices, np.unique(spot_indices)))
-        return n_spots_in_mask
-
-    def dilate_pixel_matrix(self, index_matrix, image_size, width=5, edge=1):
-        """
-        Dilate a pixel matrix index to form a matrix of neighbourhoods.
-
-        Args:
-            indices (np.2darray): 2D Array of pixel indices. Second dimension
-            is number of spots.
-            image_size (tuple): Image dimensions (height, width).
-            width: width of dilation (default 5)
-            edge: edge of dilation (default 1)
-
-        Returns:
-            dilated_indices (numpy.ndarray): Dilated pixel indices forming a neighborhood.
-        """
-        x, y = np.where(ski.morphology.octagon(width, edge))
-        x = x - int(ski.morphology.octagon(width, edge).shape[0] / 2)
-        y = y - int(ski.morphology.octagon(width, edge).shape[1] / 2)
-        centroid = np.asarray(
-            np.unravel_index(index_matrix, image_size, order="F"), dtype=int
-        )
-
-        x = (
-            np.tile(x, (len(index_matrix), 1)).T[:, :, np.newaxis]
-            + np.asarray(centroid[0, :], dtype=int)
-        ).T
-
-        y = (
-            np.tile(y, (len(index_matrix), 1)).T[:, :, np.newaxis]
-            + np.asarray(centroid[1, :], dtype=int)
-        ).T
-
-        new_dims = (index_matrix.shape[0], int(len(x.ravel()) / index_matrix.shape[0]))
-        dilated_index_matrix = np.ravel_multi_index(
-            np.vstack([x.ravel(), y.ravel()]), image_size, order="F", mode="wrap"
-        ).reshape(new_dims)
-
-        return dilated_index_matrix
-
-    def dilate_pixels(self, indices, image_size, width=5, edge=1):
-        """
-        Dilate a pixel index to form a neighborhood.
-
-        Args:
-            indices (np.1darray): Array of pixel indices.
-            image_size (tuple): Image dimensions (height, width).
-            width: width of dilation (default 5)
-            edge: edge of dilation (default 1)
-
-        Returns:
-            dilated_indices (numpy.ndarray): Dilated pixel indices forming a neighborhood.
-        """
-        x, y = np.where(ski.morphology.octagon(width, edge))
-        x = x - int(ski.morphology.octagon(width, edge).shape[0] / 2)
-        y = y - int(ski.morphology.octagon(width, edge).shape[1] / 2)
-        centroid = np.asarray(
-            np.unravel_index(indices, image_size, order="F"), dtype=int
-        )
-
-        x = (np.tile(x, (len(indices), 1)).T + np.asarray(centroid[0, :], dtype=int)).T
-
-        y = (np.tile(y, (len(indices), 1)).T + np.asarray(centroid[1, :], dtype=int)).T
-
-        new_dims = (len(indices), int(len(x.ravel()) / len(indices)))
-        dilated_indices = np.ravel_multi_index(
-            np.vstack([x.ravel(), y.ravel()]), image_size, order="F", mode="wrap"
-        ).reshape(new_dims)
-
-        if len(indices) == 1:
-            return dilated_indices[0]
-        else:
-            return dilated_indices.ravel()
 
     def create_filled_region(self, image_size, indices_to_keep):
         """
@@ -950,7 +213,7 @@ class Analysis_Functions:
             estimated_background,
         )
 
-    def intensity_pixel_indices(self, centroid_loc, image_size):
+    def intensity_pixel_indices(centroid_loc, image_size):
         """
         Calculate pixel indices for inner and outer regions around the given index.
 
@@ -963,23 +226,25 @@ class Analysis_Functions:
             outer_indices (numpy.ndarray): Pixel indices for the outer region.
         """
 
+        def calculate_offsets(octagon_shape):
+            x, y = np.where(octagon_shape)
+            x -= int(octagon_shape.shape[0] / 2)
+            y -= int(octagon_shape.shape[1] / 2)
+            return x, y
+
         small_oct = ski.morphology.octagon(2, 4)
         outer_ind = ski.morphology.octagon(2, 5)
         inner_ind = np.zeros_like(outer_ind)
         inner_ind[1:-1, 1:-1] = small_oct
-        outer_ind = outer_ind - inner_ind
-        x_inner, y_inner = np.where(inner_ind)
-        x_inner = x_inner - int(inner_ind.shape[0] / 2)
-        y_inner = y_inner - int(inner_ind.shape[1] / 2)
+        outer_ind -= inner_ind
 
-        x_outer, y_outer = np.where(outer_ind)
-        x_outer = x_outer - int(outer_ind.shape[0] / 2)
-        y_outer = y_outer - int(outer_ind.shape[1] / 2)
+        x_inner, y_inner = calculate_offsets(inner_ind)
+        x_outer, y_outer = calculate_offsets(outer_ind)
 
-        x_inner = np.tile(x_inner, (len(centroid_loc[:, 0]), 1)).T + centroid_loc[:, 0]
-        y_inner = np.tile(y_inner, (len(centroid_loc[:, 1]), 1)).T + centroid_loc[:, 1]
-        x_outer = np.tile(x_outer, (len(centroid_loc[:, 0]), 1)).T + centroid_loc[:, 0]
-        y_outer = np.tile(y_outer, (len(centroid_loc[:, 1]), 1)).T + centroid_loc[:, 1]
+        x_inner = np.tile(x_inner, (len(centroid_loc), 1)).T + centroid_loc[:, 0]
+        y_inner = np.tile(y_inner, (len(centroid_loc), 1)).T + centroid_loc[:, 1]
+        x_outer = np.tile(x_outer, (len(centroid_loc), 1)).T + centroid_loc[:, 0]
+        y_outer = np.tile(y_outer, (len(centroid_loc), 1)).T + centroid_loc[:, 1]
 
         return x_inner, y_inner, x_outer, y_outer
 
@@ -1269,6 +534,7 @@ class Analysis_Functions:
             lo_analysis (pl.DataFrame): polars dataframe of the cell analysis
             spot_analysis (pl.DataFrame): polars dataframe of the spot analysis
         """
+        C_F = CoincidenceFunctions.Coincidence_Functions()
         if coloc_type == 1:
             end_str = cell_string + "_cellMask.tiff"
         elif coloc_type == 0:
@@ -1374,8 +640,12 @@ class Analysis_Functions:
                         chance_coincidence,
                         raw_colocalisation,
                         n_iter,
-                    ) = self.calculate_spot_colocalisation_likelihood_ratio(
-                        spot_indices, mask_indices, image_size, blur_degree=1
+                    ) = C_F.calculate_coincidence(
+                        spot_indices,
+                        mask_indices,
+                        image_size,
+                        blur_degree=1,
+                        analysis_type="colocalisation_likelihood",
                     )
                     return (
                         clr,
@@ -1397,11 +667,12 @@ class Analysis_Functions:
                         chance_coincidence,
                         raw_colocalisation,
                         n_iter,
-                    ) = self.calculate_spot_to_mask_coincidence(
+                    ) = C_F.calculate_coincidence(
                         spot_indices,
                         mask_indices,
                         image_size,
                         blur_degree=blur_degree,
+                        analysis_type="spot_to_mask",
                     )
                     return coincidence, chance_coincidence, raw_colocalisation, n_iter
 
@@ -1419,11 +690,13 @@ class Analysis_Functions:
                         coincidence,
                         chance_coincidence,
                         raw_colocalisation,
-                    ) = self.calculate_largeobj_coincidence(
-                        mask_lo_indices,
-                        mask_cell_indices,
-                        n_largeobjs,
-                        image_size,
+                    ) = C_F.calculate_coincidence(
+                        spot_indices=None,
+                        largeobj_indices=mask_lo_indices,
+                        mask_indices=mask_cell_indices,
+                        n_largeobjs=n_largeobjs,
+                        image_size=image_size,
+                        analysis_type="largeobj",
                     )
                     n_iter = 100
                     return coincidence, chance_coincidence, raw_colocalisation, n_iter
