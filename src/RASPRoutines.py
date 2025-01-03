@@ -644,23 +644,18 @@ class RASP_Routines:
         cell_file=None,
     ):
         """
-        analyses data from specified image,
-        presents spots, locations, intensities in a figure, with the option of
-        saving this figure
+        Analyses data from a specified image, presenting spots, locations, intensities in a figure,
+        with the option of saving this figure.
 
         Args:
-            file (string): image location
-            thres (float): fraction of bright pixels accepted
-            large_thres (float): large object intensity threshold
-            gisgma (float): gaussian blurring parameter (default 1.4)
-            rwave (float): Ricker wavelent sigma (default 2.)
-            image_size (int): Amount of image to plot---by default plots 100x100
-                chunk of an image to give you an idea, can scale up
-            save_figure (boolean): save the figure as an svg, default no
-            cell_analysis (boolean): Parameter where script also analyses cell
-                images and computes colocalisation likelihood ratios.
-            cell_file (string): cell image location
-
+            protein_file (string): Image location
+            thres (float): Fraction of bright pixels accepted
+            large_thres (float): Large object intensity threshold
+            gsigma (float): Gaussian blurring parameter (default 1.4)
+            rwave (float): Ricker wavelength sigma (default 2.0)
+            image_size (int): Amount of image to plot - by default plots 200x200 chunk of an image
+            save_figure (boolean): Save the figure as an SVG, default False
+            cell_file (string): Cell image location
         """
         import PlottingFunctions
 
@@ -670,66 +665,63 @@ class RASP_Routines:
         img = IO.read_tiff_tophotons(
             protein_file, QE=self.QE, gain_map=self.gain_map, offset_map=self.offset_map
         )
-
-        k1, k2 = IA_F.create_kernel(gsigma, rwave)  # create image processing kernels
+        k1, k2 = IA_F.create_kernel(gsigma, rwave)
         rdl = [self.flatness, self.integratedGrad, 0.0]
 
-        if cell_file is not None:
+        img_cell = None
+        if cell_file:
             img_cell = IO.read_tiff_tophotons(
                 cell_file,
                 QE=self.QE,
                 gain_map=self.gain_map,
                 offset_map=self.offset_map,
             )
-        else:
-            img_cell = None
 
-        if len(img.shape) > 2:  # if a z-stack
+        def process_image(img, img_cell, k1, k2):
             z_planes, img2, Gx, Gy = self.get_infocus_planes(img, k1)
-            (
-                to_save,
-                to_save_largeobjects,
-                lo_mask,
-                cell_mask,
-            ) = IA_F.compute_spot_and_cell_props(
-                img,
-                img_cell,
-                k1,
-                k2,
-                img2,
-                Gx,
-                Gy,
-                prot_thres=thres,
-                large_prot_thres=large_thres,
-                areathres=self.areathres,
-                rdl=rdl,
-                z=z_planes,
-                cell_threshold1=self.cell_threshold1,
-                cell_threshold2=self.cell_threshold1,
-                cell_sigma1=self.cell_sigma1,
-                cell_sigma2=self.cell_sigma2,
-                d=self.d,
+            to_save, to_save_largeobjects, lo_mask, cell_mask = (
+                IA_F.compute_spot_and_cell_props(
+                    img,
+                    img_cell,
+                    k1,
+                    k2,
+                    img2,
+                    Gx,
+                    Gy,
+                    prot_thres=thres,
+                    large_prot_thres=large_thres,
+                    areathres=self.areathres,
+                    rdl=rdl,
+                    z=z_planes,
+                    cell_threshold1=self.cell_threshold1,
+                    cell_threshold2=self.cell_threshold1,
+                    cell_sigma1=self.cell_sigma1,
+                    cell_sigma2=self.cell_sigma2,
+                    d=self.d,
+                )
             )
+            return z_planes, to_save, to_save_largeobjects, cell_mask
 
-        z_to_plot = np.full_like(np.arange(z_planes[0] + 1, z_planes[-1] + 1), -1)
-        for i, val in enumerate(np.arange(z_planes[0] + 1, z_planes[-1] + 1)):
-            if (
-                len(
-                    to_save.filter(pl.col("z") == val)[
-                        "sum_intensity_in_photons"
-                    ].to_numpy()
-                )
-                > 1
-            ):
-                z_to_plot[i] = val
-        z_to_plot = z_to_plot[z_to_plot >= 0]
+        def filter_z_planes(to_save, z_planes):
+            z_to_plot = np.full_like(np.arange(z_planes[0] + 1, z_planes[-1] + 1), -1)
+            for i, val in enumerate(np.arange(z_planes[0] + 1, z_planes[-1] + 1)):
+                if (
+                    len(
+                        to_save.filter(pl.col("z") == val)[
+                            "sum_intensity_in_photons"
+                        ].to_numpy()
+                    )
+                    > 1
+                ):
+                    z_to_plot[i] = val
+            return z_to_plot[z_to_plot >= 0]
 
-        if cell_file is None:
+        def plot_images(
+            z_to_plot, img, to_save, to_save_largeobjects, img_cell, cell_mask
+        ):
             for i in enumerate(z_to_plot):
-                fig, axs = plots.two_column_plot(nrows=1, ncolumns=2, widthratio=[1, 1])
                 xpositions = to_save.filter(pl.col("z") == i[1])["x"].to_numpy()
                 ypositions = to_save.filter(pl.col("z") == i[1])["y"].to_numpy()
-
                 xpositions_large = to_save_largeobjects.filter(pl.col("z") == i[1])[
                     "x"
                 ].to_numpy()
@@ -739,23 +731,53 @@ class RASP_Routines:
                 testvals = (xpositions < image_size) * (ypositions < image_size)
                 xpositions = xpositions[testvals]
                 ypositions = ypositions[testvals]
-                axs[0] = plots.image_scatter_plot(
-                    axs[0],
-                    img[:image_size, :image_size, i[1] - 1],
-                    xdata=xpositions,
-                    ydata=ypositions,
-                    label="z plane = " + str(int(i[1])),
-                )
 
-                axs[1] = plots.image_scatter_plot(
-                    axs[1],
-                    img[:, :, i[1] - 1],
-                    xdata=xpositions_large,
-                    ydata=ypositions_large,
-                    label="z plane = " + str(int(i[1])),
-                )
+                if cell_file is None:
+                    fig, axs = plots.two_column_plot(
+                        nrows=1, ncolumns=2, widthratio=[1, 1]
+                    )
+                    axs[0] = plots.image_scatter_plot(
+                        axs[0],
+                        img[:image_size, :image_size, i[1] - 1],
+                        xdata=xpositions,
+                        ydata=ypositions,
+                        label="z plane = " + str(int(i[1])),
+                    )
+                    axs[1] = plots.image_scatter_plot(
+                        axs[1],
+                        img[:, :, i[1] - 1],
+                        xdata=xpositions_large,
+                        ydata=ypositions_large,
+                        label="z plane = " + str(int(i[1])),
+                    )
+                else:
+                    fig, axs = plots.two_column_plot(
+                        nrows=1, ncolumns=3, widthratio=[1, 1, 1]
+                    )
+                    axs[0] = plots.image_scatter_plot(
+                        axs[0],
+                        img[:image_size, :image_size, i[1] - 1],
+                        xdata=xpositions,
+                        ydata=ypositions,
+                        label="puncta, z plane = " + str(int(i[1])),
+                    )
+                    axs[1] = plots.image_scatter_plot(
+                        axs[1],
+                        img[:, :, i[1] - 1],
+                        xdata=xpositions_large,
+                        ydata=ypositions_large,
+                        label="z plane = " + str(int(i[1])),
+                    )
+                    axs[2] = plots.image_plot(
+                        axs[2],
+                        img_cell[:, :, i[1] - 1],
+                        label="cell, z plane = " + str(int(i[1])),
+                        plotmask=True,
+                        mask=cell_mask[:, :, i[1] - 1],
+                    )
+
                 plt.tight_layout()
-                if save_figure == True:
+                if save_figure:
                     plt.savefig(
                         protein_file.split(".")[0]
                         + "_ExampleFigure_zplane"
@@ -765,58 +787,18 @@ class RASP_Routines:
                         dpi=600,
                     )
                 plt.show()
+
+        if len(img.shape) > 2:
+            z_planes, to_save, to_save_largeobjects, cell_mask = process_image(
+                img, img_cell, k1, k2
+            )
+            z_to_plot = filter_z_planes(to_save, z_planes)
+            plot_images(
+                z_to_plot, img, to_save, to_save_largeobjects, img_cell, cell_mask
+            )
         else:
-            for i in enumerate(z_to_plot):
-                fig, axs = plots.two_column_plot(
-                    nrows=1, ncolumns=3, widthratio=[1, 1, 1]
-                )
-                xpositions = to_save.filter(pl.col("z") == i[1])["x"].to_numpy()
-                ypositions = to_save.filter(pl.col("z") == i[1])["y"].to_numpy()
-                xpositions_large = to_save_largeobjects.filter(pl.col("z") == i[1])[
-                    "x"
-                ].to_numpy()
-                ypositions_large = to_save_largeobjects.filter(pl.col("z") == i[1])[
-                    "y"
-                ].to_numpy()
-                testvals = (xpositions < image_size) * (ypositions < image_size)
-                xpositions = xpositions[testvals]
-                ypositions = ypositions[testvals]
-                axs[0] = plots.image_scatter_plot(
-                    axs[0],
-                    img[:image_size, :image_size, i[1] - 1],
-                    xdata=xpositions,
-                    ydata=ypositions,
-                    label="puncta, z plane = " + str(int(i[1])),
-                )
+            print("The provided image is not a z-stack.")
 
-                axs[1] = plots.image_scatter_plot(
-                    axs[1],
-                    img[:, :, i[1] - 1],
-                    xdata=xpositions_large,
-                    ydata=ypositions_large,
-                    label="z plane = " + str(int(i[1])),
-                )
-
-                axs[2] = plots.image_plot(
-                    axs[2],
-                    img_cell[:, :, i[1] - 1],
-                    label="cell, z plane = " + str(int(i[1])),
-                    plotmask=True,
-                    mask=cell_mask[:, :, i[1] - 1],
-                )
-
-                plt.tight_layout()
-
-                if save_figure == True:
-                    plt.savefig(
-                        protein_file.split(".")[0]
-                        + "_ExampleFigure_zplane"
-                        + str(int(i[1]))
-                        + ".svg",
-                        format="svg",
-                        dpi=600,
-                    )
-                plt.show()
         return
 
     def calculate_spot_mask_rdf_with_threshold(
