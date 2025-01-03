@@ -281,93 +281,60 @@ class Analysis_Functions:
         HWHMarray = HWHMarray[~np.isnan(HWHMarray)]
         return HWHMarray
 
-    def rejectoutliers(self, data, k=4):
-        """rejectoutliers function
-        # rejects outliers from data, does iqr method (i.e. anything below
-        lower quartile (25 percent) or above upper quartile (75 percent)
-        is rejected)
+    def reject_outliers(
+        self,
+        data,
+        k=4,
+        return_indices=False,
+        q1=None,
+        q2=None,
+        IQR=None,
+        column_name="sum_intensity_in_photons",
+    ):
+        """
+        Rejects outliers from data using the IQR method. Can return filtered data or indices.
 
         Args:
-            data (np.1darray): data matrix
-            k (float): value for IQR
+            data (np.ndarray or pl.DataFrame): Data array or DataFrame.
+            k (float): Multiplier for the IQR to determine outliers.
+            return_indices (bool): If True, return indices of outliers instead of filtered data.
+            q1 (float, optional): Precomputed first quartile. If None, it will be computed.
+            q2 (float, optional): Precomputed third quartile. If None, it will be computed.
+            IQR (float, optional): Precomputed interquartile range. If None, it will be computed.
+            column_name (str): Column name to use if data is a DataFrame.
 
         Returns:
-            newdata (np.1darray): data matrix"""
-        from scipy.stats import iqr
-
-        IQR = iqr(data)
-        q1, q2 = np.percentile(data, q=(25, 75))
-
-        nd1 = data[data <= (k * IQR) + q2]
-        newdata = nd1[nd1 >= q1 - (k * IQR)]
-        return newdata
-
-    def rejectoutliers_value(self, data, k=4, q1=None, q2=None, IQR=None):
-        """rejectoutliers_value function
-        # rejects outliers from data, does iqr method (i.e. anything below
-        lower quartile (25 percent) or above upper quartile (75 percent)
-        is rejected). If given q1, q2, and IQR, uses directly.
-
-        Args:
-            data (pl.DataFrame): polars dataarray
-            q1 (float): if float, uses directly
-            q2 (float): if float, uses directly
-            IQR (float): if float, uses directly
-
-        Returns:
-            newdata (np.1darray): data matrix"""
-        if (
-            isinstance(q1, type(None))
-            and isinstance(q2, type(None))
-            and isinstance(IQR, type(None))
-        ):
-            q1 = np.squeeze(
-                data.select(
-                    pl.col("sum_intensity_in_photons").quantile(0.25)
-                ).to_numpy()
-            )
-            q2 = np.squeeze(
-                data.select(
-                    pl.col("sum_intensity_in_photons").quantile(0.75)
-                ).to_numpy()
-            )
-            IQR = np.abs(q2 - q1)
-
-            upper_limit = (k * IQR) + q2
-            lower_limit = q1 - (k * IQR)
-            newdata = data.filter(
-                (pl.col("sum_intensity_in_photons") >= lower_limit)
-                & (pl.col("sum_intensity_in_photons") <= upper_limit)
-            )
+            np.ndarray or pl.DataFrame: Filtered data or indices of outliers.
+        """
+        if isinstance(data, pl.DataFrame):
+            data_array = data[column_name].to_numpy()
         else:
-            upper_limit = (k * IQR) + q2
-            lower_limit = q1 - (k * IQR)
-            newdata = data.filter(
-                (pl.col("sum_intensity_in_photons") >= lower_limit)
-                & (pl.col("sum_intensity_in_photons") <= upper_limit)
+            data_array = data
+
+        if q1 is None or q2 is None or IQR is None:
+            q1, q2 = np.percentile(data_array, [25, 75])
+            IQR = q2 - q1
+
+        lower_limit = q1 - k * IQR
+        upper_limit = q2 + k * IQR
+
+        if return_indices:
+            indices = np.arange(len(data_array))
+            outlier_indices = np.hstack(
+                [indices[data_array >= upper_limit], indices[data_array <= lower_limit]]
             )
-        return newdata, q1, q2, IQR
-
-    def rejectoutliers_ind(self, data, k=3):
-        """rejectoutliers function
-        # gets indices to reject outliers from data, does iqr method (i.e. anything
-        below lower quartile (25 percent) or above upper quartile (75 percent)
-        is rejected)
-
-        Args:
-            data (np.1darray): data matrix
-
-        Returns:
-            ind_arr (np.1darray): index array"""
-        from scipy.stats import iqr
-
-        IQR = iqr(data)
-        q1, q2 = np.percentile(data, q=(25, 75))
-
-        indices = np.arange(len(data), dtype=int)
-        nd1 = indices[data >= (k * IQR) + q2]
-        nd2 = indices[data <= q1 - (k * IQR)]
-        return np.hstack([nd1, nd2])
+            return outlier_indices
+        else:
+            if isinstance(data, pl.DataFrame):
+                filtered_data = data.filter(
+                    (pl.col(column_name) >= lower_limit)
+                    & (pl.col(column_name) <= upper_limit)
+                )
+            else:
+                filtered_data = data_array[
+                    (data_array >= lower_limit) & (data_array <= upper_limit)
+                ]
+            return filtered_data, q1, q2, IQR
 
     def calculate_rdf_with_thresholds(
         self,
