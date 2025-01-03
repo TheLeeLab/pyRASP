@@ -531,7 +531,7 @@ class RASP_Routines:
             variance_map=self.variance_map,
         )
 
-        def _analysis_loop(img, k1, k2, img_cell, thres, large_thres, rdl, z_test):
+        def _analysis_loop(img, k1, k2, img_cell, thres, large_thres, rdl, z_test, i):
             z_planes, img2, Gx, Gy = self.get_infocus_planes(img, k1)
             if z_test:
                 img = img[:, :, z_planes[0] : z_planes[1]]
@@ -581,97 +581,59 @@ class RASP_Routines:
 
         start = time.time()
 
-        if folder_recursive == True:
-            for val in folders:
-                subfolder = os.path.abspath(val)
-                files = self.file_search(
-                    subfolder, protein_string, imtype
-                )  # first get all files in any subfolders
-                if cell_analysis == True:
-                    cell_files = self.file_search(
-                        subfolder, cell_string, imtype
-                    )  # get all files in any subfolders
-                # create analysis and analysis parameter directories
-                analysis_directory = os.path.abspath(subfolder) + "_analysis"
-                IO.make_directory(analysis_directory)
-
-                for i in np.arange(len(files)):
-                    img = IO.read_tiff_tophotons(
-                        os.path.join(subfolder, files[i]),
+        def process_files(subfolder, files, cell_files):
+            for i in np.arange(len(files)):
+                img = IO.read_tiff_tophotons(
+                    os.path.join(subfolder, files[i]),
+                    QE=self.QE,
+                    gain_map=self.gain_map,
+                    offset_map=self.offset_map,
+                    variance_map=self.variance_map if error_reduction else None,
+                    error_correction=error_reduction,
+                )[:, :, im_start:]
+                img_cell = None
+                if cell_analysis:
+                    img_cell = IO.read_tiff_tophotons(
+                        os.path.join(subfolder, cell_files[i]),
                         QE=self.QE,
                         gain_map=self.gain_map,
                         offset_map=self.offset_map,
                         variance_map=self.variance_map if error_reduction else None,
                         error_correction=error_reduction,
                     )[:, :, im_start:]
-                    if cell_analysis == True:
-                        img_cell = IO.read_tiff_tophotons(
-                            os.path.join(folder, cell_files[i]),
-                            QE=self.QE,
-                            gain_map=self.gain_map,
-                            offset_map=self.offset_map,
-                            variance_map=self.variance_map if error_reduction else None,
-                            error_correction=error_reduction,
-                        )[:, :, im_start:]
-                    else:
-                        img_cell = None
-                    z_test = len(img.shape) > 2
-                    _analysis_loop(
-                        img, k1, k2, img_cell, thres, large_thres, rdl, z_test
-                    )
-                    if disp == True:
-                        print(
-                            "Analysed image file {}/{}    Time elapsed: {:.3f} s".format(
-                                i + 1, len(files), time.time() - start
-                            ),
-                            end="\r",
-                            flush=True,
-                        )
-        else:
-            files = all_files
-            if cell_analysis == True:
-                cell_files = self.file_search(
-                    folder, cell_string, imtype
-                )  # get all files in any subfolders
-            # create analysis and analysis parameter directories
-            analysis_directory = os.path.abspath(folder) + "_analysis"
-            IO.make_directory(analysis_directory)
-            for i in np.arange(len(files)):
-                if error_reduction == False:
-                    img = IO.read_tiff_tophotons(
-                        os.path.join(folder, files[i]),
-                        QE=self.QE,
-                        gain_map=self.gain_map,
-                        offset_map=self.offset_map,
-                    )[:, :, im_start:]
-                else:
-                    img = IO.read_tiff_tophotons(
-                        os.path.join(folder, files[i]),
-                        QE=self.QE,
-                        gain_map=self.gain_map,
-                        offset_map=self.offset_map,
-                        variance_map=self.variance_map,
-                        error_correction=True,
-                    )[:, :, im_start:]
-                if cell_analysis == True:
-                    img_cell = IO.read_tiff_tophotons(
-                        os.path.join(folder, cell_files[i]),
-                        QE=self.QE,
-                        gain_map=self.gain_map,
-                        offset_map=self.offset_map,
-                    )[:, :, im_start:]
-                else:
-                    cell_analysis = None
                 z_test = len(img.shape) > 2
-                _analysis_loop(img, k1, k2, img_cell, thres, large_thres, rdl, z_test)
-                if disp == True:
+                _analysis_loop(
+                    img, k1, k2, img_cell, thres, large_thres, rdl, z_test, i
+                )
+                if disp:
                     print(
-                        "Analysed image file {}/{}    Time elapsed: {:.3f} s".format(
-                            i + 1, len(files), time.time() - start
-                        ),
+                        f"Analysed image file {i + 1}/{len(files)}    Time elapsed: {time.time() - start:.3f} s",
                         end="\r",
                         flush=True,
                     )
+
+        start = time.time()
+
+        if folder_recursive:
+            for val in folders:
+                subfolder = os.path.abspath(val)
+                files = self.file_search(subfolder, protein_string, imtype)
+                cell_files = (
+                    self.file_search(subfolder, cell_string, imtype)
+                    if cell_analysis
+                    else []
+                )
+                analysis_directory = os.path.abspath(subfolder) + "_analysis"
+                IO.make_directory(analysis_directory)
+                process_files(subfolder, files, cell_files)
+        else:
+            files = all_files
+            cell_files = (
+                self.file_search(folder, cell_string, imtype) if cell_analysis else []
+            )
+            analysis_directory = os.path.abspath(folder) + "_analysis"
+            IO.make_directory(analysis_directory)
+            process_files(folder, files, cell_files)
         return
 
     def single_image_analysis(
