@@ -256,8 +256,8 @@ class RASP_Routines:
             )
 
         # Use NumPy for efficient outlier rejection
-        r1_data = A_F.rejectoutliers(np.concatenate(radiality_data["r1"]))
-        r2_data = A_F.rejectoutliers(np.concatenate(radiality_data["r2"]))
+        r1_data, _, _, _ = A_F.reject_outliers(np.concatenate(radiality_data["r1"]))
+        r2_data, _, _, _ = A_F.reject_outliers(np.concatenate(radiality_data["r2"]))
 
         # Robust percentile calculation with outlier removal
         r1_valid = r1_data[~np.isnan(r1_data)]
@@ -399,7 +399,7 @@ class RASP_Routines:
             )
 
         # Final calculations
-        all_HWHM = A_F.rejectoutliers(np.asarray(all_HWHM))
+        all_HWHM, _, _, _ = A_F.reject_outliers(np.asarray(all_HWHM))
         area_thresh = int(np.ceil(np.percentile(all_areas, accepted_ratio)))
         pixel_d = int(np.round(np.mean(all_HWHM)))
 
