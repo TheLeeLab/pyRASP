@@ -467,7 +467,7 @@ class ImageAnalysis_Functions:
         y_outer = np.tile(y_outer, (len(centroid_loc), 1)).T + centroid_loc[:, 1]
 
         return x_inner, y_inner, x_outer, y_outer
-    
+
     def detect_large_features(
         self, image, threshold1, threshold2=0, sigma1=2.0, sigma2=60.0
     ):

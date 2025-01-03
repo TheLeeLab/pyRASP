@@ -370,60 +370,173 @@ class Analysis_Functions:
         nd2 = indices[data <= q1 - (k * IQR)]
         return np.hstack([nd1, nd2])
 
-    def spot_to_spot_rdf(self, coordinates, pixel_size=0.11, dr=1.0):
-        """
-        Generates spot_to_spot_rdf
-
-        Uses code from 10.5281/zenodo.4625675, please cite this software if used in a paper.
-
-        Args:
-            coordinates (np.2darray): array of 2d (or 3D) coordinates
-            pixel_size (np.float): pixel size in same units as dr (default: 0.11)
-            dr (np.float): step for radial distribution function
-
-        Returns:
-            g_r (np.1darray): radial distribution function
-            radii (np.1darray): radius vector
-
-        """
-        g_r, radii = rdf(np.multiply(coordinates, pixel_size), dr=dr)
-        return g_r, radii
-
-    def spot_to_mask_rdf(
+    def calculate_rdf_with_thresholds(
         self,
-        coordinates_spot,
-        coordinates_mask,
+        analysis_data_1,
+        analysis_data_2=None,
+        mask_file=None,
+        threshold_1=None,
+        threshold_2=None,
         pixel_size=0.11,
-        dr=0.1,
-        r_max=30.0,
+        dr=1.0,
+        aboveT=1,
+        analysis_type="single_channel",
         image_size=(1200, 1200),
     ):
         """
-        Generates spot_to_mask_rdf
+        Calculate RDF (Radial Distribution Function) with thresholds for different analysis types.
 
         Args:
-            coordinates_spot (np.2darray): array of 2D spot coordinates
-            coordinates_mask (np.2darray): array of 2D mask coordinates
-            pixel_size (np.float): pixel size in same units as dr (default: 0.11)
-            dr (np.float): step for radial distribution function
-            max_radius (np.float): maximum radius value
-            image_size (array): maximum image size
+            analysis_data_1 (pl.DataFrame): The analysis data of puncta set 1.
+            analysis_data_2 (pl.DataFrame, optional): The analysis data of puncta set 2. Default is None.
+            mask_file (str, optional): The mask file location. Default is None.
+            threshold_1 (float): The photon threshold for puncta set 1.
+            threshold_2 (float, optional): The photon threshold for puncta set 2. Default is None.
+            pixel_size (float): Size of pixels.
+            dr (float): Step for radial distribution function.
+            aboveT (int): Do the calculation above or below threshold.
+            analysis_type (str): Type of analysis to perform. Options are "two_channels", "single_channel", "spot_mask".
+            image_size (tuple): Size of the image.
 
         Returns:
-            g_r (np.1darray): radial distribution function
-            radii (np.1darray): radius vector
+            rdf_analysis (pl.DataFrame): Polars DataFrame of the RDF analysis.
         """
-        g_r, radii = MultiD_RD_functions.multid_rdf(
-            coordinates_spot * pixel_size,
-            coordinates_mask * pixel_size,
-            r_max,
-            dr,
-            boxdims=(
-                [[0.0, 0.0], [image_size[0] * pixel_size, image_size[1] * pixel_size]]
-            ),
-            parallel=True,
+
+        def filter_data(data, threshold, above):
+            op = ">" if above == 1 else "<="
+            return data.filter(
+                eval(f"pl.col('sum_intensity_in_photons') {op} threshold")
+            )
+
+        def read_and_filter_data(data, threshold, above):
+            return filter_data(data, threshold, above)
+
+        def calculate_rdf_for_file_rdf(coordinates, pixel_size, dr):
+            # Radial Distribution Function Calculation for spots
+            g_r, radii = rdf(np.multiply(coordinates, pixel_size), dr=dr)
+            return g_r, radii
+
+        def calculate_rdf_for_file_spot_mask(
+            coordinates_spot, coordinates_mask, pixel_size, dr, image_size
+        ):
+            # Radial Distribution Function Calculation for spots and mask
+            r_max = np.divide(np.multiply(np.max(image_size), pixel_size), 4.0)
+            g_r, radii = MultiD_RD_functions.multid_rdf(
+                coordinates_spot * pixel_size,
+                coordinates_mask * pixel_size,
+                r_max,
+                dr,
+                boxdims=(
+                    [
+                        [0.0, 0.0],
+                        [image_size[0] * pixel_size, image_size[1] * pixel_size],
+                    ]
+                ),
+                parallel=True,
+            )
+            return g_r, radii
+
+        start = time.time()
+
+        if aboveT == 1:
+            analysis_data_1 = read_and_filter_data(analysis_data_1, threshold_1, aboveT)
+            if analysis_data_2 is not None:
+                analysis_data_2 = read_and_filter_data(
+                    analysis_data_2, threshold_2, aboveT
+                )
+        else:
+            analysis_data_1 = read_and_filter_data(analysis_data_1, threshold_1, aboveT)
+            if analysis_data_2 is not None:
+                analysis_data_2 = read_and_filter_data(
+                    analysis_data_2, threshold_2, aboveT
+                )
+
+        if len(analysis_data_1) == 0 or (
+            analysis_data_2 is not None and len(analysis_data_2) == 0
+        ):
+            return np.NAN
+
+        files_1 = np.unique(analysis_data_1["image_filename"].to_numpy())
+        files_2 = (
+            np.unique(analysis_data_2["image_filename"].to_numpy())
+            if analysis_data_2 is not None
+            else []
         )
-        return g_r, radii
+        files = np.unique(np.hstack([files_1, files_2]))
+
+        g_r = {}
+
+        for i, file in enumerate(files):
+            if analysis_type == "two_channels":
+                subset_1 = analysis_data_1.filter(pl.col("image_filename") == file)
+                subset_2 = analysis_data_2.filter(pl.col("image_filename") == file)
+                for z in np.unique(
+                    np.hstack([subset_1["z"].to_numpy(), subset_2["z"].to_numpy()])
+                ):
+                    uid = str(file) + "___" + str(z)
+                    filtered_subset_1 = subset_1.filter(pl.col("z") == z)
+                    filtered_subset_2 = subset_2.filter(pl.col("z") == z)
+                    coordinates_1 = np.vstack(
+                        [
+                            filtered_subset_1["x"].to_numpy(),
+                            filtered_subset_1["y"].to_numpy(),
+                        ]
+                    ).T
+                    coordinates_2 = np.vstack(
+                        [
+                            filtered_subset_2["x"].to_numpy(),
+                            filtered_subset_2["y"].to_numpy(),
+                        ]
+                    ).T
+                    if len(coordinates_1) > 0 and len(coordinates_2) > 0:
+                        g_r[uid], radii = calculate_rdf_for_file_spot_mask(
+                            coordinates_1, coordinates_2, pixel_size, dr, image_size
+                        )
+            elif analysis_type == "single_channel":
+                subset = analysis_data_1.filter(pl.col("image_filename") == file)
+                for z in np.unique(subset["z"].to_numpy()):
+                    uid = str(file) + "___" + str(z)
+                    subset_filter = subset.filter(pl.col("z") == z)
+                    coordinates = np.vstack(
+                        [subset_filter["x"].to_numpy(), subset_filter["y"].to_numpy()]
+                    ).T
+                    g_r[uid], radii = calculate_rdf_for_file_rdf(
+                        coordinates, pixel_size, dr
+                    )
+            elif analysis_type == "spot_mask":
+                cell_mask = IO.read_tiff(os.path.join(os.path.dirname(file), mask_file))
+                subset = analysis_data_1.filter(pl.col("image_filename") == file)
+                for z in np.unique(subset["z"].to_numpy()):
+                    uid = str(file) + "___" + str(z)
+                    filtered_subset = subset.filter(pl.col("z") == z)
+                    x = filtered_subset["x"].to_numpy()
+                    y = filtered_subset["y"].to_numpy()
+                    coordinates_spot = np.vstack([x, y]).T
+                    xm, ym = np.where(cell_mask[:, :, int(z) - 1])
+                    coordinates_mask = np.vstack([xm, ym]).T
+                    if len(coordinates_mask) > 0:
+                        g_r[uid], radii = calculate_rdf_for_file_spot_mask(
+                            coordinates_spot,
+                            coordinates_mask,
+                            pixel_size,
+                            dr,
+                            image_size,
+                        )
+            print(
+                f"Computing RDF {analysis_type}     File {i + 1}/{len(files)}    Time elapsed: {time.time() - start:.3f} s",
+                end="\r",
+                flush=True,
+            )
+
+        g_r_overall = np.zeros([len(radii), len(g_r.keys())])
+        for i, uid in enumerate(g_r.keys()):
+            g_r_overall[:, i] = g_r[uid]
+
+        g_r_mean = np.mean(g_r_overall, axis=1)
+        g_r_std = np.std(g_r_overall, axis=1)
+        data = {"radii": radii, "g_r_mean": g_r_mean, "g_r_std": g_r_std}
+
+        return pl.DataFrame(data)
 
     def colocalise_with_threshold(
         self,
@@ -728,232 +841,6 @@ class Analysis_Functions:
             analysis_type="largeobj",
         )
 
-    def two_puncta_channels_rdf_with_thresholds(
-        self,
-        analysis_data_p1,
-        analysis_data_p2,
-        threshold_p1,
-        threshold_p2,
-        pixel_size=0.11,
-        dr=1.0,
-        protein_string_1="C0",
-        protein_string_2="C1",
-        imtype=".tif",
-        aboveT=1,
-        image_size=(1200.0, 1200.0),
-    ):
-        """
-        Does rdf analysis of spots wrt mask from an analysis file.
-
-        Args:
-            analysis_data_p1 (pl.DataFrame): The analysis data of puncta set 1.
-            analysis_data_p2 (pl.DataFrame): The analysis data of puncta set 2.
-            threshold_p1 (float): The photon threshold for puncta set 1.
-            threshold_p2 (float): The photon threshold for puncta set 2.
-            pixel_size (float): size of pixels
-            dr (float): dr of rdf
-            protein_string_1 (string): will use this to find corresponding other punctum files
-            protein_string_2 (string): will use this to find corresponding other punctum files
-            imtype (string): image type previously analysed
-            aboveT (int): do the calculation above or below threshold
-
-        Returns:
-            rdf (pl.DataFrame): polars datarray of the rdf
-        """
-
-        start = time.time()
-
-        if aboveT == 1:
-            analysis_data_p1 = analysis_data_p1.filter(
-                pl.col("sum_intensity_in_photons") > threshold_p1
-            )
-            analysis_data_p2 = analysis_data_p2.filter(
-                pl.col("sum_intensity_in_photons") > threshold_p2
-            )
-        else:
-            analysis_data_p1 = analysis_data_p1.filter(
-                pl.col("sum_intensity_in_photons") <= threshold_p1
-            )
-            analysis_data_p2 = analysis_data_p2.filter(
-                pl.col("sum_intensity_in_photons") <= threshold_p2
-            )
-
-        if (len(analysis_data_p1) > 0) and (len(analysis_data_p2) > 0):
-
-            files_p1 = np.unique(
-                [
-                    file.split(imtype)[0].split(protein_string_1)[0]
-                    for file in analysis_data_p1["image_filename"].to_numpy()
-                ]
-            )
-            files_p2 = np.unique(
-                [
-                    file.split(imtype)[0].split(protein_string_2)[0]
-                    for file in analysis_data_p2["image_filename"].to_numpy()
-                ]
-            )
-            files = np.unique(np.hstack([files_p1, files_p2]))
-
-            z_planes = {}  # make dict where z planes will be stored
-            for i, file in enumerate(files):
-                zp_f1 = np.unique(
-                    analysis_data_p1.filter(
-                        pl.col("image_filename")
-                        == file + str(protein_string_1) + imtype
-                    )["z"].to_numpy()
-                )
-                zp_f2 = np.unique(
-                    analysis_data_p2.filter(
-                        pl.col("image_filename")
-                        == file + str(protein_string_2) + imtype
-                    )["z"].to_numpy()
-                )
-
-                z_planes[file] = np.unique(np.hstack([zp_f1, zp_f2]))
-
-            g_r = {}
-
-            for i, file in enumerate(files):
-                zs = z_planes[file]
-                subset_p1 = analysis_data_p1.filter(
-                    pl.col("image_filename") == file + str(protein_string_1) + imtype
-                )
-                subset_p2 = analysis_data_p2.filter(
-                    pl.col("image_filename") == file + str(protein_string_2) + imtype
-                )
-                for z in zs:
-                    uid = str(file) + "___" + str(z)
-                    filtered_subset_p1 = subset_p1.filter(pl.col("z") == z)
-                    filtered_subset_p2 = subset_p2.filter(pl.col("z") == z)
-
-                    x_p1 = filtered_subset_p1["x"].to_numpy()
-                    y_p1 = filtered_subset_p1["y"].to_numpy()
-                    x_p2 = filtered_subset_p2["x"].to_numpy()
-                    y_p2 = filtered_subset_p2["y"].to_numpy()
-                    coordinates_p1_spot = np.asarray(
-                        np.vstack([x_p1, y_p1]).T, dtype=int
-                    )
-                    coordinates_p2_spot = np.asarray(
-                        np.vstack([x_p2, y_p2]).T, dtype=int
-                    )
-                    if (len(coordinates_p1_spot) > 0) and (
-                        len(coordinates_p2_spot) > 0
-                    ):
-                        g_r[uid], radii = self.spot_to_mask_rdf(
-                            coordinates_p1_spot,
-                            coordinates_p2_spot,
-                            pixel_size=pixel_size,
-                            dr=dr,
-                            r_max=np.divide(
-                                np.multiply(image_size[0], pixel_size), 4.0
-                            ),
-                            image_size=image_size,
-                        )
-                print(
-                    "Computing RDF     File {}/{}    Time elapsed: {:.3f} s".format(
-                        i + 1, len(files), time.time() - start
-                    ),
-                    end="\r",
-                    flush=True,
-                )
-
-            g_r_overall = np.zeros([len(radii), len(g_r.keys())])
-
-            for i, uid in enumerate(g_r.keys()):
-                g_r_overall[:, i] = g_r[uid]
-
-            g_r_mean = np.mean(g_r_overall, axis=1)
-            g_r_std = np.std(g_r_overall, axis=1)
-            data = {"radii": radii, "g_r_mean": g_r_mean, "g_r_std": g_r_std}
-
-            rdf = pl.DataFrame(data)
-            return rdf
-        else:
-            return np.NAN
-
-    def single_spot_channel_rdf_with_threshold(
-        self, analysis_data, threshold, pixel_size=0.11, dr=1.0, aboveT=1
-    ):
-        """
-        Does rdf analysis of spots from an analysis file.
-
-        Args:
-            analysis_data (pl.DataFrame): The analysis data of puncta.
-            threshold (float): The photon threshold for puncta.
-            pixel_size (float): size of pixels
-            dr (float): dr of rdf
-            aboveT (int): do the calculation above or below threshold
-
-        Returns:
-            rdf (pl.DataFrame): polars datarray of the rdf
-        """
-
-        if aboveT == 1:
-            analysis_data = analysis_data.filter(
-                pl.col("sum_intensity_in_photons") > threshold
-            )
-            typestr = "> threshold"
-        else:
-            analysis_data = analysis_data.filter(
-                pl.col("sum_intensity_in_photons") <= threshold
-            )
-            typestr = "<= threshold"
-
-        if len(analysis_data) > 0:
-
-            files = np.unique(analysis_data["image_filename"].to_numpy())
-            z_planes = {}  # make dict where z planes will be stored
-            for i, file in enumerate(files):
-                z_planes[file] = np.unique(
-                    analysis_data.filter(pl.col("image_filename") == file)[
-                        "z"
-                    ].to_numpy()
-                )
-
-            g_r = {}
-            radii = {}
-
-            start = time.time()
-
-            for i, file in enumerate(files):
-                zs = z_planes[file]
-                subset = analysis_data.filter(pl.col("image_filename") == file)
-                for z in zs:
-                    uid = str(file) + "___" + str(z)
-                    subset_filter = subset.filter(pl.col("z") == z)
-                    x = subset_filter["x"].to_numpy()
-                    y = subset_filter["y"].to_numpy()
-                    coordinates = np.vstack([x, y]).T
-                    g_r[uid], radii[uid] = self.spot_to_spot_rdf(
-                        coordinates, pixel_size=pixel_size, dr=dr
-                    )
-                print(
-                    "Computing "
-                    + typestr
-                    + " RDF     File {}/{}    Time elapsed: {:.3f} s".format(
-                        i + 1, len(files), time.time() - start
-                    ),
-                    end="\r",
-                    flush=True,
-                )
-
-            radii_key, radii_overall = max(radii.items(), key=lambda x: len(set(x[1])))
-
-            g_r_overall = np.zeros([len(radii_overall), len(g_r.keys())])
-
-            for i, uid in enumerate(g_r.keys()):
-                g_r_overall[:, i] = np.interp(
-                    fp=g_r[uid], xp=radii[uid], x=radii_overall, left=0.0, right=0.0
-                )
-            g_r_mean = np.mean(g_r_overall, axis=1)
-            g_r_std = np.std(g_r_overall, axis=1)
-            data = {"radii": radii_overall, "g_r_mean": g_r_mean, "g_r_std": g_r_std}
-
-            rdf = pl.DataFrame(data)
-            return rdf
-        else:
-            return np.NAN
-
     def number_of_puncta_per_segmented_cell_with_threshold(
         self,
         analysis_file,
@@ -1101,122 +988,6 @@ class Analysis_Functions:
             )
 
         return cell_punctum_analysis.rechunk()
-
-    def spot_mask_rdf_with_threshold(
-        self,
-        analysis_file,
-        threshold,
-        out_cell=True,
-        pixel_size=0.11,
-        dr=1.0,
-        cell_string="C0",
-        protein_string="C1",
-        imtype=".tif",
-        aboveT=1,
-    ):
-        """
-        Does rdf analysis of spots wrt mask from an analysis file.
-
-        Args:
-            analysis_file (pl.DataFrame): The analysis file location of puncta set 1.
-            threshold (float): The photon threshold for puncta set 1.
-            out_cell (boolean): exclude puncta that are inside cells
-            pixel_size (float): size of pixels
-            dr (float): dr of rdf
-            cell_string (string): will use this to find corresponding cell files
-            protein_string (string): will use this to find corresponding files
-            imtype (string): image type previously analysed
-            aboveT (int): do the calculation above or below threshold
-
-        Returns:
-            rdf (pl.DataFrame): polars datarray of the rdf
-        """
-
-        analysis_data = pl.read_csv(analysis_file)
-        if aboveT == 1:
-            analysis_data = analysis_data.filter(
-                pl.col("sum_intensity_in_photons") > threshold
-            )
-        else:
-            analysis_data = analysis_data.filter(
-                pl.col("sum_intensity_in_photons") <= threshold
-            )
-
-        analysis_directory = os.path.split(analysis_file)[0]
-        if out_cell == True:
-            analysis_data = analysis_data.filter(pl.col("incell") == 0)
-
-        start = time.time()
-
-        if len(analysis_data) > 0:
-            files = np.unique(analysis_data["image_filename"].to_numpy())
-            z_planes = {}  # make dict where z planes will be stored
-            for i, file in enumerate(files):
-                z_planes[file] = np.unique(
-                    analysis_data.filter(pl.col("image_filename") == file)[
-                        "z"
-                    ].to_numpy()
-                )
-
-            g_r = {}
-
-            for i, file in enumerate(files):
-                cell_mask = IO.read_tiff(
-                    os.path.join(
-                        analysis_directory,
-                        os.path.split(file.split(imtype)[0])[-1].split(protein_string)[
-                            0
-                        ]
-                        + str(cell_string)
-                        + "_cellMask.tiff",
-                    )
-                )
-                zs = z_planes[file]
-                subset = analysis_data.filter(pl.col("image_filename") == file)
-                image_size = cell_mask[:, :, 0].shape
-                for z in zs:
-                    uid = str(file) + "___" + str(z)
-
-                    filtered_subset = subset.filter(pl.col("z") == z)
-                    x = filtered_subset["x"].to_numpy()
-                    y = filtered_subset["y"].to_numpy()
-                    coordinates_spot = np.vstack([x, y]).T
-                    xm, ym = np.where(cell_mask[:, :, int(z) - 1])
-                    coordinates_mask = np.vstack([xm, ym]).T
-
-                    if len(coordinates_mask) > 0:
-                        g_r[uid], radii = self.spot_to_mask_rdf(
-                            coordinates_spot,
-                            coordinates_mask,
-                            pixel_size=pixel_size,
-                            dr=dr,
-                            r_max=np.divide(
-                                np.multiply(np.max(image_size), pixel_size), 4.0
-                            ),
-                            image_size=image_size,
-                        )
-                print(
-                    "Computing RDF     File {}/{}    Time elapsed: {:.3f} s".format(
-                        i + 1, len(files), time.time() - start
-                    ),
-                    end="\r",
-                    flush=True,
-                )
-
-            g_r_overall = np.zeros([len(radii), len(g_r.keys())])
-
-            for i, uid in enumerate(g_r.keys()):
-                g_r_overall[:, i] = g_r[uid]
-
-            g_r_mean = np.mean(g_r_overall, axis=1)
-            g_r_std = np.std(g_r_overall, axis=1)
-
-            data = {"radii": radii, "g_r_mean": g_r_mean, "g_r_std": g_r_std}
-            rdf = pl.DataFrame(data)
-
-            return rdf
-        else:
-            return np.NAN
 
     def colocalise_spots_with_threshold(
         self,
