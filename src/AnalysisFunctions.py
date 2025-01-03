@@ -5,7 +5,6 @@ radiality, relating to the RASP concept.
 jsb92, 2024/01/02
 """
 import numpy as np
-import skimage as ski
 from skimage.measure import label, regionprops_table
 from numba import jit
 import polars as pl
