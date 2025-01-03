@@ -14,7 +14,7 @@ class Helper_Functions:
     def __init__(self):
         self = self
         return
-    
+
     def file_search(self, folder, string1, string2):
         """
         Search for files containing 'string1' in their names within 'folder',
@@ -36,7 +36,6 @@ class Helper_Functions:
         ]
         file_list = np.sort([e for e in file_list if string2 in e])
         return file_list
-
 
     def make_datarray_largeobjects(
         self,
