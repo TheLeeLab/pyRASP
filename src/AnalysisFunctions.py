@@ -521,11 +521,12 @@ class Analysis_Functions:
             threshold (float): The photon threshold for puncta.
             protein_string (str): string of protein images
             lo_string (str): string of larger object images
-            coloc_typ (boolean): if 1 (default), for cells. if 0, for large protein objects.
-                                if 2, between cell mask and large protein objects.
+            cell_string (str): string of cell images
+            coloc_type (int): if 1 (default), for cells; if 0, for large protein objects;
+                              if 2, between cell mask and large protein objects.
             imtype (str): image end string
             blur_degree (int): degree of blur to apply to puncta
-            calc_clr (boolean): calculate clr yes/no
+            calc_clr (bool): calculate clr yes/no
             aboveT (int): do the calculation above or below threshold
             lower_cell_size_threshold (float): lower threshold of cell size
             upper_cell_size_threshold (float): upper threshold of cell size
@@ -535,294 +536,269 @@ class Analysis_Functions:
             spot_analysis (pl.DataFrame): polars dataframe of the spot analysis
         """
         C_F = CoincidenceFunctions.Coincidence_Functions()
-        if coloc_type == 1:
-            end_str = cell_string + "_cellMask.tiff"
-        elif coloc_type == 0:
-            end_str = lo_string + "_loMask.tiff"
-        else:
-            end_str = None
+        end_str = {
+            1: f"{cell_string}_cellMask.tiff",
+            0: f"{lo_string}_loMask.tiff",
+        }.get(coloc_type, None)
 
         spots_with_intensities = pl.read_csv(analysis_file)
-        if coloc_type == 2:
-            if "mean_intensity_in_photons" not in spots_with_intensities.columns:
-                print("Large object analysis file not loaded in. Code will fail.")
-                return
-        if aboveT == 1:
-            spots_with_intensities = spots_with_intensities.filter(
-                pl.col("sum_intensity_in_photons") > threshold
-            )
-        else:
-            spots_with_intensities = spots_with_intensities.filter(
-                pl.col("sum_intensity_in_photons") <= threshold
-            )
+        if (
+            coloc_type == 2
+            and "mean_intensity_in_photons" not in spots_with_intensities.columns
+        ):
+            print("Large object analysis file not loaded in. Code will fail.")
+            return
 
-        if len(spots_with_intensities) > 0:
-            analysis_directory = os.path.split(analysis_file)[0]
-            image_filenames = np.unique(
-                spots_with_intensities["image_filename"].to_numpy()
-            )
+        condition = (
+            (pl.col("sum_intensity_in_photons") > threshold)
+            if aboveT
+            else (pl.col("sum_intensity_in_photons") <= threshold)
+        )
+        spots_with_intensities = spots_with_intensities.filter(condition)
 
-            if calc_clr == False:
-                columns = [
-                    "coincidence",
-                    "chance_coincidence",
-                    "n_iter",
-                    "z_plane",
-                    "image_filename",
-                ]
-            else:
-                columns = [
-                    "clr",
-                    "norm_std",
-                    "norm_CSR",
-                    "expected_spots",
-                    "coincidence",
-                    "chance_coincidence",
-                    "n_iter",
-                    "z_plane",
-                    "image_filename",
-                ]
-
-            start = time.time()
-
-            for i, image in enumerate(image_filenames):
-                common_path = os.path.split(image.split(imtype)[0])[-1].split(
-                    protein_string
-                )[0]
-                if end_str is not None:
-                    lo_mask, _, _, _ = self.threshold_cell_areas(
-                        IO.read_tiff(
-                            os.path.join(
-                                analysis_directory,
-                                common_path + end_str,
-                            )
-                        ),
-                        lower_cell_size_threshold,
-                        upper_cell_size_threshold,
-                        [False, False],
-                    )
-
-                else:
-                    lo_mask = IO.read_tiff(
-                        os.path.join(
-                            analysis_directory,
-                            common_path + str(lo_string) + "_loMask.tiff",
-                        )
-                    )
-                    cell_mask, _, _, _ = self.threshold_cell_areas(
-                        IO.read_tiff(
-                            os.path.join(
-                                analysis_directory,
-                                common_path + str(cell_string) + "_cellMask.tiff",
-                            )
-                        ),
-                        lower_cell_size_threshold,
-                        upper_cell_size_threshold,
-                        [False, False],
-                    )
-
-                image_size = lo_mask.shape[:-1]
-                image_file = spots_with_intensities.filter(
-                    pl.col("image_filename") == image
-                )
-                z_planes = np.unique(image_file["z"].to_numpy())
-
-                def parallel_coloc_per_z_clr_spot(xcoords, ycoords, mask):
-                    centroids = np.asarray(np.vstack([xcoords, ycoords]), dtype=int).T
-                    mask_indices = self.generate_indices(mask, image_size, is_mask=True)
-                    spot_indices = self.generate_indices(centroids, image_size)
-                    (
-                        clr,
-                        norm_std,
-                        norm_CSR,
-                        expected_spots,
-                        coincidence,
-                        chance_coincidence,
-                        raw_colocalisation,
-                        n_iter,
-                    ) = C_F.calculate_coincidence(
-                        spot_indices,
-                        mask_indices,
-                        image_size,
-                        blur_degree=1,
-                        analysis_type="colocalisation_likelihood",
-                    )
-                    return (
-                        clr,
-                        norm_std,
-                        norm_CSR,
-                        expected_spots,
-                        coincidence,
-                        chance_coincidence,
-                        raw_colocalisation,
-                        n_iter,
-                    )
-
-                def parallel_coloc_per_z_noclr_spot(xcoords, ycoords, mask):
-                    centroids = np.asarray(np.vstack([xcoords, ycoords]), dtype=int).T
-                    mask_indices = self.generate_indices(mask, image_size, is_mask=True)
-                    spot_indices = self.generate_indices(centroids, image_size)
-                    (
-                        coincidence,
-                        chance_coincidence,
-                        raw_colocalisation,
-                        n_iter,
-                    ) = C_F.calculate_coincidence(
-                        spot_indices,
-                        mask_indices,
-                        image_size,
-                        blur_degree=blur_degree,
-                        analysis_type="spot_to_mask",
-                    )
-                    return coincidence, chance_coincidence, raw_colocalisation, n_iter
-
-                def parallel_coloc_per_z_los(mask_lo, mask_cell):
-                    mask_lo_indices, n_largeobjs = self.generate_indices(
-                        mask_lo,
-                        image_size,
-                        is_mask=True,
-                        is_lo=True,
-                    )
-                    mask_cell_indices = self.generate_indices(
-                        mask_cell, image_size, is_mask=True, is_lo=False
-                    )
-                    (
-                        coincidence,
-                        chance_coincidence,
-                        raw_colocalisation,
-                    ) = C_F.calculate_coincidence(
-                        spot_indices=None,
-                        largeobj_indices=mask_lo_indices,
-                        mask_indices=mask_cell_indices,
-                        n_largeobjs=n_largeobjs,
-                        image_size=image_size,
-                        analysis_type="largeobj",
-                    )
-                    n_iter = 100
-                    return coincidence, chance_coincidence, raw_colocalisation, n_iter
-
-                if coloc_type != 2:
-                    xcoords = [
-                        image_file.filter(pl.col("z") == z_plane)["x"].to_numpy()
-                        for z_plane in z_planes
-                    ]
-                    ycoords = [
-                        image_file.filter(pl.col("z") == z_plane)["x"].to_numpy()
-                        for z_plane in z_planes
-                    ]
-                    if lo_mask.shape[-1] > z_planes[-1]:
-                        masks = [
-                            lo_mask[:, :, int(z_plane) - 1] for z_plane in z_planes
-                        ]
-                    else:
-                        masks = [lo_mask[:, :, j] for j in np.arange(len(z_planes))]
-                    if calc_clr == False:
-                        pool = Pool(nodes=self.cpu_number)
-                        pool.restart()
-                        results = pool.map(
-                            parallel_coloc_per_z_noclr_spot,
-                            xcoords,
-                            ycoords,
-                            masks,
-                        )
-                        pool.close()
-                        pool.terminate()
-                        coincidence = np.array([i[0] for i in results])
-                        chance_coincidence = np.array([i[1] for i in results])
-                        raw_colocalisation = np.concatenate([i[2] for i in results])
-                        n_iter = np.array([i[3] for i in results])
-                        dataarray = np.vstack(
-                            [coincidence, chance_coincidence, n_iter, z_planes]
-                        )
-                    else:
-                        pool = Pool(nodes=self.cpu_number)
-                        pool.restart()
-                        results = pool.map(
-                            parallel_coloc_per_z_clr_spot,
-                            xcoords,
-                            ycoords,
-                            masks,
-                        )
-                        pool.close()
-                        pool.terminate()
-                        clr = np.array([i[0] for i in results])
-                        norm_std = np.array([i[1] for i in results])
-                        norm_CSR = np.array([i[2] for i in results])
-                        expected_spots = np.array([i[3] for i in results])
-                        coincidence = np.array([i[4] for i in results])
-                        chance_coincidence = np.array([i[5] for i in results])
-                        raw_colocalisation = np.concatenate([i[6] for i in results])
-                        n_iter = np.array([i[7] for i in results])
-                        dataarray = np.vstack(
-                            [
-                                clr,
-                                norm_std,
-                                norm_CSR,
-                                expected_spots,
-                                coincidence,
-                                chance_coincidence,
-                                n_iter,
-                                z_planes,
-                            ]
-                        )
-                else:
-                    if lo_mask.shape[-1] > len(z_planes):
-                        masks_lo = [
-                            lo_mask[:, :, int(z_plane) - 1] for z_plane in z_planes
-                        ]
-                        masks_cell = [
-                            cell_mask[:, :, int(z_plane) - 1] for z_plane in z_planes
-                        ]
-                    else:
-                        masks_lo = [lo_mask[:, :, j] for j in np.arange(len(z_planes))]
-                        masks_cell = [
-                            cell_mask[:, :, j] for j in np.arange(len(z_planes))
-                        ]
-                    pool = Pool(nodes=self.cpu_number)
-                    pool.restart()
-                    results = pool.map(
-                        parallel_coloc_per_z_los,
-                        masks_lo,
-                        masks_cell,
-                    )
-                    pool.close()
-                    pool.terminate()
-                    coincidence = np.array([i[0] for i in results])
-                    chance_coincidence = np.array([i[1] for i in results])
-                    raw_colocalisation = np.concatenate([i[2] for i in results])
-                    n_iter = np.array([i[3] for i in results])
-                    dataarray = np.vstack(
-                        [coincidence, chance_coincidence, n_iter, z_planes]
-                    )
-                image_file = image_file.with_columns(incell=raw_colocalisation)
-                dataarray = np.vstack(
-                    [
-                        np.asarray(dataarray, dtype="object"),
-                        np.repeat(image, len(z_planes)),
-                    ]
-                )
-                if i == 0:
-                    lo_analysis = dataarray
-                    spot_analysis = image_file
-                else:
-                    lo_analysis = np.hstack([lo_analysis, dataarray])
-                    spot_analysis = pl.concat([spot_analysis, image_file])
-
-                print(
-                    "Computing colocalisation     File {}/{}    Time elapsed: {:.3f} s".format(
-                        i + 1, len(image_filenames), time.time() - start
-                    ),
-                    end="\r",
-                    flush=True,
-                )
-            df = pl.DataFrame(data=lo_analysis.T, schema=columns)
-            for i, column in enumerate(columns[:-1]):
-                df = df.replace_column(
-                    i, pl.Series(column, np.array(df[column].to_numpy(), dtype="float"))
-                )
-            return df, spot_analysis
-        else:
+        if len(spots_with_intensities) == 0:
             return np.NAN, np.NAN
+
+        analysis_directory = os.path.split(analysis_file)[0]
+        image_filenames = np.unique(spots_with_intensities["image_filename"].to_numpy())
+        columns = (
+            [
+                "clr",
+                "norm_std",
+                "norm_CSR",
+                "expected_spots",
+                "coincidence",
+                "chance_coincidence",
+                "n_iter",
+                "z_plane",
+                "image_filename",
+            ]
+            if calc_clr
+            else [
+                "coincidence",
+                "chance_coincidence",
+                "n_iter",
+                "z_plane",
+                "image_filename",
+            ]
+        )
+
+        start = time.time()
+        lo_analysis, spot_analysis = None, None
+
+        for i, image in enumerate(image_filenames):
+            common_path = os.path.split(image.split(imtype)[0])[-1].split(
+                protein_string
+            )[0]
+            lo_mask = self._read_mask(
+                analysis_directory, common_path, end_str, lo_string
+            )
+            cell_mask = self._read_mask(
+                analysis_directory,
+                common_path,
+                f"{cell_string}_cellMask.tiff",
+                cell_string,
+            )
+
+            image_size = lo_mask.shape[:-1]
+            image_file = spots_with_intensities.filter(
+                pl.col("image_filename") == image
+            )
+            z_planes = np.unique(image_file["z"].to_numpy())
+
+            if coloc_type != 2:
+                if calc_clr:
+                    dataarray, raw_colocalisation = self._process_spots_parallel(
+                        C_F,
+                        image_file,
+                        z_planes,
+                        lo_mask,
+                        image_size,
+                        self._parallel_coloc_per_z_clr_spot,
+                        blur_degree,
+                    )
+                else:
+                    dataarray, raw_colocalisation = self._process_spots_parallel(
+                        C_F,
+                        image_file,
+                        z_planes,
+                        lo_mask,
+                        image_size,
+                        self._parallel_coloc_per_z_noclr_spot,
+                        blur_degree,
+                    )
+            else:
+                dataarray, raw_colocalisation = self._process_masks_parallel(
+                    C_F,
+                    z_planes,
+                    lo_mask,
+                    cell_mask,
+                    image_size,
+                    self._parallel_coloc_per_z_los,
+                )
+
+            image_file = image_file.with_columns(incell=raw_colocalisation)
+            dataarray = np.vstack(
+                [np.asarray(dataarray, dtype="object"), np.repeat(image, len(z_planes))]
+            )
+
+            lo_analysis = (
+                dataarray
+                if lo_analysis is None
+                else np.hstack([lo_analysis, dataarray])
+            )
+            spot_analysis = (
+                image_file
+                if spot_analysis is None
+                else pl.concat([spot_analysis, image_file])
+            )
+
+            print(
+                f"Computing colocalisation     File {i + 1}/{len(image_filenames)}    Time elapsed: {time.time() - start:.3f} s",
+                end="\r",
+                flush=True,
+            )
+
+        df = pl.DataFrame(data=lo_analysis.T, schema=columns)
+        for i, column in enumerate(columns[:-1]):
+            df = df.replace_column(
+                i, pl.Series(column, np.array(df[column].to_numpy(), dtype="float"))
+            )
+
+        return df, spot_analysis
+
+    def _read_mask(self, analysis_directory, common_path, end_str, default_str):
+        mask_path = os.path.join(
+            analysis_directory,
+            common_path + end_str if end_str else f"{default_str}_loMask.tiff",
+        )
+        return IO.read_tiff(mask_path) if os.path.exists(mask_path) else None
+
+    def _process_spots_parallel(
+        self, C_F, image_file, z_planes, lo_mask, image_size, parallel_func, blur_degree
+    ):
+        xcoords = [
+            image_file.filter(pl.col("z") == z_plane)["x"].to_numpy()
+            for z_plane in z_planes
+        ]
+        ycoords = [
+            image_file.filter(pl.col("z") == z_plane)["y"].to_numpy()
+            for z_plane in z_planes
+        ]
+        masks = [
+            (
+                lo_mask[:, :, int(z_plane) - 1]
+                if lo_mask.shape[-1] > z_planes[-1]
+                else lo_mask[:, :, j]
+            )
+            for j, z_plane in enumerate(z_planes)
+        ]
+
+        pool = Pool(nodes=self.cpu_number)
+        pool.restart()
+        results = pool.map(parallel_func, xcoords, ycoords, masks)
+        pool.close()
+        pool.terminate()
+
+        coincidence = np.array([i[0] for i in results])
+        chance_coincidence = np.array([i[1] for i in results])
+        raw_colocalisation = np.concatenate([i[2] for i in results])
+        n_iter = np.array([i[3] for i in results])
+
+        dataarray = np.vstack([coincidence, chance_coincidence, n_iter, z_planes])
+        if parallel_func == self._parallel_coloc_per_z_clr_spot:
+            clr = np.array([i[0] for i in results])
+            norm_std = np.array([i[1] for i in results])
+            norm_CSR = np.array([i[2] for i in results])
+            expected_spots = np.array([i[3] for i in results])
+            dataarray = np.vstack(
+                [
+                    clr,
+                    norm_std,
+                    norm_CSR,
+                    expected_spots,
+                    coincidence,
+                    chance_coincidence,
+                    n_iter,
+                    z_planes,
+                ]
+            )
+
+        return dataarray, raw_colocalisation
+
+    def _process_masks_parallel(
+        self, C_F, z_planes, lo_mask, cell_mask, image_size, parallel_func
+    ):
+        masks_lo = [
+            (
+                lo_mask[:, :, int(z_plane) - 1]
+                if lo_mask.shape[-1] > len(z_planes)
+                else lo_mask[:, :, j]
+            )
+            for j, z_plane in enumerate(z_planes)
+        ]
+        masks_cell = [
+            (
+                cell_mask[:, :, int(z_plane) - 1]
+                if lo_mask.shape[-1] > len(z_planes)
+                else cell_mask[:, :, j]
+            )
+            for j, z_plane in enumerate(z_planes)
+        ]
+
+        pool = Pool(nodes=self.cpu_number)
+        pool.restart()
+        results = pool.map(parallel_func, masks_lo, masks_cell)
+        pool.close()
+        pool.terminate()
+
+        coincidence = np.array([i[0] for i in results])
+        chance_coincidence = np.array([i[1] for i in results])
+        raw_colocalisation = np.concatenate([i[2] for i in results])
+        n_iter = np.array([i[3] for i in results])
+
+        dataarray = np.vstack([coincidence, chance_coincidence, n_iter, z_planes])
+        return dataarray, raw_colocalisation
+
+    def _parallel_coloc_per_z_clr_spot(self, xcoords, ycoords, mask, image_size, C_F):
+        centroids = np.asarray(np.vstack([xcoords, ycoords]), dtype=int).T
+        mask_indices = self.generate_indices(mask, image_size, is_mask=True)
+        spot_indices = self.generate_indices(centroids, image_size)
+        return C_F.calculate_coincidence(
+            spot_indices,
+            mask_indices,
+            image_size,
+            blur_degree=1,
+            analysis_type="colocalisation_likelihood",
+        )
+
+    def _parallel_coloc_per_z_noclr_spot(
+        self, xcoords, ycoords, mask, image_size, C_F, blur_degree
+    ):
+        centroids = np.asarray(np.vstack([xcoords, ycoords]), dtype=int).T
+        mask_indices = self.generate_indices(mask, image_size, is_mask=True)
+        spot_indices = self.generate_indices(centroids, image_size)
+        return C_F.calculate_coincidence(
+            spot_indices,
+            mask_indices,
+            image_size,
+            blur_degree=blur_degree,
+            analysis_type="spot_to_mask",
+        )
+
+    def _parallel_coloc_per_z_los(self, mask_lo, mask_cell, image_size, C_F):
+        mask_lo_indices, n_largeobjs = self.generate_indices(
+            mask_lo, image_size, is_mask=True, is_lo=True
+        )
+        mask_cell_indices = self.generate_indices(mask_cell, image_size, is_mask=True)
+        return C_F.calculate_coincidence(
+            spot_indices=None,
+            largeobj_indices=mask_lo_indices,
+            mask_indices=mask_cell_indices,
+            n_largeobjs=n_largeobjs,
+            image_size=image_size,
+            analysis_type="largeobj",
+        )
 
     def two_puncta_channels_rdf_with_thresholds(
         self,
