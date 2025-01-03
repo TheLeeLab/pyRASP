@@ -4,7 +4,6 @@ This class contains functions that collect analysis routines for RASP.
 jsb92, 2024/02/08
 """
 import os
-import fnmatch
 import numpy as np
 import polars as pl
 import sys
@@ -13,6 +12,9 @@ import time
 
 module_dir = os.path.dirname(__file__)
 sys.path.append(module_dir)
+import HelperFunctions
+H_F = HelperFunctions.Helper_Functions()
+
 import IOFunctions
 
 IO = IOFunctions.IO_Functions()
@@ -196,7 +198,7 @@ class RASP_Routines:
         """
         # Optimize file search and sorting
         files = np.sort(
-            [f for f in self.file_search(folder, protein_string, imtype) if imtype in f]
+            [f for f in H_F.file_search(folder, protein_string, imtype) if imtype in f]
         )
 
         k1, k2 = IA_F.create_kernel(gsigma, rwave)
@@ -488,7 +490,7 @@ class RASP_Routines:
             folder_recursion (boolean): If true, recursively finds folders and analyses each separately.
 
         """
-        all_files = self.file_search(
+        all_files = H_F.file_search(
             folder, protein_string, imtype
         )  # first get all files in any subfolders
 
@@ -613,9 +615,9 @@ class RASP_Routines:
         if folder_recursive:
             for val in folders:
                 subfolder = os.path.abspath(val)
-                files = self.file_search(subfolder, protein_string, imtype)
+                files = H_F.file_search(subfolder, protein_string, imtype)
                 cell_files = (
-                    self.file_search(subfolder, cell_string, imtype)
+                    H_F.file_search(subfolder, cell_string, imtype)
                     if cell_analysis
                     else []
                 )
@@ -625,7 +627,7 @@ class RASP_Routines:
         else:
             files = all_files
             cell_files = (
-                self.file_search(folder, cell_string, imtype) if cell_analysis else []
+                H_F.file_search(folder, cell_string, imtype) if cell_analysis else []
             )
             analysis_directory = os.path.abspath(folder) + "_analysis"
             IO.make_directory(analysis_directory)
@@ -1365,25 +1367,3 @@ class RASP_Routines:
             spot_1_analysis_UT,
             spot_2_analysis_UT,
         )
-
-    def file_search(self, folder, string1, string2):
-        """
-        Search for files containing 'string1' in their names within 'folder',
-        and then filter the results to include only those containing 'string2'.
-
-        Args:
-            folder (str): The directory to search for files.
-            string1 (str): The first string to search for in the filenames.
-            string2 (str): The second string to filter the filenames containing string1.
-
-        Returns:
-            file_list (list): A sorted list of file paths matching the search criteria.
-        """
-        # Get a list of all files containing 'string1' in their names within 'folder'
-        file_list = [
-            os.path.join(dirpath, f)
-            for dirpath, dirnames, files in os.walk(folder)
-            for f in fnmatch.filter(files, "*" + string1 + "*")
-        ]
-        file_list = np.sort([e for e in file_list if string2 in e])
-        return file_list
