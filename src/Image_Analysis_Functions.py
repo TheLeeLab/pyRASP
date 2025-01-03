@@ -433,7 +433,7 @@ class ImageAnalysis_Functions:
             estimated_background,
         )
 
-    def intensity_pixel_indices(self, centroid_loc, image_size):
+    def intensity_pixel_indices(centroid_loc, image_size):
         """
         Calculate pixel indices for inner and outer regions around the given index.
 
@@ -446,26 +446,28 @@ class ImageAnalysis_Functions:
             outer_indices (numpy.ndarray): Pixel indices for the outer region.
         """
 
+        def calculate_offsets(octagon_shape):
+            x, y = np.where(octagon_shape)
+            x -= int(octagon_shape.shape[0] / 2)
+            y -= int(octagon_shape.shape[1] / 2)
+            return x, y
+
         small_oct = ski.morphology.octagon(2, 4)
         outer_ind = ski.morphology.octagon(2, 5)
         inner_ind = np.zeros_like(outer_ind)
         inner_ind[1:-1, 1:-1] = small_oct
-        outer_ind = outer_ind - inner_ind
-        x_inner, y_inner = np.where(inner_ind)
-        x_inner = x_inner - int(inner_ind.shape[0] / 2)
-        y_inner = y_inner - int(inner_ind.shape[1] / 2)
+        outer_ind -= inner_ind
 
-        x_outer, y_outer = np.where(outer_ind)
-        x_outer = x_outer - int(outer_ind.shape[0] / 2)
-        y_outer = y_outer - int(outer_ind.shape[1] / 2)
+        x_inner, y_inner = calculate_offsets(inner_ind)
+        x_outer, y_outer = calculate_offsets(outer_ind)
 
-        x_inner = np.tile(x_inner, (len(centroid_loc[:, 0]), 1)).T + centroid_loc[:, 0]
-        y_inner = np.tile(y_inner, (len(centroid_loc[:, 1]), 1)).T + centroid_loc[:, 1]
-        x_outer = np.tile(x_outer, (len(centroid_loc[:, 0]), 1)).T + centroid_loc[:, 0]
-        y_outer = np.tile(y_outer, (len(centroid_loc[:, 1]), 1)).T + centroid_loc[:, 1]
+        x_inner = np.tile(x_inner, (len(centroid_loc), 1)).T + centroid_loc[:, 0]
+        y_inner = np.tile(y_inner, (len(centroid_loc), 1)).T + centroid_loc[:, 1]
+        x_outer = np.tile(x_outer, (len(centroid_loc), 1)).T + centroid_loc[:, 0]
+        y_outer = np.tile(y_outer, (len(centroid_loc), 1)).T + centroid_loc[:, 1]
 
         return x_inner, y_inner, x_outer, y_outer
-
+    
     def detect_large_features(
         self, image, threshold1, threshold2=0, sigma1=2.0, sigma2=60.0
     ):
