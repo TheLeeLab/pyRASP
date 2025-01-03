@@ -463,7 +463,6 @@ class RASP_Routines:
         one_savefile=True,
         disp=True,
         folder_recursive=False,
-        error_reduction=False,
     ):
         """
         analyses data from images in a specified folder,
@@ -487,7 +486,6 @@ class RASP_Routines:
             one_savefile (boolean): Parameter that, if true, amalgamates analyisis into one file. Default True.
             disp (boolean): If true, prints when analysed an image stack. Default True.
             folder_recursion (boolean): If true, recursively finds folders and analyses each separately.
-            error_reduction (boolean): If true, reduces error on the oligomer image using Huang's code
 
         """
         all_files = self.file_search(
@@ -588,8 +586,7 @@ class RASP_Routines:
                     QE=self.QE,
                     gain_map=self.gain_map,
                     offset_map=self.offset_map,
-                    variance_map=self.variance_map if error_reduction else None,
-                    error_correction=error_reduction,
+                    variance_map=self.variance_map,
                 )[:, :, im_start:]
                 img_cell = None
                 if cell_analysis:
@@ -598,8 +595,7 @@ class RASP_Routines:
                         QE=self.QE,
                         gain_map=self.gain_map,
                         offset_map=self.offset_map,
-                        variance_map=self.variance_map if error_reduction else None,
-                        error_correction=error_reduction,
+                        variance_map=self.variance_map,
                     )[:, :, im_start:]
                 z_test = len(img.shape) > 2
                 _analysis_loop(

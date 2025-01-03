@@ -433,7 +433,8 @@ class ImageAnalysis_Functions:
             estimated_background,
         )
 
-    def intensity_pixel_indices(centroid_loc, image_size):
+    
+    def intensity_pixel_indices(self, centroid_loc, image_size):
         """
         Calculate pixel indices for inner and outer regions around the given index.
 
