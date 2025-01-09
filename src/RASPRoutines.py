@@ -10,7 +10,7 @@ import sys
 import time
 
 
-module_dir = os.path.dirname(__file__)
+module_dir = os.path.abspath(os.path.dirname(__file__))
 sys.path.append(module_dir)
 import HelperFunctions
 
@@ -64,7 +64,7 @@ class RASP_Routines:
 
         if defaultflat:
             self.flatness = self._load_json_value(
-                "rad_neg.json", "flatness", default=1.0, cast=float
+                "rad_neg.json", "flatness", default=0.97, cast=float
             )
 
         if defaultdfocus:
@@ -90,9 +90,8 @@ class RASP_Routines:
         file_path = os.path.join(self.defaultfolder, filename)
         if os.path.isfile(file_path):
             try:
-                with open(file_path, "r") as f:
-                    data = IO.load_json(f)
-                    return cast(data[key]) if cast else data[key]
+                data = IO.load_json(file_path)
+                return cast(data[key]) if cast else data[key]
             except (KeyError, ValueError, TypeError):
                 pass
         return default
@@ -227,7 +226,7 @@ class RASP_Routines:
                 continue
 
             # Simplified image properties computation
-            dl_mask, centroids, radiality, large_mask = A_F.compute_image_props(
+            dl_mask, centroids, radiality, large_mask = IA_F.compute_image_props(
                 image,
                 k1,
                 k2,
@@ -1129,37 +1128,9 @@ class RASP_Routines:
                 median=median,
             )
         )
-        cell_punctum_analysis_UT = None
-        # cell_punctum_analysis_UT = (
-        #     A_F.number_of_puncta_per_segmented_cell_with_threshold(
-        #         analysis_file,
-        #         analysis_data,
-        #         threshold,
-        #         lower_cell_size_threshold=lower_cell_size_threshold,
-        #         upper_cell_size_threshold=upper_cell_size_threshold,
-        #         blur_degree=blur_degree,
-        #         cell_string=cell_string,
-        #         protein_string=protein_string,
-        #         imtype=imtype,
-        #         aboveT=0,
-        #         z_project_first=z_project_first,
-        #         q1=q1,
-        #         q2=q2,
-        #         IQR=IQR,
-        #     )
-        # )
-
-        if isinstance(cell_punctum_analysis_AT, pl.DataFrame) and isinstance(
-            cell_punctum_analysis_UT, pl.DataFrame
-        ):
+        if isinstance(cell_punctum_analysis_AT, pl.DataFrame):
             cell_punctum_analysis_AT.write_csv(above_string)
-            cell_punctum_analysis_UT.write_csv(below_string)
-        else:
-            if isinstance(cell_punctum_analysis_AT, pl.DataFrame):
-                cell_punctum_analysis_AT.write_csv(above_string)
-            if isinstance(cell_punctum_analysis_UT, pl.DataFrame):
-                cell_punctum_analysis_UT.write_csv(below_string)
-        return cell_punctum_analysis_AT, cell_punctum_analysis_UT
+        return cell_punctum_analysis_AT
 
     def lo_colocalise_wrapper(
         self,
@@ -1168,12 +1139,15 @@ class RASP_Routines:
         protein_string,
         lo_string,
         cell_string,
-        coloc_type=1,
+        analysis_type="spot_to_cell",
         imtype=".tif",
         blur_degree=1,
         calc_clr=False,
         lower_cell_size_threshold=0,
         upper_cell_size_threshold=np.inf,
+        lower_lo_size_threshold=0,
+        upper_lo_size_threshold=np.inf,
+        z_project_first=[False, False],
     ):
         """
         Redo colocalisation analyses of spots above a photon threshold in an
@@ -1184,6 +1158,11 @@ class RASP_Routines:
             threshold (float): The photon threshold
             protein_string (str): string of analysed protein
             lo_string (str): string of large object to analyse
+            analysis_type (str, optional): Type of analysis to perform. Options are:
+                - "lo_to_spot": Calculate spot to large object metrics.
+                - "spot_to_cell": Calculate spot to cell metrics.
+                - "lo_to_cell": Calculate large object to cell coincidence.
+                Default is "spot_to_cell".
             coloc_typ (boolean): if 1 (default), for cells. if 0, for large protein objects.
                                 if 2, between cell mask and large protein objects.
             imtype (str): image type
@@ -1191,11 +1170,12 @@ class RASP_Routines:
             calc_clr (boolean): Calculate the clr, yes/no.
             lower_cell_size_threshold (float): lower threshold of cell size
             upper_cell_size_threshold (float): upper threshold of cell size
+            lower_lo_size_threshold (float): lower threshold of lo size
+            upper_lo_size_threshold (float): upper threshold of lo size
+            z_project_first (list of boolean): z project instructions for cell/protein size threshold
+
         """
-        if coloc_type == 1:
-            startstr = "cell_"
-        else:
-            startstr = "lo_"
+        startstr = analysis_type + "_"
 
         if int(threshold) == threshold:
             threshold_str = str(int(threshold))
@@ -1208,28 +1188,16 @@ class RASP_Routines:
             protein_string,
             lo_string,
             cell_string,
-            coloc_type=coloc_type,
+            analysis_type=analysis_type,
             imtype=".tif",
-            blur_degree=1,
+            blur_degree=blur_degree,
             calc_clr=calc_clr,
             aboveT=1,
             lower_cell_size_threshold=lower_cell_size_threshold,
             upper_cell_size_threshold=np.inf,
-        )
-
-        lo_analysis_UT, spot_analysis_UT = A_F.colocalise_with_threshold(
-            analysis_file,
-            threshold,
-            protein_string,
-            lo_string,
-            cell_string,
-            coloc_type=coloc_type,
-            imtype=".tif",
-            blur_degree=1,
-            calc_clr=calc_clr,
-            aboveT=0,
-            lower_cell_size_threshold=lower_cell_size_threshold,
-            upper_cell_size_threshold=np.inf,
+            lower_lo_size_threshold=lower_lo_size_threshold,
+            upper_lo_size_threshold=upper_lo_size_threshold,
+            z_project_first=z_project_first
         )
 
         savecell_string = os.path.join(
@@ -1239,9 +1207,6 @@ class RASP_Routines:
         if isinstance(lo_analysis_AT, pl.DataFrame):
             print(lo_analysis_AT)
             lo_analysis_AT.write_csv(savecell_string + "_abovephotonthreshold.csv")
-        if isinstance(lo_analysis_UT, pl.DataFrame):
-            lo_analysis_UT.write_csv(savecell_string + "_belowphotonthreshold.csv")
-
         if isinstance(spot_analysis_AT, pl.DataFrame):
             spot_analysis_AT.write_csv(
                 analysis_file.split(".")[0]
@@ -1249,15 +1214,7 @@ class RASP_Routines:
                 + threshold_str
                 + "_abovephotonthreshold.csv"
             )
-
-        if isinstance(spot_analysis_UT, pl.DataFrame):
-            spot_analysis_UT.write_csv(
-                analysis_file.split(".")[0]
-                + "_"
-                + threshold_str
-                + "_belowphotonthreshold.csv"
-            )
-        return lo_analysis_AT, lo_analysis_UT, spot_analysis_AT, spot_analysis_UT
+        return lo_analysis_AT, spot_analysis_AT
 
     def spot_colocalisation_wrapper(
         self,

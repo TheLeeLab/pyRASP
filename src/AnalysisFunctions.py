@@ -511,13 +511,16 @@ class Analysis_Functions:
         protein_string,
         lo_string,
         cell_string,
-        coloc_type=1,
+        analysis_type="spot_to_cell",
         imtype=".tif",
         blur_degree=1,
         calc_clr=False,
         aboveT=1,
         lower_cell_size_threshold=0,
         upper_cell_size_threshold=np.inf,
+        lower_lo_size_threshold=0,
+        upper_lo_size_threshold=np.inf,
+        z_project_first=[False, False],
     ):
         """
         Does colocalisation analysis of spots vs mask with an additional threshold.
@@ -537,6 +540,9 @@ class Analysis_Functions:
             aboveT (int): do the calculation above or below threshold
             lower_cell_size_threshold (float): lower threshold of cell size
             upper_cell_size_threshold (float): upper threshold of cell size
+            lower_lo_size_threshold (float): lower threshold of lo size
+            upper_lo_size_threshold (float): upper threshold of lo size
+            z_project_first (list of boolean): z project instructions for cell/protein size threshold
 
         Returns:
             lo_analysis (pl.DataFrame): polars dataframe of the cell analysis
@@ -544,22 +550,26 @@ class Analysis_Functions:
         """
         C_F = CoincidenceFunctions.Coincidence_Functions()
         end_str = {
-            1: f"{cell_string}_cellMask.tiff",
-            0: f"{lo_string}_loMask.tiff",
-        }.get(coloc_type, None)
+            "spot_to_cell": f"{cell_string}_cellMask.tiff",
+            "lo_to_spot": f"{lo_string}_loMask.tiff",
+            "lo_to_cell": f"{lo_string}_loMask.tiff",
+        }.get(analysis_type, None)
 
         spots_with_intensities = pl.read_csv(analysis_file)
+        if analysis_type == "lo_to_cell":
+            column = "mean_intensity_in_photons"
+        else:
+            column = "sum_intensity_in_photons"
+
         if (
-            coloc_type == 2
-            and "mean_intensity_in_photons" not in spots_with_intensities.columns
+            analysis_type == "lo_to_cell"
+            and column not in spots_with_intensities.columns
         ):
             print("Large object analysis file not loaded in. Code will fail.")
             return
 
         condition = (
-            (pl.col("sum_intensity_in_photons") > threshold)
-            if aboveT
-            else (pl.col("sum_intensity_in_photons") <= threshold)
+            (pl.col(column) > threshold) if aboveT else (pl.col(column) <= threshold)
         )
         spots_with_intensities = spots_with_intensities.filter(condition)
 
@@ -597,23 +607,49 @@ class Analysis_Functions:
             common_path = os.path.split(image.split(imtype)[0])[-1].split(
                 protein_string
             )[0]
+
             lo_mask = self._read_mask(
                 analysis_directory, common_path, end_str, lo_string
             )
-            cell_mask = self._read_mask(
-                analysis_directory,
-                common_path,
-                f"{cell_string}_cellMask.tiff",
-                cell_string,
+            if analysis_type != "lo_to_cell":
+                l_thresh = lower_cell_size_threshold
+                u_thresh = upper_cell_size_threshold
+            else:
+                l_thresh = lower_lo_size_threshold
+                u_thresh = upper_lo_size_threshold
+            lo_mask, _, _, _ = self.threshold_cell_areas(
+                lo_mask,
+                lower_cell_size_threshold=l_thresh,
+                upper_cell_size_threshold=u_thresh,
+                z_project=z_project_first,
             )
-
-            image_size = lo_mask.shape[:-1]
+            if end_str != f"{cell_string}_cellMask.tiff":
+                cell_mask, _, _ = self.threshold_cell_areas(
+                    self._read_mask(
+                        analysis_directory,
+                        common_path,
+                        f"{cell_string}_cellMask.tiff",
+                        cell_string,
+                    ),
+                    lower_cell_size_threshold=lower_cell_size_threshold,
+                    upper_cell_size_threshold=upper_cell_size_threshold,
+                    z_project=z_project_first,
+                )
             image_file = spots_with_intensities.filter(
                 pl.col("image_filename") == image
             )
+
+            if len(lo_mask.shape) > 2:
+                image_size = lo_mask.shape[:-1]
+            else:
+                image_size = lo_mask.shape
+                z_planes = image_file.replace_column(
+                    image_file.get_column_index("z"),
+                    pl.Series("z", np.ones_like(image_file["z"].to_numpy())),
+                )
             z_planes = np.unique(image_file["z"].to_numpy())
 
-            if coloc_type != 2:
+            if analysis_type != "lo_to_cell":
                 if calc_clr:
                     dataarray, raw_colocalisation = self._process_spots_parallel(
                         C_F,
@@ -671,7 +707,6 @@ class Analysis_Functions:
             df = df.replace_column(
                 i, pl.Series(column, np.array(df[column].to_numpy(), dtype="float"))
             )
-
         return df, spot_analysis
 
     def _read_mask(self, analysis_directory, common_path, end_str, default_str):
