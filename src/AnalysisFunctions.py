@@ -535,8 +535,12 @@ class Analysis_Functions:
             protein_string (str): string of protein images
             lo_string (str): string of larger object images
             cell_string (str): string of cell images
-            coloc_type (int): if 1 (default), for cells; if 0, for large protein objects;
-                              if 2, between cell mask and large protein objects.
+            analysis_type (str, optional): Type of analysis to perform. Options are:
+                - "spot_to_cell": Calculate spot to cell metrics.
+                - "lo_to_cell": Calculate lo to cell metrics.
+                - "lo_to_spot": Calculate lo to spot metrics.
+                Default is "spot_to_cell".
+
             imtype (str): image end string
             blur_degree (int): degree of blur to apply to puncta
             calc_clr (bool): calculate clr yes/no
@@ -613,7 +617,7 @@ class Analysis_Functions:
             lo_mask = self._read_mask(
                 analysis_directory, common_path, end_str, lo_string
             )
-            if analysis_type != "lo_to_cell":
+            if analysis_type not in ["lo_to_spot", "lo_to_cell"]:
                 l_thresh = lower_cell_size_threshold
                 u_thresh = upper_cell_size_threshold
             else:
