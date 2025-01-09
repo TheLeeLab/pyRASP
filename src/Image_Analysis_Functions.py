@@ -19,7 +19,7 @@ from pathos.pools import ProcessPool as Pool
 import os
 import sys
 
-module_dir = os.path.dirname(__file__)
+module_dir = os.path.abspath(os.path.dirname(__file__))
 sys.path.append(module_dir)
 import IOFunctions
 import HelperFunctions
@@ -674,23 +674,22 @@ class ImageAnalysis_Functions:
             centroids = {}
             large_mask = np.zeros_like(image)
             dl_mask = np.zeros_like(image)
-            img2, Gx, Gy, _, _ = self.calculate_gradient_field(image, k1, False)
 
-            def run_over_z(z):
+            def run_over_z(image, img2, Gx, Gy):
                 if calib == True:
-                    large_mask[:, :, z] = np.full_like(image[:, :, z], False)
+                    large_mask = np.full_like(image, False)
                 else:
-                    large_mask[:, :, z] = self.detect_large_features(
-                        image[:, :, z], large_thres
+                    large_mask = self.detect_large_features(
+                        image, large_thres
                     )
 
-                dl_mask[:, :, z], centroids[z], radiality[z], idxs = (
+                dl_mask, centroids, radiality, idxs = (
                     self.small_feature_kernel(
-                        image[:, :, z],
-                        large_mask[:, :, z],
-                        img2[:, :, z],
-                        Gx[:, :, z],
-                        Gy[:, :, z],
+                        image,
+                        large_mask,
+                        img2,
+                        Gx,
+                        Gy,
                         k2,
                         thres,
                         areathres,
@@ -698,12 +697,29 @@ class ImageAnalysis_Functions:
                         d,
                     )
                 )
+                return dl_mask, centroids, radiality, idxs
+
+            image_planes = [image[:, :, i] for i in range(image.shape[-1])]
+            planes_img2 = [img2[:, :, i] for i in range(img2.shape[-1])]
+            planes_Gx = [Gx[:, :, i] for i in range(Gx.shape[-1])]
+            planes_Gy = [Gy[:, :, i] for i in range(Gy.shape[-1])]
 
             pool = Pool(nodes=cpu_number)
             pool.restart()
-            pool.map(run_over_z, z_planes)
+            results = pool.map(
+                run_over_z,
+                image_planes,
+                planes_img2,
+                planes_Gx,
+                planes_Gy,
+            )
             pool.close()
             pool.terminate()
+            
+            dl_mask = [i[0] for i in results]
+            centroids = [i[1] for i in results]
+            radiality = [i[2] for i in results]
+            large_mask = [i[3] for i in results]
         return dl_mask, centroids, radiality, large_mask
 
     def compute_spot_and_cell_props(

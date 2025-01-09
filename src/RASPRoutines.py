@@ -183,7 +183,7 @@ class RASP_Routines:
         protein_string="C0",
         gsigma=1.4,
         rwave=2.0,
-        accepted_ratio=1,
+        accepted_percentage=1,
     ):
         """
         Calibrates radiality parameters efficiently using NumPy vectorization.
@@ -194,7 +194,7 @@ class RASP_Routines:
             protein_string (str): Image identifier
             gsigma (float): Gaussian blurring parameter
             rwave (float): Ricker wavelet sigma
-            accepted_ratio (float): Percentage of accepted data points
+            accepted_percentage (float): Percentage of accepted data points
         """
         # Optimize file search and sorting
         files = np.sort(
@@ -221,7 +221,6 @@ class RASP_Routines:
             else:
                 z_planes, img2, Gx, Gy = self.get_infocus_planes(image, k1)
                 z_planes = np.arange(z_planes[0], z_planes[-1])
-
             if len(z_planes) == 0:
                 continue
 
@@ -265,8 +264,8 @@ class RASP_Routines:
         r1_valid = r1_data[~np.isnan(r1_data)]
         r2_valid = r2_data[~np.isnan(r2_data)]
 
-        rad_1 = np.percentile(r1_valid, accepted_ratio)
-        rad_2 = np.percentile(r2_valid, 100.0 - accepted_ratio)
+        rad_1 = np.percentile(r1_valid, accepted_percentage)
+        rad_2 = np.percentile(r2_valid, 100.0 - accepted_percentage)
 
         # Consistent saving and parameter update
         to_save = {"flatness": rad_1, "integratedGrad": rad_2}

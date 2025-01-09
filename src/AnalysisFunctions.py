@@ -17,7 +17,7 @@ from copy import copy
 import os
 import sys
 
-module_dir = os.path.dirname(__file__)
+module_dir = os.path.abspath(os.path.dirname(__file__))
 sys.path.append(module_dir)
 import IOFunctions
 import MultiD_RD_functions
