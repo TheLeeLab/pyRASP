@@ -68,10 +68,16 @@ class Coincidence_Functions:
         Raises:
             ValueError: If an invalid analysis type is specified.
         """
-        if len(spot_indices) == 0 and analysis_type not in ["largeobj"]:
-            return self._handle_empty_spots(spot_indices)
-        n_spots = len(spot_indices)
-        if analysis_type not in ["spot_to_spot"]:
+        if isinstance(spot_indices, type(None)):
+            if analysis_type not in ["largeobj"]:
+                return self._handle_empty_spots(spot_indices)
+        elif len(spot_indices) == 0:
+            if analysis_type not in ["largeobj"]:
+                return self._handle_empty_spots(spot_indices)
+        if not isinstance(spot_indices, type(None)):
+            n_spots = len(spot_indices)
+
+        if analysis_type not in ["spot_to_spot", "largeobj"]:
             spot_indices = self._apply_blur(spot_indices, image_size, blur_degree)
 
         if analysis_type == "spot_to_cell":
@@ -104,7 +110,7 @@ class Coincidence_Functions:
             )
         elif analysis_type == "largeobj":
             return self._calculate_largeobj_coincidence(
-                largeobj_indices, mask_indices, n_largeobjs, image_size
+                largeobj_indices, mask_indices, n_largeobjs, image_size, n_iter
             )
         elif analysis_type == "colocalisation_likelihood":
             return self._calculate_colocalisation_likelihood_ratio(
@@ -259,7 +265,12 @@ class Coincidence_Functions:
         )
 
     def _calculate_largeobj_coincidence(
-        self, largeobj_indices, mask_indices, n_largeobjs, image_size
+        self,
+        largeobj_indices,
+        mask_indices,
+        n_largeobjs,
+        image_size,
+        n_iter,
     ):
         if n_largeobjs == 0:
             return 0.0, 0.0, np.array([0.0])
@@ -279,7 +290,7 @@ class Coincidence_Functions:
             largeobj_indices, mask_indices, image_size, n_largeobjs
         )
 
-        return coincidence, np.mean(chance_coincidence), raw_colocalisation
+        return coincidence, np.mean(chance_coincidence), raw_colocalisation, n_iter
 
     def _calculate_colocalisation_likelihood_ratio(
         self,
@@ -492,13 +503,18 @@ class Coincidence_Functions:
         return np.nanmean(CC_1), np.nanmean(CC_2)
 
     def _calculate_chance_coincidence_largeobj(
-        self, largeobj_indices, mask_indices, image_size, n_largeobjs
+        self,
+        largeobj_indices,
+        mask_indices,
+        image_size,
+        n_largeobjs,
+        n_iter=100,
     ):
         random_spot_locations = self.random_largeobj_locations(
-            largeobj_indices, np.prod(image_size), 100
+            largeobj_indices, np.prod(image_size), n_iter
         )
-        chance_coincidence_raw = np.zeros(100)
-        for i in range(100):
+        chance_coincidence_raw = np.zeros(n_iter)
+        for i in range(n_iter):
             chance_coincidence_raw[i] = np.divide(
                 self.test_largeobj_mask_overlap(
                     random_spot_locations[i], mask_indices, n_largeobjs, raw=False

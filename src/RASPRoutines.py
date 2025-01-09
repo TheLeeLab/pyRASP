@@ -1138,7 +1138,7 @@ class RASP_Routines:
         protein_string,
         lo_string,
         cell_string,
-        analysis_type="spot_to_cell",
+        analysis_type="lo_to_cell",
         imtype=".tif",
         blur_degree=1,
         calc_clr=False,
@@ -1159,7 +1159,6 @@ class RASP_Routines:
             lo_string (str): string of large object to analyse
             analysis_type (str, optional): Type of analysis to perform. Options are:
                 - "lo_to_spot": Calculate spot to large object metrics.
-                - "spot_to_cell": Calculate spot to cell metrics.
                 - "lo_to_cell": Calculate large object to cell coincidence.
                 Default is "spot_to_cell".
             coloc_typ (boolean): if 1 (default), for cells. if 0, for large protein objects.
@@ -1196,7 +1195,7 @@ class RASP_Routines:
             upper_cell_size_threshold=np.inf,
             lower_lo_size_threshold=lower_lo_size_threshold,
             upper_lo_size_threshold=upper_lo_size_threshold,
-            z_project_first=z_project_first
+            z_project_first=z_project_first,
         )
 
         savecell_string = os.path.join(
@@ -1204,7 +1203,6 @@ class RASP_Routines:
             startstr + "colocalisation_analysis_" + threshold_str,
         )
         if isinstance(lo_analysis_AT, pl.DataFrame):
-            print(lo_analysis_AT)
             lo_analysis_AT.write_csv(savecell_string + "_abovephotonthreshold.csv")
         if isinstance(spot_analysis_AT, pl.DataFrame):
             spot_analysis_AT.write_csv(

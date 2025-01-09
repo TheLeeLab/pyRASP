@@ -23,6 +23,9 @@ import IOFunctions
 import MultiD_RD_functions
 import CoincidenceFunctions
 
+C_F = CoincidenceFunctions.Coincidence_Functions()
+
+
 IO = IOFunctions.IO_Functions()
 
 
@@ -548,7 +551,6 @@ class Analysis_Functions:
             lo_analysis (pl.DataFrame): polars dataframe of the cell analysis
             spot_analysis (pl.DataFrame): polars dataframe of the spot analysis
         """
-        C_F = CoincidenceFunctions.Coincidence_Functions()
         end_str = {
             "spot_to_cell": f"{cell_string}_cellMask.tiff",
             "lo_to_spot": f"{lo_string}_loMask.tiff",
@@ -624,7 +626,7 @@ class Analysis_Functions:
                 z_project=z_project_first,
             )
             if end_str != f"{cell_string}_cellMask.tiff":
-                cell_mask, _, _ = self.threshold_cell_areas(
+                cell_mask, _, _, _ = self.threshold_cell_areas(
                     self._read_mask(
                         analysis_directory,
                         common_path,
@@ -652,7 +654,6 @@ class Analysis_Functions:
             if analysis_type != "lo_to_cell":
                 if calc_clr:
                     dataarray, raw_colocalisation = self._process_spots_parallel(
-                        C_F,
                         image_file,
                         z_planes,
                         lo_mask,
@@ -662,7 +663,6 @@ class Analysis_Functions:
                     )
                 else:
                     dataarray, raw_colocalisation = self._process_spots_parallel(
-                        C_F,
                         image_file,
                         z_planes,
                         lo_mask,
@@ -672,7 +672,6 @@ class Analysis_Functions:
                     )
             else:
                 dataarray, raw_colocalisation = self._process_masks_parallel(
-                    C_F,
                     z_planes,
                     lo_mask,
                     cell_mask,
@@ -685,7 +684,7 @@ class Analysis_Functions:
                 [np.asarray(dataarray, dtype="object"), np.repeat(image, len(z_planes))]
             )
 
-            lo_analysis = (
+            lo_analysis = np.array(
                 dataarray
                 if lo_analysis is None
                 else np.hstack([lo_analysis, dataarray])
@@ -701,8 +700,10 @@ class Analysis_Functions:
                 end="\r",
                 flush=True,
             )
-
-        df = pl.DataFrame(data=lo_analysis.T, schema=columns)
+        lo_save = {}
+        for i, column in enumerate(columns):
+            lo_save[column] = lo_analysis[i, :]
+        df = pl.DataFrame(data=lo_save)
         for i, column in enumerate(columns[:-1]):
             df = df.replace_column(
                 i, pl.Series(column, np.array(df[column].to_numpy(), dtype="float"))
@@ -717,7 +718,7 @@ class Analysis_Functions:
         return IO.read_tiff(mask_path) if os.path.exists(mask_path) else None
 
     def _process_spots_parallel(
-        self, C_F, image_file, z_planes, lo_mask, image_size, parallel_func, blur_degree
+        self, image_file, z_planes, lo_mask, image_size, parallel_func, blur_degree
     ):
         xcoords = [
             image_file.filter(pl.col("z") == z_plane)["x"].to_numpy()
@@ -735,10 +736,14 @@ class Analysis_Functions:
             )
             for j, z_plane in enumerate(z_planes)
         ]
+        image_sizes = [image_size for z_plane in z_planes]
+        blur_degrees = [blur_degree for z_plane in z_planes]
 
         pool = Pool(nodes=self.cpu_number)
         pool.restart()
-        results = pool.map(parallel_func, xcoords, ycoords, masks)
+        results = pool.map(
+            parallel_func, xcoords, ycoords, masks, image_sizes, blur_degrees
+        )
         pool.close()
         pool.terminate()
 
@@ -769,7 +774,7 @@ class Analysis_Functions:
         return dataarray, raw_colocalisation
 
     def _process_masks_parallel(
-        self, C_F, z_planes, lo_mask, cell_mask, image_size, parallel_func
+        self, z_planes, lo_mask, cell_mask, image_size, parallel_func
     ):
         masks_lo = [
             (
@@ -787,10 +792,11 @@ class Analysis_Functions:
             )
             for j, z_plane in enumerate(z_planes)
         ]
+        image_sizes = [image_size for z_plane in z_planes]
 
         pool = Pool(nodes=self.cpu_number)
         pool.restart()
-        results = pool.map(parallel_func, masks_lo, masks_cell)
+        results = pool.map(parallel_func, masks_lo, masks_cell, image_sizes)
         pool.close()
         pool.terminate()
 
@@ -802,7 +808,9 @@ class Analysis_Functions:
         dataarray = np.vstack([coincidence, chance_coincidence, n_iter, z_planes])
         return dataarray, raw_colocalisation
 
-    def _parallel_coloc_per_z_clr_spot(self, xcoords, ycoords, mask, image_size, C_F):
+    def _parallel_coloc_per_z_clr_spot(
+        self, xcoords, ycoords, mask, image_size, blur_degree
+    ):
         centroids = np.asarray(np.vstack([xcoords, ycoords]), dtype=int).T
         mask_indices = self.generate_indices(mask, image_size, is_mask=True)
         spot_indices = self.generate_indices(centroids, image_size)
@@ -810,12 +818,12 @@ class Analysis_Functions:
             spot_indices,
             mask_indices,
             image_size,
-            blur_degree=1,
+            blur_degree=blur_degree,
             analysis_type="colocalisation_likelihood",
         )
 
     def _parallel_coloc_per_z_noclr_spot(
-        self, xcoords, ycoords, mask, image_size, C_F, blur_degree
+        self, xcoords, ycoords, mask, image_size, blur_degree
     ):
         centroids = np.asarray(np.vstack([xcoords, ycoords]), dtype=int).T
         mask_indices = self.generate_indices(mask, image_size, is_mask=True)
@@ -828,7 +836,7 @@ class Analysis_Functions:
             analysis_type="spot_to_mask",
         )
 
-    def _parallel_coloc_per_z_los(self, mask_lo, mask_cell, image_size, C_F):
+    def _parallel_coloc_per_z_los(self, mask_lo, mask_cell, image_size):
         mask_lo_indices, n_largeobjs = self.generate_indices(
             mask_lo, image_size, is_mask=True, is_lo=True
         )
@@ -1019,7 +1027,6 @@ class Analysis_Functions:
             blur_degree (int): blur degree for colocalisation analysis
             aboveT (int): do the calculation above or below threshold
         """
-        C_F = CoincidenceFunctions.Coincidence_Functions()
         filter_op = ">" if aboveT == 1 else "<="
         typestr = "> threshold" if aboveT == 1 else "<= threshold"
         spots_1_with_intensities = spots_1_with_intensities.filter(

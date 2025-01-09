@@ -679,23 +679,19 @@ class ImageAnalysis_Functions:
                 if calib == True:
                     large_mask = np.full_like(image, False)
                 else:
-                    large_mask = self.detect_large_features(
-                        image, large_thres
-                    )
+                    large_mask = self.detect_large_features(image, large_thres)
 
-                dl_mask, centroids, radiality, idxs = (
-                    self.small_feature_kernel(
-                        image,
-                        large_mask,
-                        img2,
-                        Gx,
-                        Gy,
-                        k2,
-                        thres,
-                        areathres,
-                        rdl,
-                        d,
-                    )
+                dl_mask, centroids, radiality, idxs = self.small_feature_kernel(
+                    image,
+                    large_mask,
+                    img2,
+                    Gx,
+                    Gy,
+                    k2,
+                    thres,
+                    areathres,
+                    rdl,
+                    d,
                 )
                 return dl_mask, centroids, radiality, idxs
 
@@ -715,7 +711,7 @@ class ImageAnalysis_Functions:
             )
             pool.close()
             pool.terminate()
-            
+
             dl_mask = [i[0] for i in results]
             centroids = [i[1] for i in results]
             radiality = [i[2] for i in results]
