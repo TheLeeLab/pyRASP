@@ -62,7 +62,7 @@ class Coincidence_Functions:
                 - "protein_load": (olig_cell_ratio, n_olig_in_cell, n_iter)
                 - "spot_to_mask": (coincidence, chance_coincidence, raw_colocalisation, n_iter)
                 - "spot_to_spot": (coincidence_1, chance_coincidence_1, coincidence_2, chance_coincidence_2, raw_coincidence_1, raw_coincidence_2)
-                - "largeobj": (coincidence, average_chance_coincidence, raw_colocalisation)
+                - "largeobj": (coincidence, chance_coincidence, raw_colocalisation, n_iter)
                 - "colocalisation_likelihood": (colocalisation_likelihood_ratio, norm_std, norm_CSR, expected_spots_iter, coincidence, chance_coincidence, raw_colocalisation, n_iter)
 
         Raises:
@@ -485,20 +485,17 @@ class Coincidence_Functions:
                 width=blur_degree + 1,
                 edge=blur_degree,
             )
-
         CC_1 = np.zeros([n_iter])
         CC_2 = np.zeros([n_iter])
         for i in range(n_iter):
             rc_1 = self.test_spot_spot_overlap(
                 random_spot_locations_1[i, :], spot_2_indices, original_n_spots_1
             )
-            rc_1[rc_1 >= 1.0] = 1.0
-            CC_1[i] = np.divide(np.sum(rc_1), original_n_spots_1)
+            CC_1[i] = np.divide(rc_1, original_n_spots_1)
             rc_2 = self.test_spot_spot_overlap(
                 random_spot_locations_2[i, :], spot_1_indices, original_n_spots_2
             )
-            rc_2[rc_2 >= 1.0] = 1.0
-            CC_2[i] = np.divide(np.sum(rc_2), original_n_spots_2)
+            CC_2[i] = np.divide(rc_2, original_n_spots_2)
 
         return np.nanmean(CC_1), np.nanmean(CC_2)
 
@@ -565,10 +562,16 @@ class Coincidence_Functions:
         self, spot_1_indices, spot_2_indices, original_n_spots_1, original_n_spots_2
     ):
         raw_coincidence_1 = self.test_spot_spot_overlap(
-            spot_1_indices, spot_2_indices, original_n_spots_1
+            spot_1_indices,
+            spot_2_indices,
+            original_n_spots_1,
+            raw=True,
         )
         raw_coincidence_2 = self.test_spot_spot_overlap(
-            spot_2_indices, spot_1_indices, original_n_spots_2
+            spot_2_indices,
+            spot_1_indices,
+            original_n_spots_2,
+            raw=True,
         )
         return raw_coincidence_1, raw_coincidence_2
 
