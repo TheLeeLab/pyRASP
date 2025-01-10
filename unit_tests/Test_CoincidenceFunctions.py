@@ -6,8 +6,10 @@ Created on Thursday June 17 11.13am
 @author: jbeckwith
 """
 import sys
+import os
 
-sys.path.append("..")  # Adds higher directory to python modules path.
+module_dir = os.path.split(os.path.abspath(os.path.dirname(__file__)))[0]
+sys.path.append(module_dir)
 from src import CoincidenceFunctions
 import pytest
 import numpy as np
@@ -329,7 +331,7 @@ class TestClass:
                 analysis_type="largeobj",
             )
         assert np.mean(coincidence) == pytest.approx(0.25, abs=0.05)
-        
+
     def test_maskfill(self):
         percentages = np.arange(0, 1, 0.01)
         image_size = (1000, 1000)
