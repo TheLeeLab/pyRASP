@@ -127,6 +127,7 @@ class Analysis_Functions:
             coords = data
         return np.ravel_multi_index(coords.T, image_size, order="F")
 
+    # TODO: correct this, it's crap
     def Gauss2DFitting(self, image, pixel_index_list, expanded_area=5):
         """
         Gets HWHM of PSFs from fitting Gaussians to spots (from pixel_index_list)
