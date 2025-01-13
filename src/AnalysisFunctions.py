@@ -22,9 +22,10 @@ sys.path.append(module_dir)
 import IOFunctions
 import MultiD_RD_functions
 import CoincidenceFunctions
+import HelperFunctions
 
 C_F = CoincidenceFunctions.Coincidence_Functions()
-
+H_F = HelperFunctions.Helper_Functions()
 
 IO = IOFunctions.IO_Functions()
 
@@ -45,30 +46,58 @@ class Analysis_Functions:
         Returns:
             polars.DataFrame: DataFrame with number of spots per z-plane.
         """
+        results = None
         if threshold is None:
-            z_planes = np.sort(np.unique(database["z"]))
-            spots_per_plane = [
-                len(database.filter(pl.col("z") == z)["sum_intensity_in_photons"])
-                for z in z_planes
-            ]
-            data = {"z": z_planes, "n_spots": spots_per_plane}
+            columns = ["n_spots", "z", "image_filename"]
         else:
-            results = []
-            for filename in np.unique(database["image_filename"]):
-                dataslice = database.filter(pl.col("image_filename") == filename)
-                z_planes = np.unique(dataslice["z"])
-                for z in z_planes:
-                    spots_above = np.sum(
-                        dataslice.filter(pl.col("z") == z)["sum_intensity_in_photons"]
+            columns = ["n_spots_above", "n_spots_below", "z", "image_filename"]
+        for image_filename in np.sort(np.unique(database["image_filename"])):
+            dataslice = database.filter(pl.col("image_filename") == image_filename)
+            z_planes = np.sort(np.unique(dataslice["z"].to_numpy()))
+            if threshold is None:
+                spots_per_plane = [
+                    len(dataslice.filter(pl.col("z") == z)["sum_intensity_in_photons"])
+                    for z in z_planes
+                ]
+            else:
+                spots_above = [
+                    np.sum(
+                        dataslice.filter(pl.col("z") == z)[
+                            "sum_intensity_in_photons"
+                        ].to_numpy()
                         > threshold
                     )
-                    spots_below = np.sum(
-                        dataslice.filter(pl.col("z") == z)["sum_intensity_in_photons"]
+                    for z in z_planes
+                ]
+                spots_below = [
+                    np.sum(
+                        dataslice.filter(pl.col("z") == z)[
+                            "sum_intensity_in_photons"
+                        ].to_numpy()
                         <= threshold
                     )
-                    results.append([z, spots_above, spots_below, filename, threshold])
-            data = results
-        return pl.DataFrame(data)
+                    for z in z_planes
+                ]
+                spots_per_plane = np.vstack([spots_above, spots_below])
+            if results is not None:
+                results = np.hstack(
+                    [
+                        results,
+                        np.vstack(
+                            [
+                                spots_per_plane,
+                                z_planes,
+                                np.full(len(z_planes), image_filename),
+                            ]
+                        ),
+                    ]
+                )
+            else:
+                results = np.vstack(
+                    [spots_per_plane, z_planes, np.full(len(z_planes), image_filename)]
+                )
+        data = H_F.clean_database(pl.DataFrame(results.T, schema=columns), columns)
+        return data
 
     def generate_indices(self, data, image_size, is_mask=False, is_lo=False):
         """
@@ -707,11 +736,7 @@ class Analysis_Functions:
         lo_save = {}
         for i, column in enumerate(columns):
             lo_save[column] = lo_analysis[i, :]
-        df = pl.DataFrame(data=lo_save)
-        for i, column in enumerate(columns[:-1]):
-            df = df.replace_column(
-                i, pl.Series(column, np.array(df[column].to_numpy(), dtype="float"))
-            )
+        df = H_F.clean_database(pl.DataFrame(data=lo_save), columns)
         return df, spot_analysis
 
     def _read_mask(self, analysis_directory, common_path, end_str, default_str):

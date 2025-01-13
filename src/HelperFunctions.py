@@ -15,6 +15,26 @@ class Helper_Functions:
         self = self
         return
 
+    def clean_database(self, database, columns):
+        """
+
+        clean_database function replaces columns that are not filename (assumed last)
+        with floats
+
+        Args:
+            database (pl.DataFrame): database in question
+            colunms (list): columns
+
+        Returns:
+            database (pl.DataFrame): cleaned database
+        """
+        for i, column in enumerate(columns[:-1]):
+            database = database.replace_column(
+                i,
+                pl.Series(column, np.array(database[column].to_numpy(), dtype="float")),
+            )
+        return database
+
     def file_search(self, folder, string1, string2):
         """
         Search for files containing 'string1' in their names within 'folder',

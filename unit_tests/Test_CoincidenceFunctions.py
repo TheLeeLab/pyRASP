@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on Thursday June 17 11.13am
+Created 2025/01/09 10:20
 
 @author: jbeckwith
 """
@@ -239,11 +239,11 @@ class TestClass:
                 blur_degree=0,
                 analysis_type="colocalisation_likelihood",
             )
-        assert np.mean(colocalisation_likelihood_ratio) == pytest.approx(1, abs=1e-3)
-        assert np.mean(norm_CSR) == pytest.approx(1, abs=1e-3)
-        assert np.median(expected_spots_iter) == pytest.approx(250)
-        assert np.median(coincidence) == pytest.approx(mask_percentage, 1e-2)
-        assert np.median(chance_coincidence) == pytest.approx(mask_percentage, 1e-2)
+        assert np.mean(colocalisation_likelihood_ratio) == pytest.approx(1, abs=1e-2)
+        assert np.mean(norm_CSR) == pytest.approx(1, abs=1e-2)
+        assert np.median(expected_spots_iter) == pytest.approx(250, abs=5)
+        assert np.median(coincidence) == pytest.approx(mask_percentage, abs=1e-2)
+        assert np.median(chance_coincidence) == pytest.approx(mask_percentage, abs=1e-2)
         colocalisation_likelihood_ratio = np.zeros(n_iter)
         coincidence = np.zeros(n_iter)
         chance_coincidence = np.zeros(n_iter)

@@ -26,12 +26,11 @@ import HelperFunctions
 
 HF = HelperFunctions.Helper_Functions()
 IO = IOFunctions.IO_Functions()
-cpu_number = int(pathos.helpers.cpu_count() * 0.9)
 
 
 class ImageAnalysis_Functions:
-    def __init__(self):
-        self = self
+    def __init__(self, cpu_load=0.9):
+        self.cpu_number = int(pathos.helpers.cpu_count() * cpu_load)
         return
 
     def calculate_gradient_field(self, image, kernel, FS=True):
@@ -700,7 +699,7 @@ class ImageAnalysis_Functions:
             planes_Gx = [Gx[:, :, i] for i in range(Gx.shape[-1])]
             planes_Gy = [Gy[:, :, i] for i in range(Gy.shape[-1])]
 
-            pool = Pool(nodes=cpu_number)
+            pool = Pool(nodes=self.cpu_number)
             pool.restart()
             results = pool.map(
                 run_over_z,
@@ -850,7 +849,7 @@ class ImageAnalysis_Functions:
             else:
                 planes_imagecell = [None] * image.shape[-1]
 
-            pool = Pool(nodes=cpu_number)
+            pool = Pool(nodes=self.cpu_number)
             pool.restart()
             results = pool.map(
                 analyse_zplanes,
