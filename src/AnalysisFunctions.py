@@ -23,9 +23,11 @@ import IOFunctions
 import MultiD_RD_functions
 import CoincidenceFunctions
 import HelperFunctions
+import Image_Analysis_Functions
 
 C_F = CoincidenceFunctions.Coincidence_Functions()
 H_F = HelperFunctions.Helper_Functions()
+IA_F = Image_Analysis_Functions.ImageAnalysis_Functions()
 
 IO = IOFunctions.IO_Functions()
 
@@ -113,7 +115,7 @@ class Analysis_Functions:
         """
         if is_mask:
             if is_lo:
-                pil, _, _ = self.calculate_region_properties(data)
+                pil, _, _, _, _ = IA_F.calculate_region_properties(data)
                 for i in np.arange(len(pil)):
                     pil[i] = np.ravel_multi_index(
                         [pil[i][:, 0], pil[i][:, 1]], image_size, order="F"
@@ -124,115 +126,6 @@ class Analysis_Functions:
         else:
             coords = data
         return np.ravel_multi_index(coords.T, image_size, order="F")
-
-    def create_filled_region(self, image_size, indices_to_keep):
-        """
-        Fill a region in a boolean matrix based on specified indices.
-
-        Args:
-            image_size (tuple): Size of the boolean matrix.
-            indices_to_keep (list): List of indices to set as True.
-
-        Returns:
-            boolean_matrix (numpy.ndarray): Boolean matrix with specified indices set to True.
-        """
-        # Concatenate all indices to keep into a single array
-        indices_to_keep = np.concatenate(indices_to_keep)
-
-        # Create a boolean matrix of size image_size
-        boolean_matrix = np.zeros(image_size, dtype=bool)
-
-        # Set the elements at indices specified in indices_to_keep to True
-        # Utilize tuple unpacking for efficient indexing and assignment
-        boolean_matrix[tuple(indices_to_keep.T)] = True
-
-        return boolean_matrix
-
-    @staticmethod
-    @jit(nopython=True)
-    def infocus_indices(focus_scores, threshold_differential):
-        """
-        Identify in-focus indices based on focus scores and a threshold differential.
-
-        Args:
-            focus_scores (numpy.ndarray): Focus scores for different slices.
-            threshold_differential (float): Threshold for differential focus scores.
-
-        Returns:
-            in_focus_indices (list): List containing the first and last in-focus indices.
-        """
-        # Calculate the Euclidean distance between each slice in focus_scores
-        focus_score_diff = np.diff(focus_scores)
-
-        # Mask distances less than or equal to 0 as NaN
-        focus_score_diff[focus_score_diff <= 0] = np.nan
-
-        # Perform DBSCAN from the start
-        dist1 = np.hstack(
-            (np.array([0.0]), focus_score_diff > threshold_differential)
-        )  # Mark as True if distance exceeds threshold
-
-        # Calculate the Euclidean distance from the end
-        focus_score_diff_end = np.diff(focus_scores[::-1].copy())
-
-        # Perform DBSCAN from the end
-        dist2 = np.hstack(
-            (np.array([0.0]), focus_score_diff_end < threshold_differential)
-        )  # Mark as True if distance is below threshold
-
-        # Refine the DBSCAN results
-        dist1 = np.diff(dist1)
-        dist2 = np.diff(dist2)
-
-        # Find indices indicating the transition from out-of-focus to in-focus and vice versa
-        transition_to_in_focus = np.where(dist1 == -1)[0]
-        transition_to_out_focus = np.where(dist2 == 1)[0]
-
-        # Determine the first and last slices in focus
-        first_in_focus = (
-            0 if len(transition_to_in_focus) == 0 else transition_to_in_focus[0]
-        )  # First slice in focus
-        last_in_focus = (
-            len(focus_scores)
-            if len(transition_to_out_focus) == 0
-            else (len(focus_scores) - transition_to_out_focus[-1]) + 1
-        )  # Last slice in focus
-        if last_in_focus > len(focus_scores):
-            last_in_focus = len(focus_scores)
-
-        # Ensure consistency and handle cases where the first in-focus slice comes after the last
-        first_in_focus = first_in_focus if first_in_focus <= last_in_focus else 1
-
-        # Return indices for in-focus images
-        in_focus_indices = np.array([first_in_focus, last_in_focus])
-        return in_focus_indices
-
-    def calculate_region_properties(self, binary_mask):
-        """
-        Calculate properties for labeled regions in a binary mask.
-
-        Args:
-            binary_mask (numpy.ndarray): Binary mask of connected components.
-
-        Returns:
-            pixel_index_list (list): List containing pixel indices for each labeled object.
-            areas (numpy.ndarray): Array containing areas of each labeled object.
-            centroids (numpy.ndarray): Array containing centroids (x, y) of each labeled object.
-        """
-        # Find connected components and count the number of objects
-        labeled_image, num_objects = label(binary_mask, connectivity=2, return_num=True)
-        # Initialize arrays for storing properties
-        centroids = np.zeros((num_objects, 2))
-
-        # Get region properties
-        props = regionprops_table(
-            labeled_image, properties=("centroid", "area", "coords")
-        )
-        centroids[:, 0] = props["centroid-1"]
-        centroids[:, 1] = props["centroid-0"]
-        areas = props["area"]
-        pixel_index_list = props["coords"]
-        return pixel_index_list, areas, centroids
 
     def Gauss2DFitting(self, image, pixel_index_list, expanded_area=5):
         """
@@ -1228,7 +1121,9 @@ class Analysis_Functions:
             cell_mask_new = cell_mask.copy()
             for plane in range(cell_mask.shape[-1]):
                 plane_mask = cell_mask_new[:, :, plane]
-                pil, areas, centroids = self.calculate_region_properties(plane_mask)
+                pil, areas, centroids, _, _ = IA_F.calculate_region_properties(
+                    plane_mask
+                )
                 # Vectorized filtering
                 mask = (areas >= lower_cell_size_threshold) & (
                     areas < upper_cell_size_threshold
@@ -1242,7 +1137,9 @@ class Analysis_Functions:
         else:
             # Process 2D mask
             cell_mask_new = cell_mask.copy()
-            pil, areas, centroids = self.calculate_region_properties(cell_mask_new)
+            pil, areas, centroids, _, _ = IA_F.calculate_region_properties(
+                cell_mask_new
+            )
             # Vectorized filtering
             mask = (areas >= lower_cell_size_threshold) & (
                 areas < upper_cell_size_threshold
@@ -1252,7 +1149,9 @@ class Analysis_Functions:
                 cell_mask_new[pil[c][:, 0], pil[c][:, 1]] = 0
         # Final region properties calculation
         if z_project[1]:
-            pil, areas, centroids = self.calculate_region_properties(cell_mask_new)
+            pil, areas, centroids, _, _ = IA_F.calculate_region_properties(
+                cell_mask_new
+            )
         else:
             pil = None
             areas = None

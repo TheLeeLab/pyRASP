@@ -7,6 +7,7 @@ Created 2025/01/10 13:31
 """
 import sys
 import os
+import skimage as ski
 
 module_dir = os.path.split(os.path.abspath(os.path.dirname(__file__)))[0]
 sys.path.append(module_dir)
@@ -81,3 +82,20 @@ class TestClass:
         spot_numbers = self.A_F.count_spots(database, 1)
         assert np.all(250 == spot_numbers["n_spots_above"].to_numpy())
         assert np.all(250 == spot_numbers["n_spots_below"].to_numpy())
+        
+    def test_generate_indices(self):
+        image_size = (10, 10)
+        x = np.arange(3)
+        y = np.arange(3)
+        coords = np.array([x, y]).T
+        assert np.all(np.array([0, 11, 22]) == self.A_F.generate_indices(coords, image_size))
+        mask = np.zeros([10, 10])
+        for ind in x:
+            mask[ind, ind] = 1
+        assert np.all(np.array([0, 11, 22]) == self.A_F.generate_indices(mask, image_size, is_mask=True))
+        large_object = ski.morphology.octagon(1, 1)
+        image_size = large_object.shape
+        pil, n_lo = self.A_F.generate_indices(large_object, image_size, is_mask=True, is_lo=True)
+        assert n_lo == pytest.approx(1)
+        assert np.all(np.array([1, 3, 4, 5, 7]) == np.sort(pil[0]))
+        
