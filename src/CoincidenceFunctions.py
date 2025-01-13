@@ -273,12 +273,12 @@ class Coincidence_Functions:
         n_iter,
     ):
         if n_largeobjs == 0:
-            return 0.0, 0.0, np.array([0.0])
+            return 0.0, 0.0, np.array([0.0]), 0.0
 
         mask_fill = self.calculate_mask_fill(mask_indices, image_size)
         expected_spots = np.multiply(mask_fill, n_largeobjs)
         if np.isclose(expected_spots, 0.0, atol=1e-4):
-            return 0, 0, np.zeros(n_largeobjs)
+            return 0, 0, np.zeros(n_largeobjs), 0.0
 
         raw_colocalisation = self.test_largeobj_mask_overlap(
             largeobj_indices, mask_indices, n_largeobjs, raw=True
