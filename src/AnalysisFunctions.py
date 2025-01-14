@@ -267,8 +267,8 @@ class Analysis_Functions:
         analysis_data_1,
         analysis_data_2=None,
         mask_file=None,
-        threshold_1=None,
-        threshold_2=None,
+        threshold_1=0,
+        threshold_2=0,
         pixel_size=0.11,
         dr=1.0,
         aboveT=1,
@@ -567,7 +567,9 @@ class Analysis_Functions:
             image_file = spots_with_intensities.filter(
                 pl.col("image_filename") == image
             )
-
+            if (analysis_type == "lo_to_cell") and np.all(z_project_first == [False, False]):
+                image_file = image_file.filter(pl.col("area") > lower_lo_size_threshold)
+                image_file = image_file.filter(pl.col("area") <= upper_lo_size_threshold)
             if len(lo_mask.shape) > 2:
                 image_size = lo_mask.shape[:-1]
             else:
@@ -577,51 +579,50 @@ class Analysis_Functions:
                     pl.Series("z", np.ones_like(image_file["z"].to_numpy())),
                 )
             z_planes = np.unique(image_file["z"].to_numpy())
-
-            if analysis_type != "lo_to_cell":
-                if calc_clr:
-                    dataarray, raw_colocalisation = self._process_spots_parallel(
-                        image_file,
-                        z_planes,
-                        lo_mask,
-                        image_size,
-                        self._parallel_coloc_per_z_clr_spot,
-                        blur_degree,
-                    )
+            if len(z_planes) > 0:
+                if analysis_type != "lo_to_cell":
+                    if calc_clr:
+                        dataarray, raw_colocalisation = self._process_spots_parallel(
+                            image_file,
+                            z_planes,
+                            lo_mask,
+                            image_size,
+                            self._parallel_coloc_per_z_clr_spot,
+                            blur_degree,
+                        )
+                    else:
+                        dataarray, raw_colocalisation = self._process_spots_parallel(
+                            image_file,
+                            z_planes,
+                            lo_mask,
+                            image_size,
+                            self._parallel_coloc_per_z_noclr_spot,
+                            blur_degree,
+                        )
                 else:
-                    dataarray, raw_colocalisation = self._process_spots_parallel(
-                        image_file,
+                    dataarray, raw_colocalisation = self._process_masks_parallel(
                         z_planes,
                         lo_mask,
+                        cell_mask,
                         image_size,
-                        self._parallel_coloc_per_z_noclr_spot,
-                        blur_degree,
+                        self._parallel_coloc_per_z_los,
                     )
-            else:
-                dataarray, raw_colocalisation = self._process_masks_parallel(
-                    z_planes,
-                    lo_mask,
-                    cell_mask,
-                    image_size,
-                    self._parallel_coloc_per_z_los,
+    
+                image_file = image_file.with_columns(incell=raw_colocalisation)
+                dataarray = np.vstack(
+                    [np.asarray(dataarray, dtype="object"), np.repeat(image, len(z_planes))]
                 )
-
-            image_file = image_file.with_columns(incell=raw_colocalisation)
-            dataarray = np.vstack(
-                [np.asarray(dataarray, dtype="object"), np.repeat(image, len(z_planes))]
-            )
-
-            lo_analysis = np.array(
-                dataarray
-                if lo_analysis is None
-                else np.hstack([lo_analysis, dataarray])
-            )
-            spot_analysis = (
-                image_file
-                if spot_analysis is None
-                else pl.concat([spot_analysis, image_file])
-            )
-
+    
+                lo_analysis = np.array(
+                    dataarray
+                    if lo_analysis is None
+                    else np.hstack([lo_analysis, dataarray])
+                )
+                spot_analysis = (
+                    image_file
+                    if spot_analysis is None
+                    else pl.concat([spot_analysis, image_file])
+                )
             print(
                 f"Computing colocalisation     File {i + 1}/{len(image_filenames)}    Time elapsed: {time.time() - start:.3f} s",
                 end="\r",
@@ -784,7 +785,6 @@ class Analysis_Functions:
         cell_string="C0",
         protein_string="C1",
         imtype=".tif",
-        aboveT=1,
         z_project_first=[True, True],
         median=None,
     ):
@@ -813,11 +813,12 @@ class Analysis_Functions:
             cell_punctum_analysis (pl.DataFrame): polars datarray of the cell analysis
         """
         C_F = CoincidenceFunctions.Coincidence_Functions()
-        filter_op = ">" if aboveT == 1 else "<="
+        filter_op = ">"
         analysis_data = analysis_data_raw.filter(
             eval(f"pl.col('sum_intensity_in_photons') {filter_op} threshold")
         )
-        typestr = "> threshold" if aboveT == 1 else "<= threshold"
+        del analysis_data_raw
+        typestr = "> threshold"
         analysis_string = (
             " protein cell load " if median else " puncta cell likelihood "
         )

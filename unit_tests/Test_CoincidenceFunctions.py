@@ -331,6 +331,21 @@ class TestClass:
                 analysis_type="largeobj",
             )
         assert np.mean(coincidence) == pytest.approx(0.25, abs=0.05)
+        lo_indices = np.zeros([10])
+        n_largeobjects = 0
+        assert (
+            len(
+                self.C_F.calculate_coincidence(
+                    spot_indices=None,
+                    largeobj_indices=lo_indices,
+                    n_largeobjs=n_largeobjects,
+                    mask_indices=mask_indices,
+                    image_size=image_size,
+                    analysis_type="largeobj",
+                )
+            )
+            == 4
+        )
 
     def test_maskfill(self):
         percentages = np.arange(0, 1, 0.01)

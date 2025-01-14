@@ -1012,11 +1012,7 @@ class RASP_Routines:
         blur_degree=1,
         z_project_first=True,
         replace_files=False,
-        q1=None,
-        q2=None,
-        IQR=None,
         median=None,
-        k=4,
         end_string="HC_threshold",
     ):
         """
@@ -1035,30 +1031,17 @@ class RASP_Routines:
             z_project_first (boolean): if True (default), does a z projection before
                                     thresholding cell size. If false, does the opposite.
             replace_files (boolean): if False, looks for files first and if it's already analysed, does nothing
-            q1 (float): if float, adds in IQR filter
-            q2 (float): if float, adds in IQR filter
-            IQR (Float): if float, adds in IQR filter
             median (float): if float, does cell protein load
 
 
         Returns:
             cell_punctum_analysis_AT (pl.DataFrame): dataframe of cell analysis above threshold
-            cell_punctum_analysis_UT (pl.DataFrame): dataframe of cell analysis below threshold
 
         """
         if int(threshold) == threshold:
             threshold_str = str(int(threshold))
         else:
             threshold_str = str(np.around(threshold, 1)).replace(".", "p")
-
-        if (
-            ~isinstance(q1, type(None))
-            and ~isinstance(q2, type(None))
-            and ~isinstance(IQR, type(None))
-        ):
-            threshold_str = (
-                threshold_str + "_k_" + str(k).replace(".", "p") + "_outliersremoved"
-            )
 
         if median is not None:
             start_string = "cell_protein_load_"
@@ -1083,7 +1066,6 @@ class RASP_Routines:
                 + end_string,
             )
             above_string = savecell_string + "_abovethreshold.csv"
-            below_string = savecell_string + "_belowthreshold.csv"
         else:
             if int(upper_cell_size_threshold) == upper_cell_size_threshold:
                 uc_str = str(int(upper_cell_size_threshold))
@@ -1104,10 +1086,9 @@ class RASP_Routines:
                 + end_string,
             )
             above_string = savecell_string + "_abovethreshold.csv"
-            below_string = savecell_string + "_belowthreshold.csv"
 
         if replace_files == False:
-            if os.path.isfile(above_string) or os.path.isfile(below_string):
+            if os.path.isfile(above_string):
                 print("Analysis already complete; exiting.")
                 return None, None
 
@@ -1122,7 +1103,6 @@ class RASP_Routines:
                 cell_string=cell_string,
                 protein_string=protein_string,
                 imtype=imtype,
-                aboveT=1,
                 z_project_first=z_project_first,
                 median=median,
             )
