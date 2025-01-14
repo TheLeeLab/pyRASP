@@ -570,9 +570,9 @@ class Analysis_Functions:
             if (analysis_type == "lo_to_cell") and np.all(
                 z_project_first == [False, False]
             ):
-                image_file = image_file.filter(pl.col("area") > lower_lo_size_threshold)
+                image_file = image_file.filter(pl.col("area") >= lower_lo_size_threshold)
                 image_file = image_file.filter(
-                    pl.col("area") <= upper_lo_size_threshold
+                    pl.col("area") < upper_lo_size_threshold
                 )
             if len(lo_mask.shape) > 2:
                 image_size = lo_mask.shape[:-1]
