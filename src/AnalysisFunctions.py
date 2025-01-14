@@ -567,9 +567,13 @@ class Analysis_Functions:
             image_file = spots_with_intensities.filter(
                 pl.col("image_filename") == image
             )
-            if (analysis_type == "lo_to_cell") and np.all(z_project_first == [False, False]):
+            if (analysis_type == "lo_to_cell") and np.all(
+                z_project_first == [False, False]
+            ):
                 image_file = image_file.filter(pl.col("area") > lower_lo_size_threshold)
-                image_file = image_file.filter(pl.col("area") <= upper_lo_size_threshold)
+                image_file = image_file.filter(
+                    pl.col("area") <= upper_lo_size_threshold
+                )
             if len(lo_mask.shape) > 2:
                 image_size = lo_mask.shape[:-1]
             else:
@@ -607,12 +611,15 @@ class Analysis_Functions:
                         image_size,
                         self._parallel_coloc_per_z_los,
                     )
-    
+
                 image_file = image_file.with_columns(incell=raw_colocalisation)
                 dataarray = np.vstack(
-                    [np.asarray(dataarray, dtype="object"), np.repeat(image, len(z_planes))]
+                    [
+                        np.asarray(dataarray, dtype="object"),
+                        np.repeat(image, len(z_planes)),
+                    ]
                 )
-    
+
                 lo_analysis = np.array(
                     dataarray
                     if lo_analysis is None

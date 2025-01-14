@@ -1183,7 +1183,14 @@ class RASP_Routines:
             startstr + "colocalisation_analysis_" + threshold_str,
         )
         if isinstance(lo_analysis_AT, pl.DataFrame):
-            lo_analysis_AT.write_csv(savecell_string + "_abovephotonthreshold.csv")
+            lo_analysis_AT.write_csv(
+                savecell_string
+                + ""
+                + str(lower_cell_size_threshold)
+                + "mincell"
+                + str(lower_lo_size_threshold)
+                + "minlo.csv"
+            )
         if isinstance(spot_analysis_AT, pl.DataFrame):
             spot_analysis_AT.write_csv(
                 analysis_file.split(".")[0]
