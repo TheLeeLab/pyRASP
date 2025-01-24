@@ -297,7 +297,7 @@ class Analysis_Functions:
             if len(files) != len(mask_files):
                 print("Number of image files must correspond to number of mask files.")
                 return
-
+        
         def filter_data(data, threshold):
             return data.filter(pl.col("sum_intensity_in_photons") > threshold)
 

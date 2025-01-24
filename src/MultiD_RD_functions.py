@@ -125,7 +125,6 @@ def multid_rdf(
         3,
     ], "RDF can only be computed in 2 or 3 \
                                            dimensions."
-
     start = time.time()
 
     radii = np.arange(dr, r_max, dr)

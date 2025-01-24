@@ -486,6 +486,7 @@ class Plotter:
         plotmask=False,
         mask=None,
         maskcolor="white",
+        masklinewidth=0.75,
     ):
         """image_plot function
         takes image data and makes an image plot
@@ -546,7 +547,7 @@ class Plotter:
         )
 
         if plotmask == True:
-            axs.contour(mask, [0.5], linewidths=0.75, colors=maskcolor)
+            axs.contour(mask, [0.5], linewidths=masklinewidth, colors=maskcolor)
 
         return axs
 
@@ -570,6 +571,10 @@ class Plotter:
         scattercolor="red",
         s=20,
         lws=0.75,
+        plotmask=False,
+        mask=None,
+        maskcolor="white",
+        masklinewidth=0.75,
     ):
         """image_plot function
         takes image data and makes an image plot
@@ -630,6 +635,9 @@ class Plotter:
             color=labelcolor,
             fontsize=fontsz - 1,
         )
+        if plotmask == True:
+            axs.contour(mask, [0.5], linewidths=masklinewidth, colors=maskcolor)
+
         axs.scatter(
             xdata, ydata, lw=lws, edgecolor=scattercolor, s=s, facecolors="None"
         )
