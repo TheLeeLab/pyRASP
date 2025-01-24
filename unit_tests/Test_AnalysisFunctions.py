@@ -135,12 +135,12 @@ class TestClass:
             f_dist[outlier_indices] = np.NAN
             f_dist = f_dist[~np.isnan(f_dist)]
             assert np.all(f_dist == filtered_data_spec)
-            
+
     def test_calculate_rdf_with_thresholds(self):
-        columns = ['x', 'y', 'sum_intensity_in_photons', 'z', 'image_filename']
+        columns = ["x", "y", "sum_intensity_in_photons", "z", "image_filename"]
         n_files = 2
         n_z = 25
-        
+
         analysis_data_1 = None
         for file in np.arange(n_files):
             filename = str(file).zfill(4)
@@ -150,30 +150,101 @@ class TestClass:
                 image_filename = np.full(len(sum_intensity_in_photons), filename)
                 z_data = np.full_like(sum_intensity_in_photons, z)
                 if analysis_data_1 is not None:
-                        analysis_data_1 = np.hstack([analysis_data_1, np.vstack([spot_distribution.T, sum_intensity_in_photons, z_data, image_filename])])
+                    analysis_data_1 = np.hstack(
+                        [
+                            analysis_data_1,
+                            np.vstack(
+                                [
+                                    spot_distribution.T,
+                                    sum_intensity_in_photons,
+                                    z_data,
+                                    image_filename,
+                                ]
+                            ),
+                        ]
+                    )
                 else:
-                    analysis_data_1 = np.vstack([spot_distribution.T, sum_intensity_in_photons, z_data, image_filename])
-        database = self.H_F.clean_database(pl.DataFrame(data=analysis_data_1, schema=columns), columns)
-        rdf_pl = self.A_F.calculate_rdf_with_thresholds(analysis_data_1=database) 
-        assert np.all(np.isclose(rdf_pl['g_r_mean'], 1, atol=0.02))
-        
+                    analysis_data_1 = np.vstack(
+                        [
+                            spot_distribution.T,
+                            sum_intensity_in_photons,
+                            z_data,
+                            image_filename,
+                        ]
+                    )
+        database = self.H_F.clean_database(
+            pl.DataFrame(data=analysis_data_1, schema=columns), columns
+        )
+        rdf_pl = self.A_F.calculate_rdf_with_thresholds(analysis_data_1=database)
+        assert np.all(np.isclose(rdf_pl["g_r_mean"], 1, atol=0.02))
+
         analysis_data_1 = None
         analysis_data_2 = None
         for file in np.arange(n_files):
             filename = str(file).zfill(4)
             for z in np.arange(n_z):
-                spot_distribution_1 = np.random.randint(size=(1000, 2), low=0, high=1199)
-                spot_distribution_2 = np.random.randint(size=(1000, 2), low=0, high=1199)
+                spot_distribution_1 = np.random.randint(
+                    size=(1000, 2), low=0, high=1199
+                )
+                spot_distribution_2 = np.random.randint(
+                    size=(1000, 2), low=0, high=1199
+                )
                 sum_intensity_in_photons = np.ones(len(spot_distribution_1))
                 image_filename = np.full(len(sum_intensity_in_photons), filename)
                 z_data = np.full_like(sum_intensity_in_photons, z)
                 if analysis_data_1 is not None:
-                        analysis_data_1 = np.hstack([analysis_data_1, np.vstack([spot_distribution_1.T, sum_intensity_in_photons, z_data, image_filename])])
-                        analysis_data_2 = np.hstack([analysis_data_2, np.vstack([spot_distribution_2.T, sum_intensity_in_photons, z_data, image_filename])])
+                    analysis_data_1 = np.hstack(
+                        [
+                            analysis_data_1,
+                            np.vstack(
+                                [
+                                    spot_distribution_1.T,
+                                    sum_intensity_in_photons,
+                                    z_data,
+                                    image_filename,
+                                ]
+                            ),
+                        ]
+                    )
+                    analysis_data_2 = np.hstack(
+                        [
+                            analysis_data_2,
+                            np.vstack(
+                                [
+                                    spot_distribution_2.T,
+                                    sum_intensity_in_photons,
+                                    z_data,
+                                    image_filename,
+                                ]
+                            ),
+                        ]
+                    )
                 else:
-                    analysis_data_1 = np.vstack([spot_distribution_1.T, sum_intensity_in_photons, z_data, image_filename])
-                    analysis_data_2 = np.vstack([spot_distribution_2.T, sum_intensity_in_photons, z_data, image_filename])
-        database_1 = self.H_F.clean_database(pl.DataFrame(data=analysis_data_1, schema=columns), columns)
-        database_2 = self.H_F.clean_database(pl.DataFrame(data=analysis_data_2, schema=columns), columns)
-        rdf_pl = self.A_F.calculate_rdf_with_thresholds(analysis_data_1=database_1, analysis_data_2=database_2, analysis_type="two_channels") 
-        assert np.all(np.isclose(rdf_pl['g_r_mean'], 1, atol=0.02))
+                    analysis_data_1 = np.vstack(
+                        [
+                            spot_distribution_1.T,
+                            sum_intensity_in_photons,
+                            z_data,
+                            image_filename,
+                        ]
+                    )
+                    analysis_data_2 = np.vstack(
+                        [
+                            spot_distribution_2.T,
+                            sum_intensity_in_photons,
+                            z_data,
+                            image_filename,
+                        ]
+                    )
+        database_1 = self.H_F.clean_database(
+            pl.DataFrame(data=analysis_data_1, schema=columns), columns
+        )
+        database_2 = self.H_F.clean_database(
+            pl.DataFrame(data=analysis_data_2, schema=columns), columns
+        )
+        rdf_pl = self.A_F.calculate_rdf_with_thresholds(
+            analysis_data_1=database_1,
+            analysis_data_2=database_2,
+            analysis_type="two_channels",
+        )
+        assert np.all(np.isclose(rdf_pl["g_r_mean"], 1, atol=0.02))
