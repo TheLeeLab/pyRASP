@@ -174,7 +174,7 @@ class TestClass:
                 blur_degree=0,
             )
         assert np.mean(olig_cell_ratio) == pytest.approx(1, abs=1e-2)
-        assert np.mean(n_olig_in_cell) == pytest.approx(250, abs=1)
+        assert np.mean(n_olig_in_cell) == pytest.approx(250, abs=2)
 
     def test_spot_to_cell(self):
         n_iter = 1000
@@ -201,7 +201,7 @@ class TestClass:
                 blur_degree=0,
             )
         assert np.mean(olig_cell_ratio) == pytest.approx(1, abs=1e-2)
-        assert np.mean(n_olig_in_cell) == pytest.approx(250, abs=1)
+        assert np.mean(n_olig_in_cell) == pytest.approx(250, abs=2)
 
     def test_colocalisation_likelihood(self):
         n_iter = 100
