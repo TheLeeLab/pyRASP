@@ -173,7 +173,7 @@ class RASP_Routines:
         """
 
         img2, Gx, Gy, focus_score, na = IA_F.calculate_gradient_field(image, kernel)
-        z_planes = A_F.infocus_indices(focus_score, self.focus_score_diff)
+        z_planes = IA_F.infocus_indices(focus_score, self.focus_score_diff)
         return z_planes, img2, Gx, Gy
 
     def calibrate_radiality(
