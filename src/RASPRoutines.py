@@ -643,6 +643,10 @@ class RASP_Routines:
         image_size=200,
         save_figure=False,
         cell_file=None,
+        lower_cell_size_threshold=None,
+        upper_cell_size_threshold=np.inf,
+        lower_lo_size_threshold=None,
+        upper_lo_size_threshold=np.inf,
     ):
         """
         Analyses data from a specified image, presenting spots, locations, intensities in a figure,
@@ -657,6 +661,11 @@ class RASP_Routines:
             image_size (int): Amount of image to plot - by default plots 200x200 chunk of an image
             save_figure (boolean): Save the figure as an SVG, default False
             cell_file (string): Cell image location
+            lower_cell_size_threshold (float): lower threshold of cell size
+            upper_cell_size_threshold (float): upper threshold of cell size
+            lower_lo_size_threshold (float): lower threshold of large object size
+            upper_lo_size_threshold (float): upper threshold of large object size
+
         """
         import PlottingFunctions
 
@@ -793,6 +802,19 @@ class RASP_Routines:
             z_planes, to_save, to_save_largeobjects, cell_mask = process_image(
                 img, img_cell, k1, k2
             )
+            if lower_cell_size_threshold is not None:
+                to_save_largeobjects = to_save_largeobjects.filter(
+                    (pl.col("area") > lower_cell_size_threshold)
+                    & (pl.col("area") <= upper_cell_size_threshold)
+                )
+            if lower_cell_size_threshold is not None:
+                for i in np.arange(cell_mask.shape[-1]):
+                    cell_mask[:, :, i], _, _, _ = A_F.threshold_cell_areas(
+                        cell_mask[:, :, i],
+                        lower_cell_size_threshold=lower_cell_size_threshold,
+                        upper_cell_size_threshold=upper_cell_size_threshold,
+                        z_project=[False, False],
+                    )
             z_to_plot = filter_z_planes(to_save, z_planes)
             plot_images(
                 z_to_plot, img, to_save, to_save_largeobjects, img_cell, cell_mask
