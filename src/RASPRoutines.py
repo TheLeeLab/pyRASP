@@ -802,10 +802,10 @@ class RASP_Routines:
             z_planes, to_save, to_save_largeobjects, cell_mask = process_image(
                 img, img_cell, k1, k2
             )
-            if lower_cell_size_threshold is not None:
+            if lower_lo_size_threshold is not None:
                 to_save_largeobjects = to_save_largeobjects.filter(
-                    (pl.col("area") > lower_cell_size_threshold)
-                    & (pl.col("area") <= upper_cell_size_threshold)
+                    (pl.col("area") > lower_lo_size_threshold)
+                    & (pl.col("area") <= upper_lo_size_threshold)
                 )
             if lower_cell_size_threshold is not None:
                 for i in np.arange(cell_mask.shape[-1]):
