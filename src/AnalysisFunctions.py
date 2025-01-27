@@ -439,7 +439,7 @@ class Analysis_Functions:
 
         return pl.DataFrame(data)
 
-    def filter_lo_intensity(self, lo_data, lo_mask):
+    def filter_lo_intensity(self, lo_data, lo_mask, z_planes):
         """
         Filters lo mask, and polars dataframe, based on intensity.
 
@@ -451,22 +451,21 @@ class Analysis_Functions:
             lo_mask (np.ndarray): numpy array of lo mask
         """
         lo_mask_new = copy(lo_mask)
-        if len(lo_mask.shape) > 2:
-            z_planes = np.arange(lo_mask.shape[-1])
-            for z_plane in z_planes:
-                pil, areas, centroids, _, _ = IA_F.calculate_region_properties(
-                    lo_mask[:, :, z_plane]
-                )
-                for lo in np.arange(len(pil)):
-                    area = areas[lo]
-                    x = centroids[lo, 0]
-                    y = centroids[lo, 1]
-                    if (
-                        ~np.any(np.isclose(area, lo_data["area"].to_numpy(), atol=0.1))
-                        and ~np.any(np.isclose(x, lo_data["x"].to_numpy(), atol=0.1))
-                        and ~np.any(np.isclose(y, lo_data["y"].to_numpy(), atol=0.1))
-                    ):
-                        lo_mask_new[pil[lo][:, 0], pil[lo][:, 1], z_plane] = 0
+        for z_plane in np.asarray(z_planes, dtype=int):
+            lo_tocheck = lo_data.filter(pl.col("z") == z_plane)
+            pil, areas, centroids, _, _ = IA_F.calculate_region_properties(
+                lo_mask[:, :, z_plane - 1]
+            )
+            for lo in np.arange(len(pil)):
+                area = areas[lo]
+                x = centroids[lo, 0]
+                y = centroids[lo, 1]
+                if (
+                    ~np.any(np.isclose(area, lo_tocheck["area"].to_numpy(), atol=0.1))
+                    and ~np.any(np.isclose(x, lo_tocheck["x"].to_numpy(), atol=0.1))
+                    and ~np.any(np.isclose(y, lo_tocheck["y"].to_numpy(), atol=0.1))
+                ):
+                    lo_mask_new[pil[lo][:, 0], pil[lo][:, 1], z_plane - 1] = 0
         return lo_mask_new
 
     def colocalise_with_threshold(
@@ -601,7 +600,7 @@ class Analysis_Functions:
                     z_project=z_project_first,
                 )
                 if (threshold > 0) and analysis_type == "lo_to_cell":
-                    lo_mask = self.filter_lo_intensity(image_file, lo_mask)
+                    lo_mask = self.filter_lo_intensity(image_file, lo_mask, z_planes)
                 if len(lo_mask.shape) > 2:
                     image_size = lo_mask.shape[:-1]
                 else:
