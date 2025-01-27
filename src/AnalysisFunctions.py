@@ -439,6 +439,36 @@ class Analysis_Functions:
 
         return pl.DataFrame(data)
 
+    def filter_lo_intensity(self, lo_data, lo_mask):
+        """
+        Filters lo mask, and polars dataframe, based on intensity.
+
+        Args:
+            lo_data (pl.DataFrame): The analysis file of large objects. Already thresholded (code assumes)
+            lo_mask (np.ndarray): large object mask
+        Returns:
+            lo_data (pl.DataFrame): polars dataframe of the lo analysis
+            lo_mask (np.ndarray): numpy array of lo mask
+        """
+        lo_mask_new = copy(lo_mask)
+        if len(lo_mask.shape) > 2:
+            z_planes = np.arange(lo_mask.shape[-1])
+            for z_plane in z_planes:
+                pil, areas, centroids, _, _ = IA_F.calculate_region_properties(
+                    lo_mask[:, :, z_plane]
+                )
+                for lo in np.arange(len(pil)):
+                    area = areas[lo]
+                    x = centroids[lo, 0]
+                    y = centroids[lo, 1]
+                    if (
+                        ~np.any(np.isclose(area, lo_data["area"].to_numpy(), atol=0.1))
+                        and ~np.any(np.isclose(x, lo_data["x"].to_numpy(), atol=0.1))
+                        and ~np.any(np.isclose(y, lo_data["y"].to_numpy(), atol=0.1))
+                    ):
+                        lo_mask_new[pil[lo][:, 0], pil[lo][:, 1], z_plane] = 0
+        return lo_mask_new
+
     def colocalise_with_threshold(
         self,
         analysis_file,
@@ -463,7 +493,7 @@ class Analysis_Functions:
         Args:
             analysis_file (string): The analysis file of puncta. If large objects are to be
                                     analysed as puncta, make sure this is a large object file.
-            threshold (float): The photon threshold for puncta.
+            threshold (float): The photon threshold for puncta/large objects.
             protein_string (str): string of protein images
             lo_string (str): string of larger object images
             cell_string (str): string of cell images
@@ -548,8 +578,11 @@ class Analysis_Functions:
             image_file = spots_with_intensities.filter(
                 pl.col("image_filename") == image
             )
-            image_file = image_file.filter(pl.col("area") >= lower_lo_size_threshold)
-            image_file = image_file.filter(pl.col("area") < upper_lo_size_threshold)
+            if analysis_type in ["lo_to spot", "lo_to_cell"]:
+                image_file = image_file.filter(
+                    pl.col("area") >= lower_lo_size_threshold
+                )
+                image_file = image_file.filter(pl.col("area") < upper_lo_size_threshold)
             z_planes = np.unique(image_file["z"].to_numpy())
             if len(z_planes) > 0:
                 lo_mask = self._read_mask(
@@ -567,6 +600,8 @@ class Analysis_Functions:
                     upper_cell_size_threshold=u_thresh,
                     z_project=z_project_first,
                 )
+                if (threshold > 0) and analysis_type == "lo_to_cell":
+                    lo_mask = self.filter_lo_intensity(image_file, lo_mask)
                 if len(lo_mask.shape) > 2:
                     image_size = lo_mask.shape[:-1]
                 else:

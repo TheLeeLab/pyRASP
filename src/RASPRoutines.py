@@ -1207,11 +1207,11 @@ class RASP_Routines:
         if isinstance(lo_analysis_AT, pl.DataFrame):
             lo_analysis_AT.write_csv(
                 savecell_string
-                + ""
+                + "_"
                 + str(lower_cell_size_threshold)
-                + "mincell"
+                + "_mincell_"
                 + str(lower_lo_size_threshold)
-                + "minlo.csv"
+                + "_minlo.csv"
             )
         if isinstance(spot_analysis_AT, pl.DataFrame):
             spot_analysis_AT.write_csv(
