@@ -468,6 +468,29 @@ class Analysis_Functions:
                     lo_mask_new[pil[lo][:, 0], pil[lo][:, 1], z_plane - 1] = 0
         return lo_mask_new
 
+    def filter_cellmask_intensity(self, cell_mask, cell_image, intensity_threshold):
+        """
+        Filters cell mask, based on intensity.
+
+        Args:
+            cell_mask (np.ndarray): The cell mask.
+            cell_image (np.ndarray): Raw cell image
+        Returns:
+            new_cell_mask (np.ndarray): numpy array of cell mask
+        """
+        new_cell_mask = copy(cell_mask)
+        z_planes = cell_mask.shape[-1]
+        for z in np.arange(z_planes):
+            binary_mask = cell_mask[:, :, z]
+            image = cell_image[:, :, z]
+            pil, areas, centroids, sum_intensity, mean_intensity = (
+                IA_F.calculate_region_properties(binary_mask, image=image)
+            )
+            for i in np.arange(len(mean_intensity)):
+                if mean_intensity[i] < intensity_threshold:
+                    new_cell_mask[pil[i][:, 0], pil[i][:, 0], z] = 0
+        return new_cell_mask
+
     def colocalise_with_threshold(
         self,
         analysis_file,
@@ -485,6 +508,7 @@ class Analysis_Functions:
         lower_lo_size_threshold=0,
         upper_lo_size_threshold=np.inf,
         z_project_first=[False, False],
+        cell_threshold=0,
     ):
         """
         Does colocalisation analysis of spots vs mask with an additional threshold.
@@ -511,6 +535,7 @@ class Analysis_Functions:
             lower_lo_size_threshold (float): lower threshold of lo size
             upper_lo_size_threshold (float): upper threshold of lo size
             z_project_first (list of boolean): z project instructions for cell/protein size threshold
+            cell_threshold (float): intensity value cell should be above
 
         Returns:
             lo_analysis (pl.DataFrame): polars dataframe of the cell analysis
@@ -571,6 +596,7 @@ class Analysis_Functions:
         lo_analysis, spot_analysis = None, None
 
         for i, image in enumerate(image_filenames):
+            raw_data_path = os.path.split(image)[0]
             common_path = os.path.split(image.split(imtype)[0])[-1].split(
                 protein_string
             )[0]
@@ -611,6 +637,9 @@ class Analysis_Functions:
                     )
                     z_planes = np.unique(image_file["z"].to_numpy())
                 if end_str != f"{cell_string}_cellMask.tiff":
+                    raw_cell_data = IO.read_tiff(
+                        os.path.join(raw_data_path, common_path + cell_string + ".tif")
+                    )
                     cell_mask, _, _, _ = self.threshold_cell_areas(
                         self._read_mask(
                             analysis_directory,
@@ -622,6 +651,21 @@ class Analysis_Functions:
                         upper_cell_size_threshold=upper_cell_size_threshold,
                         z_project=z_project_first,
                     )
+                    cell_mask = self.filter_cellmask_intensity(
+                        cell_mask, raw_cell_data, cell_threshold
+                    )
+                    if cell_threshold > 0:
+                        file_path = os.path.join(
+                            analysis_directory,
+                            common_path
+                            + cell_string
+                            + "_it_"
+                            + str(cell_threshold).replace(".", "p")
+                            + "_lst_"
+                            + str(lower_cell_size_threshold).replace(".", "p")
+                            + ".tif",
+                        )
+                        IO.write_tiff(cell_mask, file_path, bit=np.uint8)
 
                     if analysis_type != "lo_to_cell":
                         if calc_clr:

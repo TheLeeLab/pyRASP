@@ -1149,6 +1149,7 @@ class RASP_Routines:
         lower_lo_size_threshold=0,
         upper_lo_size_threshold=np.inf,
         z_project_first=[False, False],
+        cell_threshold=0.0,
     ):
         """
         Redo colocalisation analyses of spots above a photon threshold in an
@@ -1173,6 +1174,7 @@ class RASP_Routines:
             lower_lo_size_threshold (float): lower threshold of lo size
             upper_lo_size_threshold (float): upper threshold of lo size
             z_project_first (list of boolean): z project instructions for cell/protein size threshold
+            cell_threshold (float): intensity value cell should be above
 
         """
         startstr = analysis_type + "_"
@@ -1198,6 +1200,7 @@ class RASP_Routines:
             lower_lo_size_threshold=lower_lo_size_threshold,
             upper_lo_size_threshold=upper_lo_size_threshold,
             z_project_first=z_project_first,
+            cell_threshold=cell_threshold,
         )
 
         savecell_string = os.path.join(

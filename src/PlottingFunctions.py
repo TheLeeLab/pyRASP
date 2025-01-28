@@ -569,12 +569,14 @@ class Plotter:
         scalebarlabel=r"10$\,\mu$m",
         alpha=1,
         scattercolor="red",
+        facecolor="None",
         s=20,
         lws=0.75,
         plotmask=False,
         mask=None,
         maskcolor="white",
         masklinewidth=0.75,
+        alpha_scatter=1,
     ):
         """image_plot function
         takes image data and makes an image plot
@@ -639,6 +641,12 @@ class Plotter:
             axs.contour(mask, [0.5], linewidths=masklinewidth, colors=maskcolor)
 
         axs.scatter(
-            xdata, ydata, lw=lws, edgecolor=scattercolor, s=s, facecolors="None"
+            xdata,
+            ydata,
+            lw=lws,
+            edgecolor=scattercolor,
+            s=s,
+            facecolors=facecolor,
+            alpha=alpha_scatter,
         )
         return axs
