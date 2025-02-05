@@ -666,57 +666,56 @@ class Analysis_Functions:
                             + ".tif",
                         )
                         IO.write_tiff(cell_mask, file_path, bit=np.uint8)
-
-                    if analysis_type != "lo_to_cell":
-                        if calc_clr:
-                            dataarray, raw_colocalisation = (
-                                self._process_spots_parallel(
-                                    image_file,
-                                    z_planes,
-                                    lo_mask,
-                                    image_size,
-                                    self._parallel_coloc_per_z_clr_spot,
-                                    blur_degree,
-                                )
+                if analysis_type != "lo_to_cell":
+                    if calc_clr:
+                        dataarray, raw_colocalisation = (
+                            self._process_spots_parallel(
+                                image_file,
+                                z_planes,
+                                lo_mask,
+                                image_size,
+                                self._parallel_coloc_per_z_clr_spot,
+                                blur_degree,
                             )
-                        else:
-                            dataarray, raw_colocalisation = (
-                                self._process_spots_parallel(
-                                    image_file,
-                                    z_planes,
-                                    lo_mask,
-                                    image_size,
-                                    self._parallel_coloc_per_z_noclr_spot,
-                                    blur_degree,
-                                )
-                            )
-                    else:
-                        dataarray, raw_colocalisation = self._process_masks_parallel(
-                            z_planes,
-                            lo_mask,
-                            cell_mask,
-                            image_size,
-                            self._parallel_coloc_per_z_los,
                         )
-
-                    image_file = image_file.with_columns(incell=raw_colocalisation)
-                    dataarray = np.vstack(
-                        [
-                            np.asarray(dataarray, dtype="object"),
-                            np.repeat(image, len(z_planes)),
-                        ]
+                    else:
+                        dataarray, raw_colocalisation = (
+                            self._process_spots_parallel(
+                                image_file,
+                                z_planes,
+                                lo_mask,
+                                image_size,
+                                self._parallel_coloc_per_z_noclr_spot,
+                                blur_degree,
+                            )
+                        )
+                else:
+                    dataarray, raw_colocalisation = self._process_masks_parallel(
+                        z_planes,
+                        lo_mask,
+                        cell_mask,
+                        image_size,
+                        self._parallel_coloc_per_z_los,
                     )
 
-                    lo_analysis = np.array(
-                        dataarray
-                        if lo_analysis is None
-                        else np.hstack([lo_analysis, dataarray])
-                    )
-                    spot_analysis = (
-                        image_file
-                        if spot_analysis is None
-                        else pl.concat([spot_analysis, image_file])
-                    )
+                image_file = image_file.with_columns(incell=raw_colocalisation)
+                dataarray = np.vstack(
+                    [
+                        np.asarray(dataarray, dtype="object"),
+                        np.repeat(image, len(z_planes)),
+                    ]
+                )
+
+                lo_analysis = np.array(
+                    dataarray
+                    if lo_analysis is None
+                    else np.hstack([lo_analysis, dataarray])
+                )
+                spot_analysis = (
+                    image_file
+                    if spot_analysis is None
+                    else pl.concat([spot_analysis, image_file])
+                )
             print(
                 f"Computing colocalisation     File {i + 1}/{len(image_filenames)}    Time elapsed: {time.time() - start:.3f} s",
                 end="\r",

@@ -1163,6 +1163,7 @@ class RASP_Routines:
             analysis_type (str, optional): Type of analysis to perform. Options are:
                 - "lo_to_spot": Calculate spot to large object metrics.
                 - "lo_to_cell": Calculate large object to cell coincidence.
+                - "spot_to_cell": Calculate spot to cell object metrics.
                 Default is "spot_to_cell".
             coloc_typ (boolean): if 1 (default), for cells. if 0, for large protein objects.
                                 if 2, between cell mask and large protein objects.
@@ -1214,7 +1215,9 @@ class RASP_Routines:
                 + str(lower_cell_size_threshold)
                 + "_mincell_"
                 + str(lower_lo_size_threshold)
-                + "_minlo.csv"
+                + "_minlo_"
+                + threshold_str
+                + "_abovephotonthreshold.csv"
             )
         if isinstance(spot_analysis_AT, pl.DataFrame):
             spot_analysis_AT.write_csv(
