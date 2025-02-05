@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-This class contains functions pertaining to coincidence, relating to the RASP 
+This class contains functions pertaining to coincidence, relating to the RASP
 project.
 jsb92, 2025/01/01
 """

@@ -5,10 +5,10 @@ Class related to making figure-quality plots.
 
 Probably best to set your default sans-serif font to Helvetica before you make
 figures: https://fowlerlab.org/2019/01/03/changing-the-sans-serif-font-to-helvetica/
- 
+
 The maximum published width for a one-column
 figure is 3.33 inches (240 pt). The maximum width for a two-column
-figure is 6.69 inches (17 cm). The maximum depth of figures should 
+figure is 6.69 inches (17 cm). The maximum depth of figures should
 be 8 ¼ in. (21.1 cm).
 
 panel labels are 8 point font, ticks are 7 point font,

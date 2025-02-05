@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-This class contains functions pertaining to analysis of images based on their 
+This class contains functions pertaining to analysis of images based on their
 radiality, relating to the RASP concept.
 jsb92, 2024/01/02
 """

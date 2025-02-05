@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-This class contains functions pertaining to analysis of images based on their 
+This class contains functions pertaining to analysis of images based on their
 radiality, relating to the RASP concept.
 jsb92, 2024/01/02
 """
@@ -668,26 +668,22 @@ class Analysis_Functions:
                         IO.write_tiff(cell_mask, file_path, bit=np.uint8)
                 if analysis_type != "lo_to_cell":
                     if calc_clr:
-                        dataarray, raw_colocalisation = (
-                            self._process_spots_parallel(
-                                image_file,
-                                z_planes,
-                                lo_mask,
-                                image_size,
-                                self._parallel_coloc_per_z_clr_spot,
-                                blur_degree,
-                            )
+                        dataarray, raw_colocalisation = self._process_spots_parallel(
+                            image_file,
+                            z_planes,
+                            lo_mask,
+                            image_size,
+                            self._parallel_coloc_per_z_clr_spot,
+                            blur_degree,
                         )
                     else:
-                        dataarray, raw_colocalisation = (
-                            self._process_spots_parallel(
-                                image_file,
-                                z_planes,
-                                lo_mask,
-                                image_size,
-                                self._parallel_coloc_per_z_noclr_spot,
-                                blur_degree,
-                            )
+                        dataarray, raw_colocalisation = self._process_spots_parallel(
+                            image_file,
+                            z_planes,
+                            lo_mask,
+                            image_size,
+                            self._parallel_coloc_per_z_noclr_spot,
+                            blur_degree,
                         )
                 else:
                     dataarray, raw_colocalisation = self._process_masks_parallel(
