@@ -98,7 +98,13 @@ class Analysis_Functions:
                 results = np.vstack(
                     [spots_per_plane, z_planes, np.full(len(z_planes), image_filename)]
                 )
-        data = H_F.clean_database(pl.DataFrame(results.T, schema=columns), columns)
+            if results is not None:
+                spot_save = {}
+                for i, column in enumerate(columns):
+                    spot_save[column] = results[i, :]
+                data = H_F.clean_database(pl.DataFrame(data=spot_save), columns)
+            else:
+                data = None
         return data
 
     def generate_indices(self, data, image_size, is_mask=False, is_lo=False):
