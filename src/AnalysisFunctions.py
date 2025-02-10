@@ -135,13 +135,13 @@ class Analysis_Functions:
         for i in np.arange(len(image_size)):
             if indices is None:
                 indices = np.where(
-                    (0 >= coords[:, i]) & (coords[:, i] < image_size[i])
+                    (coords[:, i] >= 0) & (coords[:, i] < image_size[i])
                 )[0]
             else:
                 indices = np.hstack(
                     [
                         indices,
-                        np.where((0 >= coords[:, i]) & (coords[:, i] < image_size[i]))[
+                        np.where((coords[:, i] >= 0) & (coords[:, i] < image_size[i]))[
                             0
                         ],
                     ]
