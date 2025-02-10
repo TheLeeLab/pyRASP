@@ -134,9 +134,18 @@ class Analysis_Functions:
         indices = None
         for i in np.arange(len(image_size)):
             if indices is None:
-                indices = np.where((0 >= coords[:, i]) or (coords[:, i] < image_size[i]))[0]
+                indices = np.where(
+                    (0 >= coords[:, i]) or (coords[:, i] < image_size[i])
+                )[0]
             else:
-                indices = np.hstack([indices, np.where((0 >= coords[:, i]) or (coords[:, i] < image_size[i]))[0]])
+                indices = np.hstack(
+                    [
+                        indices,
+                        np.where((0 >= coords[:, i]) or (coords[:, i] < image_size[i]))[
+                            0
+                        ],
+                    ]
+                )
         coords = coords[indices, :]
         return np.ravel_multi_index(coords.T, image_size, order="F")
 
