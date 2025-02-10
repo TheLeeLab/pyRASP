@@ -574,7 +574,7 @@ class RASP_Routines:
                 i,
                 z_planes,
                 lo_mask,
-                cell_mask=cell_mask if cell_analysis else False,
+                cell_mask=cell_mask if cell_analysis else None,
                 one_savefile=one_savefile,
             )
 
