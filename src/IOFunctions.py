@@ -278,8 +278,8 @@ class IO_Functions:
         if len(data.shape) > 2:
             image_dims = data.shape[1:]
         else:
-            image_dims = data.shape 
-            
+            image_dims = data.shape
+
         if type(gain_map) is not float:
             if image_dims != gain_map.shape:
                 print(

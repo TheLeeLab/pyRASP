@@ -130,10 +130,8 @@ class Analysis_Functions:
         else:
             coords = data
         for i in np.arange(len(image_size)):
-                indices = np.where(
-                    (coords[:, i] < 0) | (coords[:, i] >= image_size[i])
-                )[0]
-                coords[np.unique(indices), :] = 0
+            indices = np.where((coords[:, i] < 0) | (coords[:, i] >= image_size[i]))[0]
+            coords[np.unique(indices), :] = 0
         return np.ravel_multi_index(coords.T, image_size, order="F")
 
     # TODO: correct this, it's crap
@@ -702,7 +700,7 @@ class Analysis_Functions:
                         image_size,
                         self._parallel_coloc_per_z_los,
                     )
-                
+
                 image_file = image_file.with_columns(incell=raw_colocalisation)
                 dataarray = np.vstack(
                     [
