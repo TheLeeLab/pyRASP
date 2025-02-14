@@ -809,7 +809,7 @@ class RASP_Routines:
                 )
             if lower_cell_size_threshold is not None:
                 for i in np.arange(cell_mask.shape[-1]):
-                    cell_mask[i, :, :], _, _, _ = A_F.threshold_cell_areas(
+                    cell_mask[i, :, :], _, _, _ = A_F.threshold_cell_areas_2d(
                         cell_mask[i, :, :],
                         lower_cell_size_threshold=lower_cell_size_threshold,
                         upper_cell_size_threshold=upper_cell_size_threshold,

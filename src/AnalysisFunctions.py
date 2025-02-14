@@ -626,7 +626,7 @@ class Analysis_Functions:
                 else:
                     l_thresh = lower_lo_size_threshold
                     u_thresh = upper_lo_size_threshold
-                lo_mask, _, _, _ = self.threshold_cell_areas(
+                lo_mask, _, _, _ = self.threshold_cell_areas_2d(
                     lo_mask,
                     lower_cell_size_threshold=l_thresh,
                     upper_cell_size_threshold=u_thresh,
@@ -647,7 +647,7 @@ class Analysis_Functions:
                     raw_cell_data = IO.read_tiff(
                         os.path.join(raw_data_path, common_path + cell_string + ".tif")
                     )
-                    cell_mask, _, _, _ = self.threshold_cell_areas(
+                    cell_mask, _, _, _ = self.threshold_cell_areas_2d(
                         self._read_mask(
                             analysis_directory,
                             common_path,
@@ -940,7 +940,7 @@ class Analysis_Functions:
 
             raw_cell_mask = IO.read_tiff(cell_file)
             subset = analysis_data.filter(pl.col("image_filename") == file)
-            cell_mask, pil_mask, centroids, areas = self.threshold_cell_areas(
+            cell_mask, pil_mask, centroids, areas = self.threshold_cell_areas_2d(
                 raw_cell_mask,
                 lower_cell_size_threshold,
                 upper_cell_size_threshold=upper_cell_size_threshold,
@@ -1189,7 +1189,7 @@ class Analysis_Functions:
                 )
         return (plane_1_analysis, plane_2_analysis, spot_1_analysis, spot_2_analysis)
 
-    def threshold_cell_areas(
+    def threshold_cell_areas_2d(
         self,
         cell_mask_raw,
         lower_cell_size_threshold=100,
@@ -1283,7 +1283,7 @@ class Analysis_Functions:
             new_cell_mask (np.2darray): thresholded cell mask
 
         """
-        new_cell_mask, pil, centroids, areas = self.threshold_cell_areas(
+        new_cell_mask, pil, centroids, areas = self.threshold_cell_areas_2d(
             cell_mask,
             lower_cell_size_threshold,
             upper_cell_size_threshold=upper_cell_size_threshold,
