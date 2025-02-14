@@ -8,10 +8,15 @@ import numpy as np
 from scipy.signal.windows import gaussian as gauss
 from scipy.signal import fftconvolve
 import skimage as ski
-from skimage.filters import gaussian
+from skimage.filters import gaussian, threshold_li
 from skimage.measure import label, regionprops_table
 import skimage.draw as draw
-from scipy.ndimage import binary_opening, binary_closing, binary_fill_holes
+from scipy.ndimage import (
+    binary_opening,
+    binary_closing,
+    binary_fill_holes,
+    median_filter,
+)
 from numba import jit
 import polars as pl
 import pathos
@@ -469,6 +474,30 @@ class ImageAnalysis_Functions:
         y_outer = np.tile(y_outer, (len(centroid_loc), 1)).T + centroid_loc[:, 1]
 
         return x_inner, y_inner, x_outer, y_outer
+
+    def detect_3D_features(self, image, median_filtersize=3, width=50):
+        """
+        Detects large features in a 3D image based li's threshold and median
+        filtering.
+
+        Args:
+            image (numpy.ndarray): Original image.
+            median_filtersize (int): Median filter size in 3D.
+            width (float): Width threshold for object cleanup.
+
+        Returns:
+            large_mask (numpy.ndarray): Binary mask for the large features.
+        """
+        denoised = median_filter(image, size=3)
+        li_thresholded = denoised > threshold_li(denoised)
+        filled = binary_fill_holes(li_thresholded)
+        remove_holes = ski.morphology.remove_small_holes(
+            filled, area_threshold=width**3
+        )
+        large_mask = ski.morphology.remove_small_objects(
+            remove_holes, min_size=width**3
+        )
+        return large_mask
 
     def detect_large_features(
         self, image, threshold1, threshold2=0, sigma1=2.0, sigma2=60.0
