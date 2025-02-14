@@ -475,30 +475,6 @@ class ImageAnalysis_Functions:
 
         return x_inner, y_inner, x_outer, y_outer
 
-    def detect_3D_features(self, image, median_filtersize=3, width=50):
-        """
-        Detects large features in a 3D image based li's threshold and median
-        filtering.
-
-        Args:
-            image (numpy.ndarray): Original image.
-            median_filtersize (int): Median filter size in 3D.
-            width (float): Width threshold for object cleanup.
-
-        Returns:
-            large_mask (numpy.ndarray): Binary mask for the large features.
-        """
-        denoised = median_filter(image, size=3)
-        li_thresholded = denoised > threshold_li(denoised)
-        filled = binary_fill_holes(li_thresholded)
-        remove_holes = ski.morphology.remove_small_holes(
-            filled, area_threshold=width**3
-        )
-        large_mask = ski.morphology.remove_small_objects(
-            remove_holes, min_size=width**3
-        )
-        return large_mask
-
     def detect_large_features(
         self, image, threshold1, threshold2=0, sigma1=2.0, sigma2=60.0
     ):
