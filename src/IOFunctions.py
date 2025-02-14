@@ -246,8 +246,6 @@ class IO_Functions:
             image = io.imread(file_path, plugin="tifffile")
         else:
             image = io.imread(file_path, plugin="tifffile", key=frame)
-        if len(image.shape) > 2:  # if image a stack
-            image = np.swapaxes(np.swapaxes(image, 0, -1), 0, 1)
         return np.asarray(image, dtype="double")
 
     def read_tiff_tophotons(
@@ -276,15 +274,14 @@ class IO_Functions:
         """
         # Use skimage's imread function to read the TIFF file
         # specifying the 'tifffile' plugin explicitly
-        if isinstance(frame, type(None)):
-            data = io.imread(file_path, plugin="tifffile")
+        data = self.read_tiff(file_path, frame=frame)
+        if len(data.shape) > 2:
+            image_dims = data.shape[1:]
         else:
-            data = io.imread(file_path, plugin="tifffile", key=frame)
-        if len(data.shape) > 2:  # if image a stack
-            data = np.swapaxes(np.swapaxes(data, 0, -1), 0, 1)
-
+            image_dims = data.shape 
+            
         if type(gain_map) is not float:
-            if data.shape[:2] != gain_map.shape:
+            if image_dims != gain_map.shape:
                 print(
                     "Gain and offset map not compatible with image dimensions. Defaulting to gain of 1 and offset of 0."
                 )
@@ -295,8 +292,8 @@ class IO_Functions:
             if len(data.shape) > 2:
                 data = np.divide(
                     np.divide(
-                        np.subtract(data, offset_map[:, :, np.newaxis]),
-                        gain_map[:, :, np.newaxis],
+                        np.subtract(data, offset_map[np.newaxis, :, :]),
+                        gain_map[np.newaxis, :, :],
                     ),
                     QE,
                 )
@@ -320,11 +317,12 @@ class IO_Functions:
             The plugin is set to 'tifffile' and photometric to 'minisblack'.
             Additional metadata specifying the software as 'Python' is included.
         """
-        xamount = str(volume.shape[0])
-        yamount = str(volume.shape[1])
-        if len(volume.shape) > 2:  # if image a stack
-            volume = volume.T
-            volume = np.asarray(np.swapaxes(volume, 1, 2))
+        if len(volume.shape) > 2:
+            xamount = str(volume.shape[1])
+            yamount = str(volume.shape[2])
+        else:
+            xamount = str(volume.shape[0])
+            yamount = str(volume.shape[1])
 
         description = "ImageJ=1.54f\nunit=micron\nmin=" + xamount + "\nmax=" + yamount
 

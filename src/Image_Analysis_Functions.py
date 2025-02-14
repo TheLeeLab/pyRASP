@@ -55,16 +55,16 @@ class ImageAnalysis_Functions:
 
         # Low-pass filtering using convolution
         if len(image.shape) > 2:
-            for channel in np.arange(image.shape[2]):
+            for channel in np.arange(image.shape[0]):
                 image_padded = np.pad(
-                    image[:, :, channel],
+                    image[channel, :, :],
                     (
                         (kernel.shape[0] // 2, kernel.shape[0] // 2),
                         (kernel.shape[1] // 2, kernel.shape[1] // 2),
                     ),
                     mode="edge",
                 )
-                filtered_image[:, :, channel] = fftconvolve(
+                filtered_image[channel, :, :] = fftconvolve(
                     image_padded, kernel, mode="valid"
                 )
         else:
@@ -79,11 +79,11 @@ class ImageAnalysis_Functions:
             filtered_image[:, :] = fftconvolve(image_padded, kernel, mode="valid")
         # Gradient calculation
         if len(image.shape) > 2:
-            gradient_x[:, :-1, :] = np.diff(
-                filtered_image, axis=1
+            gradient_x[:, :, :-1] = np.diff(
+                filtered_image, axis=2
             )  # x gradient (right to left)
-            gradient_y[:-1, :, :] = np.diff(
-                filtered_image, axis=0
+            gradient_y[:, :-1, :] = np.diff(
+                filtered_image, axis=1
             )  # y gradient (bottom to top)
         else:
             gradient_x[:, :-1] = np.diff(
@@ -97,7 +97,10 @@ class ImageAnalysis_Functions:
             gradient_magnitude = np.sqrt(
                 np.add(np.square(gradient_x), np.square(gradient_y))
             )
-            sum_gradient = np.sum(gradient_magnitude, axis=(0, 1))
+            if len(image.shape) > 2:
+                sum_gradient = np.sum(gradient_magnitude, axis=(1, 2))
+            else:
+                sum_gradient = np.sum(gradient_magnitude, axis=(0, 1))
             concentration_factor = np.divide(sum_gradient, np.max(sum_gradient))
             focus_score = np.log(sum_gradient)
         else:
@@ -112,7 +115,7 @@ class ImageAnalysis_Functions:
 
         Args:
             pil_small (list): List of pixel indices.
-            img (numpy.ndarray): The input image.
+            img (numpy.2darray): The input image.
             gradient_x (numpy.ndarray): X-gradient of the image.
             gradient_y (numpy.ndarray): Y-gradient of the image.
             d (integer): pixel ring size
@@ -400,7 +403,7 @@ class ImageAnalysis_Functions:
         Estimate intensity values for each centroid in the image.
 
         Args:
-            image (numpy.ndarray): Input image.
+            image (numpy.2darray): Input image.
             centroids (numpy.ndarray): Centroid locations.
 
         Returns:
@@ -422,8 +425,8 @@ class ImageAnalysis_Functions:
             np.subtract(image[y_in, x_in], estimated_background), axis=0
         )
 
-        estimated_intensity[estimated_intensity < 0] = np.NAN
-        estimated_background[estimated_background < 0] = np.NAN
+        estimated_intensity[estimated_intensity < 0] = np.nan
+        estimated_background[estimated_background < 0] = np.nan
 
         # correct for averaged background; report background summed
         return (
@@ -694,10 +697,10 @@ class ImageAnalysis_Functions:
                 )
                 return dl_mask, centroids, radiality, idxs
 
-            image_planes = [image[:, :, i] for i in range(image.shape[-1])]
-            planes_img2 = [img2[:, :, i] for i in range(img2.shape[-1])]
-            planes_Gx = [Gx[:, :, i] for i in range(Gx.shape[-1])]
-            planes_Gy = [Gy[:, :, i] for i in range(Gy.shape[-1])]
+            image_planes = [image[i, :, :] for i in range(image.shape[0])]
+            planes_img2 = [img2[i, :, :] for i in range(img2.shape[0])]
+            planes_Gx = [Gx[i, :, :] for i in range(Gx.shape[0])]
+            planes_Gy = [Gy[i, :, :] for i in range(Gy.shape[0])]
 
             pool = Pool(nodes=self.cpu_number)
             pool.restart()
@@ -838,22 +841,22 @@ class ImageAnalysis_Functions:
                     cell_mask,
                 )
 
-            planes = [image[:, :, i] for i in range(image.shape[-1])]
-            planes_img2 = [img2[:, :, i] for i in range(img2.shape[-1])]
-            planes_Gx = [Gx[:, :, i] for i in range(Gx.shape[-1])]
-            planes_Gy = [Gy[:, :, i] for i in range(Gy.shape[-1])]
+            planes = [image[i, :, :] for i in range(image.shape[0])]
+            planes_img2 = [img2[i, :, :] for i in range(img2.shape[0])]
+            planes_Gx = [Gx[i, :, :] for i in range(Gx.shape[0])]
+            planes_Gy = [Gy[i, :, :] for i in range(Gy.shape[0])]
             if image_cell is not None:
                 planes_imagecell = [
-                    image_cell[:, :, i] for i in range(image_cell.shape[-1])
+                    image_cell[i, :, :] for i in range(image_cell.shape[0])
                 ]
             else:
-                planes_imagecell = [None] * image.shape[-1]
+                planes_imagecell = [None] * image.shape[0]
 
             pool = Pool(nodes=self.cpu_number)
             pool.restart()
             results = pool.map(
                 analyse_zplanes,
-                np.arange(image.shape[-1]),
+                np.arange(image.shape[0]),
                 planes,
                 planes_img2,
                 planes_Gx,
@@ -871,10 +874,10 @@ class ImageAnalysis_Functions:
             centroids_large = [i[5] for i in results]
             meanintensities_large = [i[6] for i in results]
             sumintensities_large = [i[7] for i in results]
-            lo_mask = np.dstack([i[8] for i in results])
+            lo_mask = np.stack([i[8] for i in results], axis=0)
 
             if image_cell is not None:
-                cell_mask = np.dstack([i[9] for i in results])
+                cell_mask = np.stack([i[9] for i in results], axis=0)
             else:
                 cell_mask = None
 

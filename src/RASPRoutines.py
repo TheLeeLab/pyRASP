@@ -533,12 +533,12 @@ class RASP_Routines:
         def _analysis_loop(img, k1, k2, img_cell, thres, large_thres, rdl, z_test, i):
             z_planes, img2, Gx, Gy = self.get_infocus_planes(img, k1)
             if z_test:
-                img = img[:, :, z_planes[0] : z_planes[1]]
-                img2 = img2[:, :, z_planes[0] : z_planes[1]]
-                Gx = Gx[:, :, z_planes[0] : z_planes[1]]
-                Gy = Gy[:, :, z_planes[0] : z_planes[1]]
+                img = img[z_planes[0] : z_planes[1], :, :]
+                img2 = img2[z_planes[0] : z_planes[1], :, :]
+                Gx = Gx[z_planes[0] : z_planes[1], :, :]
+                Gy = Gy[z_planes[0] : z_planes[1], :, :]
                 if img_cell is not None:
-                    img_cell = img_cell[:, :, z_planes[0] : z_planes[1]]
+                    img_cell = img_cell[z_planes[0] : z_planes[1], :, :]
             (
                 to_save,
                 to_save_largeobjects,
@@ -588,7 +588,7 @@ class RASP_Routines:
                     gain_map=self.gain_map,
                     offset_map=self.offset_map,
                     variance_map=self.variance_map,
-                )[:, :, im_start:]
+                )[im_start:, :, :]
                 img_cell = None
                 if cell_analysis:
                     img_cell = IO.read_tiff_tophotons(
@@ -597,7 +597,7 @@ class RASP_Routines:
                         gain_map=self.gain_map,
                         offset_map=self.offset_map,
                         variance_map=self.variance_map,
-                    )[:, :, im_start:]
+                    )[im_start:, :, :]
                 z_test = len(img.shape) > 2
                 _analysis_loop(
                     img, k1, k2, img_cell, thres, large_thres, rdl, z_test, i
@@ -748,14 +748,14 @@ class RASP_Routines:
                     )
                     axs[0] = plots.image_scatter_plot(
                         axs[0],
-                        img[:image_size, :image_size, i[1] - 1],
+                        img[i[1] - 1, :image_size, :image_size],
                         xdata=xpositions,
                         ydata=ypositions,
                         label="z plane = " + str(int(i[1])),
                     )
                     axs[1] = plots.image_scatter_plot(
                         axs[1],
-                        img[:, :, i[1] - 1],
+                        img[i[1] - 1, :, :],
                         xdata=xpositions_large,
                         ydata=ypositions_large,
                         label="z plane = " + str(int(i[1])),
@@ -766,21 +766,21 @@ class RASP_Routines:
                     )
                     axs[0] = plots.image_scatter_plot(
                         axs[0],
-                        img[:image_size, :image_size, i[1] - 1],
+                        img[i[1] - 1, :image_size, :image_size],
                         xdata=xpositions,
                         ydata=ypositions,
                         label="puncta, z plane = " + str(int(i[1])),
                     )
                     axs[1] = plots.image_scatter_plot(
                         axs[1],
-                        img[:, :, i[1] - 1],
+                        img[i[1] - 1, :, :],
                         xdata=xpositions_large,
                         ydata=ypositions_large,
                         label="z plane = " + str(int(i[1])),
                     )
                     axs[2] = plots.image_plot(
                         axs[2],
-                        img_cell[:, :, i[1] - 1],
+                        img_cell[i[1] - 1, :, :],
                         label="cell, z plane = " + str(int(i[1])),
                         plotmask=True,
                         mask=cell_mask[:, :, i[1] - 1],
@@ -809,8 +809,8 @@ class RASP_Routines:
                 )
             if lower_cell_size_threshold is not None:
                 for i in np.arange(cell_mask.shape[-1]):
-                    cell_mask[:, :, i], _, _, _ = A_F.threshold_cell_areas(
-                        cell_mask[:, :, i],
+                    cell_mask[i, :, :], _, _, _ = A_F.threshold_cell_areas(
+                        cell_mask[i, :, :],
                         lower_cell_size_threshold=lower_cell_size_threshold,
                         upper_cell_size_threshold=upper_cell_size_threshold,
                         z_project=[False, False],

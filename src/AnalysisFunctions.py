@@ -5,8 +5,6 @@ radiality, relating to the RASP concept.
 jsb92, 2024/01/02
 """
 import numpy as np
-from skimage.measure import label, regionprops_table
-from numba import jit
 import polars as pl
 import pathos
 from pathos.pools import ThreadPool as Pool
@@ -131,22 +129,11 @@ class Analysis_Functions:
                 coords = np.column_stack(np.nonzero(data))
         else:
             coords = data
-        indices = None
         for i in np.arange(len(image_size)):
-            if indices is None:
                 indices = np.where(
-                    (coords[:, i] >= 0) & (coords[:, i] < image_size[i])
+                    (coords[:, i] < 0) | (coords[:, i] >= image_size[i])
                 )[0]
-            else:
-                indices = np.hstack(
-                    [
-                        indices,
-                        np.where((coords[:, i] >= 0) & (coords[:, i] < image_size[i]))[
-                            0
-                        ],
-                    ]
-                )
-        coords = coords[np.unique(indices), :]
+                coords[np.unique(indices), :] = 0
         return np.ravel_multi_index(coords.T, image_size, order="F")
 
     # TODO: correct this, it's crap
@@ -476,7 +463,7 @@ class Analysis_Functions:
         for z_plane in np.asarray(z_planes, dtype=int):
             lo_tocheck = lo_data.filter(pl.col("z") == z_plane)
             pil, areas, centroids, _, _ = IA_F.calculate_region_properties(
-                lo_mask[:, :, z_plane - 1]
+                lo_mask[z_plane - 1, :, :]
             )
             for lo in np.arange(len(pil)):
                 area = areas[lo]
@@ -487,7 +474,7 @@ class Analysis_Functions:
                     and ~np.any(np.isclose(x, lo_tocheck["x"].to_numpy(), atol=0.1))
                     and ~np.any(np.isclose(y, lo_tocheck["y"].to_numpy(), atol=0.1))
                 ):
-                    lo_mask_new[pil[lo][:, 0], pil[lo][:, 1], z_plane - 1] = 0
+                    lo_mask_new[z_plane - 1, pil[lo][:, 0], pil[lo][:, 1]] = 0
         return lo_mask_new
 
     def filter_cellmask_intensity(self, cell_mask, cell_image, intensity_threshold):
@@ -501,16 +488,16 @@ class Analysis_Functions:
             new_cell_mask (np.ndarray): numpy array of cell mask
         """
         new_cell_mask = copy(cell_mask)
-        z_planes = cell_mask.shape[-1]
+        z_planes = cell_mask.shape[0]
         for z in np.arange(z_planes):
-            binary_mask = cell_mask[:, :, z]
-            image = cell_image[:, :, z]
+            binary_mask = cell_mask[z, :, :]
+            image = cell_image[z, :, :]
             pil, areas, centroids, sum_intensity, mean_intensity = (
                 IA_F.calculate_region_properties(binary_mask, image=image)
             )
             for i in np.arange(len(mean_intensity)):
                 if mean_intensity[i] < intensity_threshold:
-                    new_cell_mask[pil[i][:, 0], pil[i][:, 0], z] = 0
+                    new_cell_mask[z, pil[i][:, 0], pil[i][:, 0]] = 0
         return new_cell_mask
 
     def colocalise_with_threshold(
@@ -650,7 +637,7 @@ class Analysis_Functions:
                 if (threshold > 0) and analysis_type == "lo_to_cell":
                     lo_mask = self.filter_lo_intensity(image_file, lo_mask, z_planes)
                 if len(lo_mask.shape) > 2:
-                    image_size = lo_mask.shape[:-1]
+                    image_size = lo_mask.shape[1:]
                 else:
                     image_size = lo_mask.shape
                     z_planes = image_file.replace_column(
@@ -715,7 +702,7 @@ class Analysis_Functions:
                         image_size,
                         self._parallel_coloc_per_z_los,
                     )
-
+                
                 image_file = image_file.with_columns(incell=raw_colocalisation)
                 dataarray = np.vstack(
                     [
@@ -765,9 +752,9 @@ class Analysis_Functions:
         ]
         masks = [
             (
-                lo_mask[:, :, int(z_plane) - 1]
-                if lo_mask.shape[-1] > z_planes[-1]
-                else lo_mask[:, :, j]
+                lo_mask[int(z_plane) - 1, :, :]
+                if lo_mask.shape[0] > z_planes[-1]
+                else lo_mask[j, :, :]
             )
             for j, z_plane in enumerate(z_planes)
         ]
@@ -813,17 +800,17 @@ class Analysis_Functions:
     ):
         masks_lo = [
             (
-                lo_mask[:, :, int(z_plane) - 1]
-                if lo_mask.shape[-1] > len(z_planes)
-                else lo_mask[:, :, j]
+                lo_mask[int(z_plane) - 1, :, :]
+                if lo_mask.shape[0] > len(z_planes)
+                else lo_mask[j, :, :]
             )
             for j, z_plane in enumerate(z_planes)
         ]
         masks_cell = [
             (
-                cell_mask[:, :, int(z_plane) - 1]
-                if lo_mask.shape[-1] > len(z_planes)
-                else cell_mask[:, :, j]
+                cell_mask[int(z_plane) - 1, :, :]
+                if lo_mask.shape[0] > len(z_planes)
+                else cell_mask[j, :, :]
             )
             for j, z_plane in enumerate(z_planes)
         ]
@@ -962,7 +949,7 @@ class Analysis_Functions:
                 z_project=z_project_first,
             )
             image_size = (
-                cell_mask.shape if len(cell_mask.shape) < 3 else cell_mask.shape[:-1]
+                cell_mask.shape if len(cell_mask.shape) < 3 else cell_mask.shape[1:]
             )
             x, y = subset["x"].to_numpy(), subset["y"].to_numpy()
             bounds = (x < image_size[0]) & (x >= 0) & (y < image_size[1]) & (y >= 0)
@@ -1225,15 +1212,15 @@ class Analysis_Functions:
         """
         # Z-project if needed
         if z_project[0] and len(cell_mask_raw.shape) > 2:
-            cell_mask = np.sum(cell_mask_raw, axis=-1).clip(0, 1)
+            cell_mask = np.sum(cell_mask_raw, axis=0).clip(0, 1)
         else:
             cell_mask = cell_mask_raw.copy()
         # Handle multi-dimensional and 2D masks differently
         if len(cell_mask.shape) > 2:
             # Process 3D mask
             cell_mask_new = cell_mask.copy()
-            for plane in range(cell_mask.shape[-1]):
-                plane_mask = cell_mask_new[:, :, plane]
+            for plane in range(cell_mask.shape[0]):
+                plane_mask = cell_mask_new[plane, :, :]
                 pil, areas, centroids, _, _ = IA_F.calculate_region_properties(
                     plane_mask
                 )
@@ -1243,10 +1230,10 @@ class Analysis_Functions:
                 )
                 # Update mask
                 for c in np.where(~mask)[0]:
-                    cell_mask_new[pil[c][:, 0], pil[c][:, 1], plane] = 0
+                    cell_mask_new[plane, pil[c][:, 0], pil[c][:, 1]] = 0
             # Reconstruct final mask
             if z_project[1]:
-                cell_mask_new = np.sum(cell_mask_new, axis=-1).clip(0, 1)
+                cell_mask_new = np.sum(cell_mask_new, axis=0).clip(0, 1)
         else:
             # Process 2D mask
             cell_mask_new = cell_mask.copy()
