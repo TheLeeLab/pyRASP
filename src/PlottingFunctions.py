@@ -641,8 +641,8 @@ class Plotter:
             axs.contour(mask, [0.5], linewidths=masklinewidth, colors=maskcolor)
 
         axs.scatter(
-            xdata,
             ydata,
+            xdata,
             lw=lws,
             edgecolor=scattercolor,
             s=s,

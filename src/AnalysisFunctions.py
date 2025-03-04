@@ -11,6 +11,9 @@ from pathos.pools import ThreadPool as Pool
 from rdfpy import rdf
 import time
 from copy import copy
+import skimage as ski
+from skimage import filters
+from scipy.ndimage import binary_fill_holes
 
 import os
 import sys
@@ -883,6 +886,9 @@ class Analysis_Functions:
         imtype=".tif",
         z_project_first=[True, True],
         median=None,
+        dims=2,
+        sigma1=2.0,
+        sigma2=40.0,
     ):
         """
         Does analysis of number of oligomers in a mask area per "segmented" cell area.
@@ -904,6 +910,10 @@ class Analysis_Functions:
                                     thresholding cell size.
                                     If both false, does not z project and
                                     then does the analysis per z plane.
+            median (float): if given, calculates cell protein load
+            dims (int): if 2, does standard 2d analyses. If 3, does 3D analysis.
+            sigma1 (float): sigma1 for if doing cell mask from intensity data
+            sigma2 (float): sigma2 for if doing cell mask from intensity data
 
         Returns:
             cell_punctum_analysis (pl.DataFrame): polars datarray of the cell analysis
@@ -919,7 +929,6 @@ class Analysis_Functions:
             " protein cell load " if median else " puncta cell likelihood "
         )
         analysis_type = "protein_load" if median else "spot_to_cell"
-        analysis_directory = os.path.split(analysis_file)[0]
 
         if len(analysis_data) == 0:
             return np.NAN
@@ -929,30 +938,60 @@ class Analysis_Functions:
         start = time.time()
 
         for i, file in enumerate(files):
-            cell_file = os.path.join(
-                analysis_directory,
-                os.path.split(file.split(imtype)[0])[-1].split(protein_string)[0]
-                + str(cell_string)
-                + "_cellMask.tiff",
-            )
+            cell_file = file.split(protein_string + ".tif")[0] + cell_string + ".tif"
             if not os.path.isfile(cell_file):
                 continue
 
-            raw_cell_mask = IO.read_tiff(cell_file)
             subset = analysis_data.filter(pl.col("image_filename") == file)
-            cell_mask, pil_mask, centroids, areas = self.threshold_cell_areas_2d(
-                raw_cell_mask,
-                lower_cell_size_threshold,
-                upper_cell_size_threshold=upper_cell_size_threshold,
-                z_project=z_project_first,
+            zi = np.unique(subset["zi"].to_numpy())[0]
+            zf = np.unique(subset["zf"].to_numpy())[0]
+            cell_image = IO.read_tiff(cell_file)
+            cell_image[: zi - 1, :, :] = 0
+            cell_image[zf - 1 :, :, :] = 0
+            raw_cell_mask = IA_F.detect_large_features_3D(
+                cell_image,
+                filters.threshold_otsu,
+                sigma1=sigma1,
+                sigma2=sigma2,
+                hole_threshold=100,
+                cell_threshold=lower_cell_size_threshold,
             )
-            image_size = (
-                cell_mask.shape if len(cell_mask.shape) < 3 else cell_mask.shape[1:]
+
+            if dims == 2:
+                cell_mask, pil_mask, centroids, areas = self.threshold_cell_areas_2d(
+                    raw_cell_mask,
+                    lower_cell_size_threshold,
+                    upper_cell_size_threshold=upper_cell_size_threshold,
+                    z_project=z_project_first,
+                )
+            else:
+                cell_mask = raw_cell_mask
+                pil_mask, areas, centroids, _, _ = IA_F.calculate_region_properties(
+                    cell_mask, dims=3
+                )
+
+            if dims == 2:
+                image_size = (
+                    cell_mask.shape if len(cell_mask.shape) < 3 else cell_mask.shape[1:]
+                )
+                x_lim = image_size[0]
+                y_lim = image_size[1]
+            else:
+                image_size = cell_mask.shape
+                x_lim = image_size[1]
+                y_lim = image_size[2]
+
+            x, y, z = (
+                subset["x"].to_numpy(),
+                subset["y"].to_numpy(),
+                subset["z"].to_numpy(),
             )
-            x, y = subset["x"].to_numpy(), subset["y"].to_numpy()
-            bounds = (x < image_size[0]) & (x >= 0) & (y < image_size[1]) & (y >= 0)
+            bounds = (x < x_lim) & (x >= 0) & (y < y_lim) & (y >= 0)
             x, y = x[bounds], y[bounds]
-            centroids_puncta = np.asarray(np.vstack([x, y]), dtype=int)
+            if dims == 2:
+                centroids_puncta = np.asarray(np.vstack([x, y]), dtype=int)
+            else:
+                centroids_puncta = np.asarray(np.vstack([z, x, y]), dtype=int)
             spot_indices, filter_array = np.unique(
                 np.ravel_multi_index(centroids_puncta, image_size, order="F"),
                 return_index=True,
@@ -965,10 +1004,16 @@ class Analysis_Functions:
             filename_tosave = np.full_like(centroids[:, 0], file, dtype="object")
 
             def areaanalysis(coords):
-                xm, ym = coords[:, 0], coords[:, 1]
-                if np.any(xm > image_size[0]) or np.any(ym > image_size[1]):
+                if coords.shape[-1] == 2:
+                    xm, ym = coords[:, 0], coords[:, 1]
+                else:
+                    zm, xm, ym = coords[:, 0], coords[:, 1], coords[:, 2]
+                if np.any(xm > x_lim) or np.any(ym > y_lim):
                     return np.NAN, np.NAN
-                coordinates_mask = np.asarray(np.vstack([xm, ym]), dtype=int)
+                if coords.shape[-1] == 2:
+                    coordinates_mask = np.asarray(np.vstack([xm, ym]), dtype=int)
+                else:
+                    coordinates_mask = np.asarray(np.vstack([zm, xm, ym]), dtype=int)
                 mask_indices = np.ravel_multi_index(
                     coordinates_mask, image_size, order="F"
                 )
@@ -991,18 +1036,33 @@ class Analysis_Functions:
             n_spots_in_object = np.array([r[1] for r in results])
 
             if len(areas) > 0:
-                data = {
-                    "area/pixels": areas,
-                    "x_centre": centroids[:, 0],
-                    "y_centre": centroids[:, 1],
-                    (
-                        "puncta_cell_likelihood"
-                        if median is None
-                        else "cell_protein_load"
-                    ): n_cell_ratios,
-                    "n_puncta_in_cell": n_spots_in_object,
-                    "image_filename": filename_tosave,
-                }
+                if dims == 2:
+                    data = {
+                        "area/um2": areas,
+                        "x_centre": centroids[:, 0],
+                        "y_centre": centroids[:, 1],
+                        (
+                            "puncta_cell_likelihood"
+                            if median is None
+                            else "cell_protein_load"
+                        ): n_cell_ratios,
+                        "n_puncta_in_cell": n_spots_in_object,
+                        "image_filename": filename_tosave,
+                    }
+                else:
+                    data = {
+                        "area/um3": areas,
+                        "z_centre": centroids[:, 0],
+                        "x_centre": centroids[:, 1],
+                        "y_centre": centroids[:, 2],
+                        (
+                            "puncta_cell_likelihood"
+                            if median is None
+                            else "cell_protein_load"
+                        ): n_cell_ratios,
+                        "n_puncta_in_cell": n_spots_in_object,
+                        "image_filename": filename_tosave,
+                    }
 
                 cell_punctum_analysis = (
                     pl.concat([cell_punctum_analysis, pl.DataFrame(data)])
@@ -1188,6 +1248,42 @@ class Analysis_Functions:
                     flush=True,
                 )
         return (plane_1_analysis, plane_2_analysis, spot_1_analysis, spot_2_analysis)
+
+    def threshold_cell_areas_3d(
+        self,
+        cell_mask,
+        lower_cell_size_threshold=100,
+    ):
+        """
+        Removes small or objects from a cell mask.
+
+        Args:
+            cell_mask_raw (np.ndarray): Cell mask object
+            lower_cell_size_threshold (float): Lower size threshold
+            upper_cell_size_threshold (float): Upper size threshold
+            z_project (bool): If True, z-projects cell mask
+
+        Returns:
+            tuple: Processed cell mask, pixel image locations, centroids, areas
+        """
+        try:
+            if len(cell_mask.shape) < 3:
+                raise Exception("Data is not 3D, as required.")
+        except Exception as error:
+            print("Caught this error: " + repr(error))
+            return
+
+        filled = binary_fill_holes(cell_mask)
+
+        cell_mask_new = ski.morphology.remove_small_holes(
+            filled, area_threshold=lower_cell_size_threshold
+        )
+        cell_mask_new = ski.morphology.remove_small_objects(
+            cell_mask_new, min_size=lower_cell_size_threshold
+        )
+
+        pil, centroids, areas = IA_F.calculate_region_properties(cell_mask_new, dims=3)
+        return cell_mask_new, pil, centroids, areas
 
     def threshold_cell_areas_2d(
         self,

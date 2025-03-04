@@ -28,6 +28,10 @@ module_dir = os.path.abspath(os.path.dirname(__file__))
 sys.path.append(module_dir)
 import IOFunctions
 import HelperFunctions
+import SpotDetectionFunctions
+
+SD_F = SpotDetectionFunctions.SpotDetection_Functions()
+
 
 HF = HelperFunctions.Helper_Functions()
 IO = IOFunctions.IO_Functions()
@@ -169,6 +173,52 @@ class ImageAnalysis_Functions:
         radiality = np.vstack([flatness, integrated_grad]).T
 
         return radiality
+
+    def default_SMD_routine(self, image, d=2, pfa=1e-6):
+        """
+        Daisy-chains analyses to get
+        basic image properties (centroids, radiality)
+        from a SMD image (i.e. no background)
+
+        Args:
+            image (array): image as numpy array
+            k1 (array): gaussian blur kernel
+            k2 (array): ricker wavelet kernel
+
+        Returns:
+            centroids (2D array): centroid positions per oligomer
+            estimated_intensity (numpy.ndarray): Estimated sum intensity per oligomer.
+            estimated_background (numpy.ndarray): Estimated mean background per oligomer.
+            estimated_background_perpixel (numpy.ndarray): Estimated mean background per pixel.
+
+        """
+        if len(image.shape) > 2:
+            to_return = None
+            for i in np.arange(image.shape[0]):
+                to_save = {}
+                img = image[i, :, :]
+                centroids = SD_F.detect_puncta_in_image(image=img, pfa=pfa)
+
+                (
+                    estimated_intensity,
+                    estimated_background,
+                    estimated_background_perpixel,
+                ) = self.estimate_intensity(img, centroids)
+                to_keep = ~np.isnan(estimated_intensity)
+                to_save["sum_intensity_in_photons"] = estimated_intensity[to_keep]
+                to_save["bg_per_punctum"] = estimated_background[to_keep]
+                to_save["bg_per_pixel"] = estimated_background_perpixel[to_keep]
+                centroids = centroids[to_keep, :]
+                to_save["x"] = centroids[:, 0]
+                to_save["y"] = centroids[:, 1]
+                to_save["z"] = np.zeros_like(centroids[:, 1], i) + 1
+
+                if to_return is None:
+                    to_return = pl.DataFrame(to_save)
+                else:
+                    temp = pl.DataFrame(to_save)
+                    to_return = pl.concat([to_return, temp])
+        return to_return
 
     def default_spotanalysis_routine(
         self,
@@ -473,6 +523,16 @@ class ImageAnalysis_Functions:
         x_outer = np.tile(x_outer, (len(centroid_loc), 1)).T + centroid_loc[:, 0]
         y_outer = np.tile(y_outer, (len(centroid_loc), 1)).T + centroid_loc[:, 1]
 
+        x_inner[x_inner < 0] = 0
+        y_inner[y_inner < 0] = 0
+        x_inner[x_inner >= image_size[0]] = image_size[0] - 1
+        y_inner[y_inner >= image_size[1]] = image_size[1] - 1
+
+        x_outer[x_outer < 0] = 0
+        y_outer[y_outer < 0] = 0
+        x_outer[x_outer >= image_size[0]] = image_size[0] - 1
+        y_outer[y_outer >= image_size[1]] = image_size[1] - 1
+
         return x_inner, y_inner, x_outer, y_outer
 
     def detect_large_features(
@@ -526,23 +586,78 @@ class ImageAnalysis_Functions:
 
         return large_mask.astype(bool)
 
-    def calculate_region_properties(self, binary_mask, image=None):
+    def detect_large_features_3D(
+        image,
+        filter_function,
+        sigma1=2.0,
+        sigma2=60.0,
+        hole_threshold=100,
+        cell_threshold=2000,
+    ):
+        """
+        Detects large features in an 3D image based on given filter function.
+
+        Args:
+            image (numpy.ndarray): Original image.
+            filter_function (function): Threshold determining function, e.g. ski.filters.threshold_yen.
+            sigma1 (float): first gaussian blur width
+            sigma2 (float): second gaussian blur width
+            hole_threshold (float): hole size threshold
+            cell_threshold (float): cell size threshold
+
+        Returns:
+            large_mask (numpy.ndarray): Binary mask for the large features.
+        """
+
+        large_mask = np.zeros_like(image)
+        for i in np.arange(image.shape[0]):
+            enhanced_image = gaussian(
+                image[i, :, :], sigma=sigma1, truncate=2.0
+            ) - gaussian(image[i, :, :], sigma=sigma2, truncate=2.0)
+
+            # Create a binary mask for large features based on the threshold
+            large_mask[i, :, :] = enhanced_image > filter_function(enhanced_image)
+
+            large_mask[i, :, :] = binary_opening(
+                large_mask[i, :, :], structure=ski.morphology.disk(1)
+            )
+            large_mask[i, :, :] = binary_closing(
+                large_mask[i, :, :], structure=ski.morphology.disk(5)
+            )
+        large_mask = binary_fill_holes(large_mask)
+        large_mask = ski.morphology.remove_small_holes(
+            large_mask, area_threshold=hole_threshold
+        )
+        large_mask = ski.morphology.remove_small_objects(
+            large_mask, min_size=cell_threshold
+        )
+        return large_mask.astype(bool)
+
+    def calculate_region_properties(
+        self, binary_mask, image=None, dims=2, spacing=(0.5, 0.11, 0.11)
+    ):
         """
         Calculate properties for labeled regions in a binary mask.
 
         Args:
             binary_mask (numpy.ndarray): Binary mask of connected components.
             image (numpy.ndarray): image of same dimension as binary mask. Optional.
+            dims (float): if 3, gets 3 centroid values. if 2, 2.
+            spacing (tuple): pixel spacing. Converts area into real units.
 
         Returns:
             pixel_index_list (list): List containing pixel indices for each labeled object.
-            areas (numpy.ndarray): Array containing areas of each labeled object.
+            areas (numpy.ndarray): Array containing areas (in um2 or um3) of each labeled object.
             centroids (numpy.ndarray): Array containing centroids (x, y) of each labeled object.
         """
         # Find connected components and count the number of objects
-        labeled_image, num_objects = label(binary_mask, connectivity=2, return_num=True)
+        if dims == 2:
+            spacing = spacing[1:]
+        labeled_image, num_objects = label(
+            binary_mask, connectivity=dims, return_num=True
+        )
         # Initialize arrays for storing properties
-        centroids = np.zeros((num_objects, 2))
+        centroids = np.zeros((num_objects, dims))
 
         if image is not None:
             properties = ("centroid", "area", "coords", "intensity_mean")
@@ -551,10 +666,13 @@ class ImageAnalysis_Functions:
 
         # Get region properties
         props = regionprops_table(
-            labeled_image, intensity_image=image, properties=properties
+            labeled_image, intensity_image=image, properties=properties, spacing=spacing
         )
-        centroids[:, 0] = props["centroid-1"]
-        centroids[:, 1] = props["centroid-0"]
+        for i in np.arange(dims):
+            centroids[:, i] = np.asarray(
+                props["centroid-" + str(int(i))] / spacing[i], dtype=int
+            )
+        centroids = np.array(centroids, dtype=int)
         areas = props["area"]
         pixel_index_list = props["coords"]
         if image is not None:

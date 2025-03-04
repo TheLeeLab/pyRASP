@@ -448,6 +448,107 @@ class RASP_Routines:
 
         return
 
+    def SMD_analysis(
+        self,
+        folder,
+        imtype=".tif",
+        pfa=1e-6,
+        protein_string="C1",
+        one_savefile=True,
+        disp=True,
+        folder_recursive=False,
+    ):
+        """
+        analyses data from images in a specified folder,
+        saves spots, locations, intensities and backgrounds in a folder created
+        next to the folder analysed with _analysis string attached
+        also writes a folder with _analysisparameters and saves analysis parameters
+        used for particular experiment
+
+        Args:
+            folder (string): Folder containing images
+            imtype (string): Type of images being analysed. Default '.tif'
+            gisgma (float): gaussian blurring parameter. Default 1.4.
+            rwave (float): Ricker wavelent sigma. Default 2.
+            protein_string (np.1darray): strings for protein-stained data. Default C1.
+            one_savefile (boolean): Parameter that, if true, amalgamates analyisis into one file. Default True.
+            disp (boolean): If true, prints when analysed an image stack. Default True.
+            folder_recursion (boolean): If true, recursively finds folders and analyses each separately.
+
+        """
+        all_files = H_F.file_search(
+            folder, protein_string, imtype
+        )  # first get all files in any subfolders
+
+        folders = np.unique(
+            [os.path.split(i)[0] for i in all_files]
+        )  # get unique folders in this
+
+        to_save = {
+            "flatness": self.flatness,
+            "integratedGrad": self.integratedGrad,
+            "areathres": self.areathres,
+            "d": self.d,
+            "QE": self.QE,
+        }
+        # save analysis parameters in overall directory
+        analysis_p_directory = os.path.abspath(folder) + "_analysisparameters"
+
+        IO.save_analysis_params(
+            analysis_p_directory,
+            to_save,
+            gain_map=self.gain_map,
+            offset_map=self.offset_map,
+            variance_map=self.variance_map,
+        )
+
+        def _analysis_loop(img, i):
+            to_save = IA_F.default_SMD_routine(img, pfa=pfa)
+            IO.save_SMD_analysis(
+                to_save,
+                analysis_directory,
+                imtype,
+                protein_string,
+                files,
+                i,
+                one_savefile=one_savefile,
+            )
+
+        start = time.time()
+
+        def process_files(subfolder, files):
+            for i in np.arange(len(files)):
+                img = IO.read_tiff_tophotons(
+                    os.path.join(subfolder, files[i]),
+                    QE=self.QE,
+                    gain_map=self.gain_map,
+                    offset_map=self.offset_map,
+                    variance_map=self.variance_map,
+                )
+                _analysis_loop(img, i)
+                if disp:
+                    print(
+                        f"Analysed image file {i + 1}/{len(files)}    Time elapsed: {time.time() - start:.3f} s",
+                        end="\r",
+                        flush=True,
+                    )
+
+        start = time.time()
+
+        if folder_recursive:
+            for val in folders:
+                subfolder = os.path.abspath(val)
+                files = H_F.file_search(subfolder, protein_string, imtype)
+                analysis_directory = os.path.abspath(subfolder) + "_analysis"
+                IO.make_directory(analysis_directory)
+                process_files(subfolder, files)
+        else:
+            files = all_files
+            analysis_directory = os.path.abspath(folder) + "_analysis"
+            IO.make_directory(analysis_directory)
+            process_files(folder, files)
+        return
+
     def analyse_images(
         self,
         folder,
@@ -1020,6 +1121,118 @@ class RASP_Routines:
         if isinstance(rdf_AT, pl.DataFrame):
             rdf_AT.write_csv(to_save_name + "_abovethreshold_rdf.csv")
         return rdf_AT
+
+    def count_puncta_in_individual_cells_threshold_3D(
+        self,
+        analysis_data,
+        analysis_file,
+        threshold,
+        cell_string,
+        protein_string,
+        lower_cell_size_threshold=2000,
+        upper_cell_size_threshold=np.inf,
+        imtype=".tif",
+        blur_degree=1,
+        z_project_first=True,
+        replace_files=False,
+        median=None,
+        end_string="HC_threshold",
+    ):
+        """
+        Redo colocalisation analayses of spots above a photon threshold in an
+        analysis file. Does on full 3D mask.
+
+        Args:
+            analysis_file (str): The analysis file to be re-done.
+            threshold (float): The photon threshold
+            cell_string (str): string of cell to analyse
+            protein_string (str): string of analysed protein
+            lower_cell_size_threshold (float): lower cell size threshold
+            upper_cell_size_threshold (float): upper cell size threshold
+            imtype (str): image type
+            blur_degree (int): blur degree for colocalisation analysis
+            z_project_first (boolean): if True (default), does a z projection before
+                                    thresholding cell size. If false, does the opposite.
+            replace_files (boolean): if False, looks for files first and if it's already analysed, does nothing
+            median (float): if float, does cell protein load
+
+
+        Returns:
+            cell_punctum_analysis_AT (pl.DataFrame): dataframe of cell analysis above threshold
+
+        """
+        if int(threshold) == threshold:
+            threshold_str = str(int(threshold))
+        else:
+            threshold_str = str(np.around(threshold, 1)).replace(".", "p")
+
+        if median is not None:
+            start_string = "cell_protein_load_"
+        else:
+            start_string = "single_cell_coincidence_"
+
+        if int(lower_cell_size_threshold) == lower_cell_size_threshold:
+            lc_str = str(int(lower_cell_size_threshold))
+        else:
+            lc_str = str(np.around(lower_cell_size_threshold, 1)).replace(".", "p")
+
+        if np.isinf(upper_cell_size_threshold):
+            savecell_string = os.path.join(
+                os.path.split(analysis_file)[0],
+                start_string
+                + "mincellsize_"
+                + lc_str
+                + "_photonthreshold_"
+                + threshold_str
+                + "_photons"
+                + "_"
+                + end_string,
+            )
+            above_string = savecell_string + "_abovethreshold.csv"
+        else:
+            if int(upper_cell_size_threshold) == upper_cell_size_threshold:
+                uc_str = str(int(upper_cell_size_threshold))
+            else:
+                uc_str = str(np.around(upper_cell_size_threshold, 1)).replace(".", "p")
+
+            savecell_string = os.path.join(
+                os.path.split(analysis_file)[0],
+                start_string
+                + "mincellsize_"
+                + lc_str
+                + "_maxcellsize_"
+                + uc_str
+                + "_photonthreshold_"
+                + threshold_str
+                + "_photons"
+                + "_"
+                + end_string,
+            )
+            above_string = savecell_string + "_abovethreshold.csv"
+
+        if replace_files == False:
+            if os.path.isfile(above_string):
+                print("Analysis already complete; exiting.")
+                return None, None
+
+        cell_punctum_analysis_AT = (
+            A_F.number_of_puncta_per_segmented_cell_with_threshold(
+                analysis_file,
+                analysis_data,
+                threshold,
+                lower_cell_size_threshold=lower_cell_size_threshold,
+                upper_cell_size_threshold=upper_cell_size_threshold,
+                blur_degree=blur_degree,
+                cell_string=cell_string,
+                protein_string=protein_string,
+                imtype=imtype,
+                z_project_first=z_project_first,
+                median=median,
+            )
+        )
+        if isinstance(cell_punctum_analysis_AT, pl.DataFrame):
+            cell_punctum_analysis_AT.write_csv(above_string)
+        return cell_punctum_analysis_AT
 
     def count_puncta_in_individual_cells_threshold(
         self,

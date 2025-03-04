@@ -19,6 +19,79 @@ class IO_Functions:
         self = self
         return
 
+    def save_SMD_analysis(
+        self,
+        to_save,
+        analysis_directory,
+        imtype,
+        protein_string,
+        files,
+        i=0,
+        one_savefile=True,
+    ):
+        """
+        saves analysis.
+
+        Args:
+            to_save (pl.DataFrame): polars dataframe.
+            analysis_directory (string): analysis directory to save in
+            imtype (string): string of image type
+            protein_string (np.1darray): strings for protein-stained data (default C1)
+            i (int): location in files where we're analysing
+            one_savefile (boolean): if True, saving all analysis in one csv
+        """
+        module_dir = os.path.dirname(__file__)
+        sys.path.append(module_dir)
+        import AnalysisFunctions
+
+        A_F = AnalysisFunctions.Analysis_Functions()
+
+        def _get_base_filename(file):
+            return os.path.split(file)[-1].split(imtype)[0]
+
+        def _write_dataframe(df, filepath, append=False):
+            if df.shape[0] > 0:
+                if append and os.path.isfile(filepath):
+                    with open(filepath, mode="ab") as f:
+                        df.write_csv(f, include_header=False)
+                else:
+                    df.write_csv(filepath)
+
+        # Handle separate file saving
+        if not one_savefile:
+            base_filename = _get_base_filename(files[i])
+            savename = os.path.join(analysis_directory, f"{base_filename}.csv")
+
+            to_save.write_csv(savename)
+
+            return
+
+        # Handling single file saving
+        if to_save is not None:
+            to_save = to_save.with_columns(
+                image_filename=np.full_like(
+                    to_save["z"].to_numpy(), files[i], dtype="object"
+                )
+            )
+            n_spots = A_F.count_spots(to_save)
+        else:
+            n_spots = None
+
+        # Prepare save paths
+        save_paths = [
+            os.path.join(analysis_directory, "spot_analysis.csv"),
+            os.path.join(analysis_directory, "spot_numbers.csv"),
+        ]
+
+        # Count spots and large objects
+
+        # Save or append data
+        dfs_to_save = [to_save, n_spots]
+        for df, path in zip(dfs_to_save, save_paths):
+            if df is not None:
+                _write_dataframe(df, path, append=(i != 0))
+        return
+
     def save_analysis(
         self,
         to_save,
