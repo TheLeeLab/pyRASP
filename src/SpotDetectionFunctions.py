@@ -3,9 +3,8 @@
 """
 Created on Mon Jan 20 13:59:53 2025
 
-This code heavily based on code from
-Hekrdla, M. et al. Optimized molecule detection in 
-localization microscopy with selected false positive probability.
+This code based on code from
+Hekrdla, M. et al.
 Nat Commun 16, 601 (2025).
 """
 import sys
