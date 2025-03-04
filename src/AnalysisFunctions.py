@@ -889,6 +889,7 @@ class Analysis_Functions:
         dims=2,
         sigma1=2.0,
         sigma2=40.0,
+        scaling=(0.5, 0.11, 0.11),
     ):
         """
         Does analysis of number of oligomers in a mask area per "segmented" cell area.
@@ -967,7 +968,7 @@ class Analysis_Functions:
             else:
                 cell_mask = raw_cell_mask
                 pil_mask, areas, centroids, _, _ = IA_F.calculate_region_properties(
-                    cell_mask, dims=3
+                    cell_mask, dims=3, scaling=scaling
                 )
 
             if dims == 2:
