@@ -833,20 +833,24 @@ class RASP_Routines:
             for i in enumerate(z_to_plot):
                 xpositions = to_save.filter(pl.col("z") == i[1])["x"].to_numpy()
                 ypositions = to_save.filter(pl.col("z") == i[1])["y"].to_numpy()
-                xpositions_large = to_save_largeobjects.filter(pl.col("z") == i[1])[
-                    "x"
-                ].to_numpy()
-                ypositions_large = to_save_largeobjects.filter(pl.col("z") == i[1])[
-                    "y"
-                ].to_numpy()
+                if to_save_largeobjects is not None:
+                    xpositions_large = to_save_largeobjects.filter(pl.col("z") == i[1])[
+                        "x"
+                    ].to_numpy()
+                    ypositions_large = to_save_largeobjects.filter(pl.col("z") == i[1])[
+                        "y"
+                    ].to_numpy()
                 testvals = (xpositions < image_size) * (ypositions < image_size)
                 xpositions = xpositions[testvals]
                 ypositions = ypositions[testvals]
 
                 if cell_file is None:
-                    fig, axs = plots.two_column_plot(
-                        nrows=1, ncolumns=2, widthratio=[1, 1]
-                    )
+                    if to_save_largeobjects is not None:
+                        fig, axs = plots.two_column_plot(
+                            nrows=1, ncolumns=2, widthratio=[1, 1]
+                        )
+                    else:
+                        fig, axs = plots.one_column_plot()
                     axs[0] = plots.image_scatter_plot(
                         axs[0],
                         img[i[1] - 1, :image_size, :image_size],
@@ -854,13 +858,14 @@ class RASP_Routines:
                         ydata=ypositions,
                         label="z plane = " + str(int(i[1])),
                     )
-                    axs[1] = plots.image_scatter_plot(
-                        axs[1],
-                        img[i[1] - 1, :, :],
-                        xdata=xpositions_large,
-                        ydata=ypositions_large,
-                        label="z plane = " + str(int(i[1])),
-                    )
+                    if to_save_largeobjects is not None: 
+                        axs[1] = plots.image_scatter_plot(
+                            axs[1],
+                            img[i[1] - 1, :, :],
+                            xdata=xpositions_large,
+                            ydata=ypositions_large,
+                            label="z plane = " + str(int(i[1])),
+                        )
                 else:
                     fig, axs = plots.two_column_plot(
                         nrows=1, ncolumns=3, widthratio=[1, 1, 1]
@@ -1137,6 +1142,10 @@ class RASP_Routines:
         replace_files=False,
         median=None,
         end_string="HC_threshold",
+        dims=3,
+        sigma1=2.0,
+        sigma2=40.0,
+        spacing=(0.5, 0.11, 0.11),
     ):
         """
         Redo colocalisation analayses of spots above a photon threshold in an
@@ -1167,9 +1176,9 @@ class RASP_Routines:
             threshold_str = str(np.around(threshold, 1)).replace(".", "p")
 
         if median is not None:
-            start_string = "cell_protein_load_"
+            start_string = "cell_protein_load_3Danalysis_"
         else:
-            start_string = "single_cell_coincidence_"
+            start_string = "single_cell_coincidence_3Danalysis_"
 
         if int(lower_cell_size_threshold) == lower_cell_size_threshold:
             lc_str = str(int(lower_cell_size_threshold))
@@ -1228,6 +1237,10 @@ class RASP_Routines:
                 imtype=imtype,
                 z_project_first=z_project_first,
                 median=median,
+                dims=dims,
+                spacing=spacing,
+                sigma1=sigma1,
+                sigma2=sigma2,
             )
         )
         if isinstance(cell_punctum_analysis_AT, pl.DataFrame):
@@ -1245,10 +1258,11 @@ class RASP_Routines:
         upper_cell_size_threshold=np.inf,
         imtype=".tif",
         blur_degree=1,
-        z_project_first=True,
+        z_project_first=[True, True],
         replace_files=False,
         median=None,
         end_string="HC_threshold",
+        spacing=(0.11, 0.11),
     ):
         """
         Redo colocalisation analayses of spots above a photon threshold in an
@@ -1340,6 +1354,8 @@ class RASP_Routines:
                 imtype=imtype,
                 z_project_first=z_project_first,
                 median=median,
+                dims=2,
+                spacing=spacing,
             )
         )
         if isinstance(cell_punctum_analysis_AT, pl.DataFrame):

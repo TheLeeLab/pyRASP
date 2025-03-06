@@ -29,6 +29,7 @@ class Coincidence_Functions:
         blur_degree=1,
         analytical_solution=True,
         max_iter=1000,
+        spacing=None
     ):
         """
         Calculates various types of coincidence metrics based on the specified analysis type.
@@ -55,6 +56,7 @@ class Coincidence_Functions:
             blur_degree (int, optional): Degree of blur to apply. Default is 1.
             analytical_solution (bool, optional): Use analytical solution for randomization. Default is True.
             max_iter (int, optional): Maximum number of iterations for colocalisation likelihood ratio calculation. Default is 1000.
+            spacing (tuple, optional): if spacing is applied, calculates volume of object scaled to pixel sizes.
 
         Returns:
             tuple: Metrics based on the specified analysis type. The structure of the tuple varies depending on the analysis type:
@@ -88,6 +90,7 @@ class Coincidence_Functions:
                 n_spots,
                 n_iter,
                 analytical_solution,
+                spacing=spacing,
             )
         elif analysis_type == "protein_load":
             return self._calculate_protein_load(
@@ -99,6 +102,7 @@ class Coincidence_Functions:
                 image_size,
                 n_iter,
                 analytical_solution,
+                spacing=spacing,
             )
         elif analysis_type == "spot_to_mask":
             return self._calculate_spot_to_mask_coincidence(
@@ -144,6 +148,7 @@ class Coincidence_Functions:
         n_spots,
         n_iter,
         analytical_solution,
+        spacing
     ):
         raw_colocalisation, n_olig_in_cell = self._compute_colocalisation(
             spot_indices, mask_indices, n_spots
@@ -156,6 +161,7 @@ class Coincidence_Functions:
             n_iter,
             analytical_solution,
             n_spots,
+            spacing,
         )
 
         if n_olig_in_cell == 0 or n_olig_in_cell_random == 0:
@@ -390,9 +396,17 @@ class Coincidence_Functions:
         n_iter,
         analytical_solution,
         original_n_spots,
+        spacing
     ):
         if analytical_solution:
-            return original_n_spots * (len(mask_indices.ravel()) / np.prod(image_size))
+            if spacing is None:
+                return original_n_spots * (len(mask_indices.ravel()) / np.prod(image_size))
+            else:
+                cell_mask = np.zeros(image_size)
+                cell_mask.ravel()[mask_indices] = 1
+                area = ski.measure.regionprops_table(np.asarray(cell_mask, dtype=int), spacing=spacing, properties=('area', ))['area'][0]
+                total_area = np.prod(image_size*np.array(spacing))
+                return original_n_spots * (area/total_area)
         else:
             return np.mean(
                 [
@@ -664,7 +678,7 @@ class Coincidence_Functions:
 
         Args:
             indices (np.1darray): Array of pixel indices.
-            image_size (tuple): Image dimensions (height, width).
+            image_size (tuple): Image dimensions (z (optional), height, width).
             width: width of dilation (default 5)
             edge: edge of dilation (default 1)
 
@@ -677,29 +691,41 @@ class Coincidence_Functions:
         centroid = np.asarray(
             np.unravel_index(indices, image_size, order="F"), dtype=int
         )
-
+        if len(image_size) == 2:
+            x_c = centroid[0, :]
+            y_c = centroid[1, :]
+        else:
+            z_c = centroid[0, :]
+            x_c = centroid[1, :]
+            y_c = centroid[2, :]
         if len(indices.shape) > 1:
             x = (
                 np.tile(x, (len(indices), 1)).T[:, :, np.newaxis]
-                + np.asarray(centroid[0, :], dtype=int)
+                + np.asarray(x_c, dtype=int)
             ).T
 
             y = (
                 np.tile(y, (len(indices), 1)).T[:, :, np.newaxis]
-                + np.asarray(centroid[1, :], dtype=int)
+                + np.asarray(y_c, dtype=int)
             ).T
             new_dims = (indices.shape[0], int(len(x.ravel()) / indices.shape[0]))
         else:
             x = (
-                np.tile(x, (len(indices), 1)).T + np.asarray(centroid[0, :], dtype=int)
+                np.tile(x, (len(indices), 1)).T + np.asarray(x_c, dtype=int)
             ).T
 
             y = (
-                np.tile(y, (len(indices), 1)).T + np.asarray(centroid[1, :], dtype=int)
+                np.tile(y, (len(indices), 1)).T + np.asarray(y_c, dtype=int)
             ).T
-            new_dims = (len(indices), int(len(x.ravel()) / len(indices)))
+            new_dims = (len(indices), int(len(x.ravel()) / indices.shape[0]))
+        if len(image_size) == 3:
+            z = np.tile(z_c, (x.shape[-1], 1)).T
+            wrap = np.vstack([z.ravel(), x.ravel(), y.ravel()])
+        else:
+            wrap = np.vstack([x.ravel(), y.ravel()])
+
         dilated_indices = np.ravel_multi_index(
-            np.vstack([x.ravel(), y.ravel()]), image_size, order="F", mode="wrap"
+            wrap, image_size, order="F", mode="wrap"
         ).reshape(new_dims)
 
         if len(indices) == 1:

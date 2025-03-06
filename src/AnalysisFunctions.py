@@ -889,7 +889,7 @@ class Analysis_Functions:
         dims=2,
         sigma1=2.0,
         sigma2=40.0,
-        scaling=(0.5, 0.11, 0.11),
+        spacing=(0.5, 0.11, 0.11),
     ):
         """
         Does analysis of number of oligomers in a mask area per "segmented" cell area.
@@ -937,26 +937,36 @@ class Analysis_Functions:
         files = np.unique(analysis_data["image_filename"].to_numpy())
         cell_punctum_analysis = None
         start = time.time()
+        analysis_directory = os.path.split(analysis_file)[0]
 
         for i, file in enumerate(files):
-            cell_file = file.split(protein_string + ".tif")[0] + cell_string + ".tif"
-            if not os.path.isfile(cell_file):
-                continue
-
+            cell_mask_file = os.path.join(
+                analysis_directory,
+                os.path.split(file.split(imtype)[0])[-1].split(protein_string)[0]
+                + str(cell_string)
+                + "_cellMask.tiff",
+            )
             subset = analysis_data.filter(pl.col("image_filename") == file)
             zi = np.unique(subset["zi"].to_numpy())[0]
             zf = np.unique(subset["zf"].to_numpy())[0]
-            cell_image = IO.read_tiff(cell_file)
-            cell_image[: zi - 1, :, :] = 0
-            cell_image[zf - 1 :, :, :] = 0
-            raw_cell_mask = IA_F.detect_large_features_3D(
-                cell_image,
-                filters.threshold_otsu,
-                sigma1=sigma1,
-                sigma2=sigma2,
-                hole_threshold=100,
-                cell_threshold=lower_cell_size_threshold,
-            )
+            if not os.path.isfile(cell_mask_file):
+                cell_file = file.split(protein_string + ".tif")[0] + cell_string + ".tif"
+                if not os.path.isfile(cell_file):
+                    continue
+                cell_image = IO.read_tiff(cell_file)
+                cell_image[: int(zi - 1), :, :] = 0
+                cell_image[int(zf - 1) :, :, :] = 0
+                raw_cell_mask = IA_F.detect_large_features_3D(
+                    cell_image,
+                    filter_function=filters.threshold_otsu,
+                    sigma1=sigma1,
+                    sigma2=sigma2,
+                    hole_threshold=100,
+                    cell_threshold=lower_cell_size_threshold,
+                )
+                IO.write_tiff(file_path=cell_mask_file, volume=raw_cell_mask, bit=np.uint8)
+            else:
+                raw_cell_mask = IO.read_tiff(cell_mask_file)
 
             if dims == 2:
                 cell_mask, pil_mask, centroids, areas = self.threshold_cell_areas_2d(
@@ -964,11 +974,12 @@ class Analysis_Functions:
                     lower_cell_size_threshold,
                     upper_cell_size_threshold=upper_cell_size_threshold,
                     z_project=z_project_first,
+                    spacing=spacing,
                 )
             else:
                 cell_mask = raw_cell_mask
                 pil_mask, areas, centroids, _, _ = IA_F.calculate_region_properties(
-                    cell_mask, dims=3, scaling=scaling
+                    cell_mask, dims=3, spacing=spacing
                 )
 
             if dims == 2:
@@ -981,18 +992,22 @@ class Analysis_Functions:
                 image_size = cell_mask.shape
                 x_lim = image_size[1]
                 y_lim = image_size[2]
+                z_lim = image_size[0]
 
             x, y, z = (
                 subset["x"].to_numpy(),
                 subset["y"].to_numpy(),
                 subset["z"].to_numpy(),
             )
-            bounds = (x < x_lim) & (x >= 0) & (y < y_lim) & (y >= 0)
-            x, y = x[bounds], y[bounds]
             if dims == 2:
+                bounds = (x < x_lim) & (x >= 0) & (y < y_lim) & (y >= 0)
+                x, y = x[bounds], y[bounds]
                 centroids_puncta = np.asarray(np.vstack([x, y]), dtype=int)
             else:
+                bounds = (x < x_lim) & (x >= 0) & (y < y_lim) & (y >= 0) & (z < z_lim) & (z >= 0)
+                z, x, y = z[bounds], x[bounds], y[bounds]
                 centroids_puncta = np.asarray(np.vstack([z, x, y]), dtype=int)
+
             spot_indices, filter_array = np.unique(
                 np.ravel_multi_index(centroids_puncta, image_size, order="F"),
                 return_index=True,
@@ -1027,6 +1042,7 @@ class Analysis_Functions:
                     n_iter=1,
                     blur_degree=blur_degree,
                     analysis_type=analysis_type,
+                    spacing=spacing,
                 )
                 return olig_cell_ratio, n_olig_in_cell
 
@@ -1292,6 +1308,7 @@ class Analysis_Functions:
         lower_cell_size_threshold=100,
         upper_cell_size_threshold=np.inf,
         z_project=[True, True],
+        spacing=(0.11,0.11)
     ):
         """
         Removes small and/or large objects from a cell mask.
@@ -1317,7 +1334,7 @@ class Analysis_Functions:
             for plane in range(cell_mask.shape[0]):
                 plane_mask = cell_mask_new[plane, :, :]
                 pil, areas, centroids, _, _ = IA_F.calculate_region_properties(
-                    plane_mask
+                    plane_mask, spacing=(1,1)
                 )
                 # Vectorized filtering
                 mask = (areas >= lower_cell_size_threshold) & (
@@ -1333,7 +1350,7 @@ class Analysis_Functions:
             # Process 2D mask
             cell_mask_new = cell_mask.copy()
             pil, areas, centroids, _, _ = IA_F.calculate_region_properties(
-                cell_mask_new
+                cell_mask_new, spacing=(1,1)
             )
             # Vectorized filtering
             mask = (areas >= lower_cell_size_threshold) & (
@@ -1345,7 +1362,7 @@ class Analysis_Functions:
         # Final region properties calculation
         if z_project[1]:
             pil, areas, centroids, _, _ = IA_F.calculate_region_properties(
-                cell_mask_new
+                cell_mask_new, spacing=spacing,
             )
         else:
             pil = None

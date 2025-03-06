@@ -211,8 +211,8 @@ class ImageAnalysis_Functions:
                 centroids = centroids[to_keep, :]
                 to_save["x"] = centroids[:, 0]
                 to_save["y"] = centroids[:, 1]
-                to_save["z"] = np.zeros_like(centroids[:, 1], i) + 1
-
+                to_save["z"] = np.full_like(centroids[:, 1], i) + 1
+                
                 if to_return is None:
                     to_return = pl.DataFrame(to_save)
                 else:
@@ -587,6 +587,7 @@ class ImageAnalysis_Functions:
         return large_mask.astype(bool)
 
     def detect_large_features_3D(
+        self,
         image,
         filter_function,
         sigma1=2.0,
@@ -651,7 +652,7 @@ class ImageAnalysis_Functions:
             centroids (numpy.ndarray): Array containing centroids (x, y) of each labeled object.
         """
         # Find connected components and count the number of objects
-        if dims == 2:
+        if len(spacing) > dims:
             spacing = spacing[1:]
         labeled_image, num_objects = label(
             binary_mask, connectivity=dims, return_num=True
