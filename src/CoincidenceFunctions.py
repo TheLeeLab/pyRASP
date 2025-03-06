@@ -29,7 +29,7 @@ class Coincidence_Functions:
         blur_degree=1,
         analytical_solution=True,
         max_iter=1000,
-        spacing=None
+        spacing=None,
     ):
         """
         Calculates various types of coincidence metrics based on the specified analysis type.
@@ -148,7 +148,7 @@ class Coincidence_Functions:
         n_spots,
         n_iter,
         analytical_solution,
-        spacing
+        spacing,
     ):
         raw_colocalisation, n_olig_in_cell = self._compute_colocalisation(
             spot_indices, mask_indices, n_spots
@@ -396,17 +396,23 @@ class Coincidence_Functions:
         n_iter,
         analytical_solution,
         original_n_spots,
-        spacing
+        spacing,
     ):
         if analytical_solution:
             if spacing is None:
-                return original_n_spots * (len(mask_indices.ravel()) / np.prod(image_size))
+                return original_n_spots * (
+                    len(mask_indices.ravel()) / np.prod(image_size)
+                )
             else:
                 cell_mask = np.zeros(image_size)
                 cell_mask.ravel()[mask_indices] = 1
-                area = ski.measure.regionprops_table(np.asarray(cell_mask, dtype=int), spacing=spacing, properties=('area', ))['area'][0]
-                total_area = np.prod(image_size*np.array(spacing))
-                return original_n_spots * (area/total_area)
+                area = ski.measure.regionprops_table(
+                    np.asarray(cell_mask, dtype=int),
+                    spacing=spacing,
+                    properties=("area",),
+                )["area"][0]
+                total_area = np.prod(image_size * np.array(spacing))
+                return original_n_spots * (area / total_area)
         else:
             return np.mean(
                 [
@@ -710,13 +716,9 @@ class Coincidence_Functions:
             ).T
             new_dims = (indices.shape[0], int(len(x.ravel()) / indices.shape[0]))
         else:
-            x = (
-                np.tile(x, (len(indices), 1)).T + np.asarray(x_c, dtype=int)
-            ).T
+            x = (np.tile(x, (len(indices), 1)).T + np.asarray(x_c, dtype=int)).T
 
-            y = (
-                np.tile(y, (len(indices), 1)).T + np.asarray(y_c, dtype=int)
-            ).T
+            y = (np.tile(y, (len(indices), 1)).T + np.asarray(y_c, dtype=int)).T
             new_dims = (len(indices), int(len(x.ravel()) / indices.shape[0]))
         if len(image_size) == 3:
             z = np.tile(z_c, (x.shape[-1], 1)).T

@@ -858,7 +858,7 @@ class RASP_Routines:
                         ydata=ypositions,
                         label="z plane = " + str(int(i[1])),
                     )
-                    if to_save_largeobjects is not None: 
+                    if to_save_largeobjects is not None:
                         axs[1] = plots.image_scatter_plot(
                             axs[1],
                             img[i[1] - 1, :, :],

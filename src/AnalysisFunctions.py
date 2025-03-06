@@ -950,7 +950,9 @@ class Analysis_Functions:
             zi = np.unique(subset["zi"].to_numpy())[0]
             zf = np.unique(subset["zf"].to_numpy())[0]
             if not os.path.isfile(cell_mask_file):
-                cell_file = file.split(protein_string + ".tif")[0] + cell_string + ".tif"
+                cell_file = (
+                    file.split(protein_string + ".tif")[0] + cell_string + ".tif"
+                )
                 if not os.path.isfile(cell_file):
                     continue
                 cell_image = IO.read_tiff(cell_file)
@@ -964,7 +966,9 @@ class Analysis_Functions:
                     hole_threshold=100,
                     cell_threshold=lower_cell_size_threshold,
                 )
-                IO.write_tiff(file_path=cell_mask_file, volume=raw_cell_mask, bit=np.uint8)
+                IO.write_tiff(
+                    file_path=cell_mask_file, volume=raw_cell_mask, bit=np.uint8
+                )
             else:
                 raw_cell_mask = IO.read_tiff(cell_mask_file)
 
@@ -1004,7 +1008,14 @@ class Analysis_Functions:
                 x, y = x[bounds], y[bounds]
                 centroids_puncta = np.asarray(np.vstack([x, y]), dtype=int)
             else:
-                bounds = (x < x_lim) & (x >= 0) & (y < y_lim) & (y >= 0) & (z < z_lim) & (z >= 0)
+                bounds = (
+                    (x < x_lim)
+                    & (x >= 0)
+                    & (y < y_lim)
+                    & (y >= 0)
+                    & (z < z_lim)
+                    & (z >= 0)
+                )
                 z, x, y = z[bounds], x[bounds], y[bounds]
                 centroids_puncta = np.asarray(np.vstack([z, x, y]), dtype=int)
 
@@ -1308,7 +1319,7 @@ class Analysis_Functions:
         lower_cell_size_threshold=100,
         upper_cell_size_threshold=np.inf,
         z_project=[True, True],
-        spacing=(0.11,0.11)
+        spacing=(0.11, 0.11),
     ):
         """
         Removes small and/or large objects from a cell mask.
@@ -1334,7 +1345,7 @@ class Analysis_Functions:
             for plane in range(cell_mask.shape[0]):
                 plane_mask = cell_mask_new[plane, :, :]
                 pil, areas, centroids, _, _ = IA_F.calculate_region_properties(
-                    plane_mask, spacing=(1,1)
+                    plane_mask, spacing=(1, 1)
                 )
                 # Vectorized filtering
                 mask = (areas >= lower_cell_size_threshold) & (
@@ -1350,7 +1361,7 @@ class Analysis_Functions:
             # Process 2D mask
             cell_mask_new = cell_mask.copy()
             pil, areas, centroids, _, _ = IA_F.calculate_region_properties(
-                cell_mask_new, spacing=(1,1)
+                cell_mask_new, spacing=(1, 1)
             )
             # Vectorized filtering
             mask = (areas >= lower_cell_size_threshold) & (
@@ -1362,7 +1373,8 @@ class Analysis_Functions:
         # Final region properties calculation
         if z_project[1]:
             pil, areas, centroids, _, _ = IA_F.calculate_region_properties(
-                cell_mask_new, spacing=spacing,
+                cell_mask_new,
+                spacing=spacing,
             )
         else:
             pil = None

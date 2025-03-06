@@ -212,7 +212,7 @@ class ImageAnalysis_Functions:
                 to_save["x"] = centroids[:, 0]
                 to_save["y"] = centroids[:, 1]
                 to_save["z"] = np.full_like(centroids[:, 1], i) + 1
-                
+
                 if to_return is None:
                     to_return = pl.DataFrame(to_save)
                 else:
