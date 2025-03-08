@@ -71,11 +71,15 @@ class Coincidence_Functions:
             ValueError: If an invalid analysis type is specified.
         """
         if isinstance(spot_indices, type(None)):
-            if analysis_type not in ["largeobj"]:
+            if analysis_type not in ["largeobj", "spot_to_cell", "protein_load"]:
                 return self._handle_empty_spots(spot_indices)
+            elif analysis_type in ["spot_to_cell", "protein_load"]:
+                return np.nan, 0, 0
         elif len(spot_indices) == 0:
-            if analysis_type not in ["largeobj"]:
+            if analysis_type not in ["largeobj", "spot_to_cell", "protein_load"]:
                 return self._handle_empty_spots(spot_indices)
+            elif analysis_type in ["spot_to_cell", "protein_load"]:
+                return np.nan, 0, 0
         if not isinstance(spot_indices, type(None)):
             n_spots = len(spot_indices)
 
@@ -170,7 +174,6 @@ class Coincidence_Functions:
         olig_cell_ratio = self._compute_olig_cell_ratio(
             n_olig_in_cell, n_olig_in_cell_random
         )
-
         return olig_cell_ratio, n_olig_in_cell, n_iter
 
     def _calculate_protein_load(
@@ -198,7 +201,7 @@ class Coincidence_Functions:
         )
 
         if n_olig_in_cell == 0 or n_olig_in_cell_random == 0:
-            return np.nan, n_olig_in_cell, n_iter
+            return np.nan, 0, 0
 
         olig_cell_ratio = self._compute_protein_load_ratio(
             n_olig_in_cell,

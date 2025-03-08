@@ -1035,7 +1035,7 @@ class Analysis_Functions:
                     xm, ym = coords[:, 0], coords[:, 1]
                 else:
                     zm, xm, ym = coords[:, 0], coords[:, 1], coords[:, 2]
-                if np.any(xm > x_lim) or np.any(ym > y_lim):
+                if np.any(xm > x_lim) or np.any(ym > y_lim) or np.any(zm > z_lim):
                     return np.NAN, np.NAN
                 if coords.shape[-1] == 2:
                     coordinates_mask = np.asarray(np.vstack([xm, ym]), dtype=int)
