@@ -1360,7 +1360,7 @@ class Analysis_Functions:
         )
 
         for i in np.arange(len(pil_raw)):
-            if len(np.unique(pil_raw[i][:, 0]) < n_planes):
+            if len(np.unique(pil_raw[i][:, 0])) < n_planes:
                 cell_mask_new[pil_raw[i][:, 0], pil_raw[i][:, 1], pil_raw[i][:, 2]] = 0
 
         pil, areas, centroids, _, _ = IA_F.calculate_region_properties(

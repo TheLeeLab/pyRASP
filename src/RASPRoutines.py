@@ -1265,7 +1265,7 @@ class RASP_Routines:
                 analysis_file,
                 analysis_data,
                 threshold_lower,
-                threshold_upper,
+                threshold_upper=threshold_upper,
                 lower_cell_size_threshold=lower_cell_size_threshold,
                 upper_cell_size_threshold=upper_cell_size_threshold,
                 blur_degree=blur_degree,
