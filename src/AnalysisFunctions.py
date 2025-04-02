@@ -1123,16 +1123,17 @@ class Analysis_Functions:
                     else pl.DataFrame(data)
                 )
             if time.time() - start < 60:
-                telapse = (time.time() - start)
-                tstring = 's'
+                telapse = time.time() - start
+                tstring = "s"
             elif time.time() - start > 60:
                 telapse = (time.time() - start) / 60
-                tstring = 'm'
+                tstring = "m"
             else:
                 telapse = (time.time() - start) / np.square(60)
-                tstring = 'h'
+                tstring = "h"
             print(
-                f"Computing {typestr} {analysis_string} File {i + 1}/{len(files)}    Time elapsed: {telapse:.3f} "+tstring,
+                f"Computing {typestr} {analysis_string} File {i + 1}/{len(files)}    Time elapsed: {telapse:.3f} "
+                + tstring,
                 end="\r",
                 flush=True,
             )
