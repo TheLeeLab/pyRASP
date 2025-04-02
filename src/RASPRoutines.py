@@ -1131,11 +1131,12 @@ class RASP_Routines:
         self,
         analysis_data,
         analysis_file,
-        threshold,
+        threshold_lower,
         cell_string,
         protein_string,
-        lower_cell_size_threshold=2000,
-        upper_cell_size_threshold=np.inf,
+        lower_cell_size_threshold=5000,
+        upper_cell_size_threshold=200000,
+        threshold_upper=np.inf,
         imtype=".tif",
         blur_degree=1,
         z_project_first=True,
@@ -1158,6 +1159,7 @@ class RASP_Routines:
             protein_string (str): string of analysed protein
             lower_cell_size_threshold (float): lower cell size threshold
             upper_cell_size_threshold (float): upper cell size threshold
+            threshold_upper (float): upper photon threshold
             imtype (str): image type
             blur_degree (int): blur degree for colocalisation analysis
             z_project_first (boolean): if True (default), does a z projection before
@@ -1170,10 +1172,23 @@ class RASP_Routines:
             cell_punctum_analysis_AT (pl.DataFrame): dataframe of cell analysis above threshold
 
         """
-        if int(threshold) == threshold:
-            threshold_str = str(int(threshold))
+        from datetime import date
+
+        today = date.today().strftime("%Y%m%d")
+        newfolder = os.path.join(os.path.split(analysis_file)[0], today)
+        if not os.path.isdir(newfolder):
+            os.mkdir(newfolder)
+
+        if int(threshold_lower) == threshold_lower:
+            threshold_str = str(int(threshold_lower))
         else:
-            threshold_str = str(np.around(threshold, 1)).replace(".", "p")
+            threshold_str = str(np.around(threshold_lower, 1)).replace(".", "p")
+
+        if threshold_upper != np.inf:
+            if int(threshold_upper) == threshold_upper:
+                threshold_u_str = str(int(threshold_upper))
+            else:
+                threshold_u_str = str(np.around(threshold_upper, 1)).replace(".", "p")
 
         if median is not None:
             start_string = "cell_protein_load_3Danalysis_"
@@ -1187,7 +1202,7 @@ class RASP_Routines:
 
         if np.isinf(upper_cell_size_threshold):
             savecell_string = os.path.join(
-                os.path.split(analysis_file)[0],
+                newfolder,
                 start_string
                 + "mincellsize_"
                 + lc_str
@@ -1203,32 +1218,54 @@ class RASP_Routines:
                 uc_str = str(int(upper_cell_size_threshold))
             else:
                 uc_str = str(np.around(upper_cell_size_threshold, 1)).replace(".", "p")
-
-            savecell_string = os.path.join(
-                os.path.split(analysis_file)[0],
-                start_string
-                + "mincellsize_"
-                + lc_str
-                + "_maxcellsize_"
-                + uc_str
-                + "_photonthreshold_"
-                + threshold_str
-                + "_photons"
-                + "_"
-                + end_string,
-            )
-            above_string = savecell_string + "_abovethreshold.csv"
+            if threshold_upper == np.inf:
+                savecell_string = os.path.join(
+                    newfolder,
+                    start_string
+                    + "mincellsize_"
+                    + lc_str
+                    + "_maxcellsize_"
+                    + uc_str
+                    + "_photonthreshold_"
+                    + threshold_str
+                    + "_photons"
+                    + "_"
+                    + end_string,
+                )
+                above_string = savecell_string + "_abovethreshold.csv"
+            else:
+                savecell_string = os.path.join(
+                    newfolder,
+                    start_string
+                    + "mincellsize_"
+                    + lc_str
+                    + "_maxcellsize_"
+                    + uc_str
+                    + "_lowerphotonthreshold_"
+                    + threshold_str
+                    + "_upperphotonthreshold_"
+                    + threshold_u_str
+                    + "_photons"
+                    + "_"
+                    + end_string,
+                )
+                above_string = savecell_string + "_abovethreshold.csv"
 
         if replace_files == False:
             if os.path.isfile(above_string):
-                print("Analysis already complete; exiting.")
+                print(
+                    "Analysis already complete. Exiting.",
+                    end="\r",
+                    flush=True,
+                )
                 return None, None
 
         cell_punctum_analysis_AT = (
             A_F.number_of_puncta_per_segmented_cell_with_threshold(
                 analysis_file,
                 analysis_data,
-                threshold,
+                threshold_lower,
+                threshold_upper,
                 lower_cell_size_threshold=lower_cell_size_threshold,
                 upper_cell_size_threshold=upper_cell_size_threshold,
                 blur_degree=blur_degree,

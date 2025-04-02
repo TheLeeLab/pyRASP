@@ -166,6 +166,12 @@ class ImageAnalysis_Functions:
             np.tile(xy_default[:, 1], (len(pil_small), 1)).T + xy[:, 1], dtype=int
         ).T
 
+        x_lim, y_lim = img.shape
+        x[x >= x_lim] = x_lim - 1
+        x[x < 0] = 0
+        y[y >= y_lim] = y_lim - 1
+        y[y < 0] = 0
+
         g2 = np.sqrt(np.add(np.square(gradient_x[x, y]), np.square(gradient_y[x, y])))
 
         flatness = np.mean(np.divide(img[x, y].T, r0), axis=0)

@@ -877,7 +877,8 @@ class Analysis_Functions:
         self,
         analysis_file,
         analysis_data_raw,
-        threshold,
+        threshold_lower,
+        threshold_upper=np.inf,
         lower_cell_size_threshold=100,
         upper_cell_size_threshold=np.inf,
         blur_degree=1,
@@ -921,8 +922,11 @@ class Analysis_Functions:
         """
         C_F = CoincidenceFunctions.Coincidence_Functions()
         filter_op = ">"
+        filter_op_u = "<="
         analysis_data = analysis_data_raw.filter(
-            eval(f"pl.col('sum_intensity_in_photons') {filter_op} threshold")
+            eval(
+                f"(pl.col('sum_intensity_in_photons') {filter_op} threshold_lower) & (pl.col('sum_intensity_in_photons') {filter_op_u} threshold_upper)"
+            )
         )
         del analysis_data_raw
         typestr = "> threshold"
@@ -981,11 +985,12 @@ class Analysis_Functions:
                     spacing=spacing,
                 )
             else:
-                cell_mask = raw_cell_mask
-                pil_mask, areas, centroids, _, _ = IA_F.calculate_region_properties(
-                    cell_mask, dims=3, spacing=spacing
+                cell_mask, pil_mask, centroids, areas = self.threshold_cell_areas_3d(
+                    raw_cell_mask,
+                    lower_cell_size_threshold,
+                    upper_cell_size_threshold=upper_cell_size_threshold,
+                    spacing=spacing,
                 )
-
             if dims == 2:
                 image_size = (
                     cell_mask.shape if len(cell_mask.shape) < 3 else cell_mask.shape[1:]
@@ -1280,7 +1285,11 @@ class Analysis_Functions:
     def threshold_cell_areas_3d(
         self,
         cell_mask,
-        lower_cell_size_threshold=100,
+        lower_cell_size_threshold=10000,
+        upper_cell_size_threshold=200000,
+        spacing=(0.5, 0.11, 0.11),
+        n_planes=3,
+        erosionsize=5,
     ):
         """
         Removes small or objects from a cell mask.
@@ -1289,7 +1298,9 @@ class Analysis_Functions:
             cell_mask_raw (np.ndarray): Cell mask object
             lower_cell_size_threshold (float): Lower size threshold
             upper_cell_size_threshold (float): Upper size threshold
-            z_project (bool): If True, z-projects cell mask
+            spacing (tuple): pixel spacing
+            n_planes (int): number of planes object has to be across
+            ballsize (int): how big a dilation ball to use
 
         Returns:
             tuple: Processed cell mask, pixel image locations, centroids, areas
@@ -1304,13 +1315,35 @@ class Analysis_Functions:
         filled = binary_fill_holes(cell_mask)
 
         cell_mask_new = ski.morphology.remove_small_holes(
-            filled, area_threshold=lower_cell_size_threshold
+            filled,
+            area_threshold=lower_cell_size_threshold,
         )
         cell_mask_new = ski.morphology.remove_small_objects(
             cell_mask_new, min_size=lower_cell_size_threshold
         )
+        objects = ski.measure.label(cell_mask_new)
+        large_objects = ski.morphology.remove_small_objects(
+            objects, min_size=upper_cell_size_threshold
+        )
+        small_objects = objects ^ large_objects
+        cell_mask_new = np.asarray(small_objects.clip(0, 1), dtype=bool)
+        cell_mask_new = np.asarray(
+            ski.morphology.binary_closing(
+                cell_mask_new,
+                footprint=ski.morphology.ball(erosionsize),
+            ),
+            dtype=bool,
+        )
+        pil_raw, _, _, _, _ = IA_F.calculate_region_properties(
+            cell_mask_new, dims=3, spacing=(1, 1, 1)
+        )
+        for i in np.arange(len(pil_raw)):
+            if not len(np.unique(pil_raw[i][:, 0])):
+                cell_mask_new[pil_raw[i][:, 0], pil_raw[i][:, 1], pil_raw[i][:, 2]] = 0
 
-        pil, centroids, areas = IA_F.calculate_region_properties(cell_mask_new, dims=3)
+        pil, areas, centroids, _, _ = IA_F.calculate_region_properties(
+            cell_mask_new, dims=3, spacing=spacing
+        )
         return cell_mask_new, pil, centroids, areas
 
     def threshold_cell_areas_2d(
