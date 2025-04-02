@@ -950,6 +950,13 @@ class Analysis_Functions:
                 + str(cell_string)
                 + "_cellMask.tiff",
             )
+            cell_mask_thresholded_file = os.path.join(
+                analysis_directory,
+                os.path.split(file.split(imtype)[0])[-1].split(protein_string)[0]
+                + str(cell_string)
+                + "_cellMask_cleanedup.tiff",
+            )
+
             subset = analysis_data.filter(pl.col("image_filename") == file)
             zi = np.unique(subset["zi"].to_numpy())[0]
             zf = np.unique(subset["zf"].to_numpy())[0]
@@ -974,7 +981,13 @@ class Analysis_Functions:
                     file_path=cell_mask_file, volume=raw_cell_mask, bit=np.uint8
                 )
             else:
-                raw_cell_mask = IO.read_tiff(cell_mask_file)
+                if os.path.isfile(cell_mask_thresholded_file):
+                    cell_mask = IO.read_tiff(cell_mask_thresholded_file)
+                    pil_mask, centroids, areas, _, _ = IA_F.calculate_region_properties(
+                        cell_mask, dims=3
+                    )
+                else:
+                    raw_cell_mask = IO.read_tiff(cell_mask_file)
 
             if dims == 2:
                 cell_mask, pil_mask, centroids, areas = self.threshold_cell_areas_2d(
@@ -985,12 +998,20 @@ class Analysis_Functions:
                     spacing=spacing,
                 )
             else:
-                cell_mask, pil_mask, centroids, areas = self.threshold_cell_areas_3d(
-                    raw_cell_mask,
-                    lower_cell_size_threshold,
-                    upper_cell_size_threshold=upper_cell_size_threshold,
-                    spacing=spacing,
-                )
+                if not os.path.isfile(cell_mask_thresholded_file):
+                    cell_mask, pil_mask, centroids, areas = (
+                        self.threshold_cell_areas_3d(
+                            raw_cell_mask,
+                            lower_cell_size_threshold,
+                            upper_cell_size_threshold=upper_cell_size_threshold,
+                            spacing=spacing,
+                        )
+                    )
+                    IO.write_tiff(
+                        file_path=cell_mask_thresholded_file,
+                        volume=cell_mask,
+                        bit=np.uint8,
+                    )
             if dims == 2:
                 image_size = (
                     cell_mask.shape if len(cell_mask.shape) < 3 else cell_mask.shape[1:]
