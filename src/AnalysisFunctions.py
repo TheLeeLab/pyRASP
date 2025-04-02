@@ -1337,13 +1337,15 @@ class Analysis_Functions:
         pil_raw, _, _, _, _ = IA_F.calculate_region_properties(
             cell_mask_new, dims=3, spacing=(1, 1, 1)
         )
+
         for i in np.arange(len(pil_raw)):
-            if not len(np.unique(pil_raw[i][:, 0])):
+            if len(np.unique(pil_raw[i][:, 0]) < n_planes):
                 cell_mask_new[pil_raw[i][:, 0], pil_raw[i][:, 1], pil_raw[i][:, 2]] = 0
 
         pil, areas, centroids, _, _ = IA_F.calculate_region_properties(
             cell_mask_new, dims=3, spacing=spacing
         )
+
         return cell_mask_new, pil, centroids, areas
 
     def threshold_cell_areas_2d(
