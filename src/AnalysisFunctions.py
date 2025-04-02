@@ -983,14 +983,13 @@ class Analysis_Functions:
             else:
                 if os.path.isfile(cell_mask_thresholded_file):
                     cell_mask = IO.read_tiff(cell_mask_thresholded_file)
-                    pil_mask, centroids, areas, _, _ = IA_F.calculate_region_properties(
+                    pil_mask, areas, centroids, _, _ = IA_F.calculate_region_properties(
                         cell_mask, dims=3
                     )
                 else:
                     raw_cell_mask = IO.read_tiff(cell_mask_file)
-
             if dims == 2:
-                cell_mask, pil_mask, centroids, areas = self.threshold_cell_areas_2d(
+                cell_mask, pil_mask, areas, centroids = self.threshold_cell_areas_2d(
                     raw_cell_mask,
                     lower_cell_size_threshold,
                     upper_cell_size_threshold=upper_cell_size_threshold,
@@ -999,7 +998,7 @@ class Analysis_Functions:
                 )
             else:
                 if not os.path.isfile(cell_mask_thresholded_file):
-                    cell_mask, pil_mask, centroids, areas = (
+                    cell_mask, pil_mask, areas, centroids = (
                         self.threshold_cell_areas_3d(
                             raw_cell_mask,
                             lower_cell_size_threshold,
@@ -1123,9 +1122,17 @@ class Analysis_Functions:
                     if cell_punctum_analysis is not None
                     else pl.DataFrame(data)
                 )
-
+            if time.time() - start < 60:
+                telapse = (time.time() - start)
+                tstring = 's'
+            elif time.time() - start > 60:
+                telapse = (time.time() - start) / 60
+                tstring = 'm'
+            else:
+                telapse = (time.time() - start) / np.square(60)
+                tstring = 'h'
             print(
-                f"Computing {typestr} {analysis_string} File {i + 1}/{len(files)}    Time elapsed: {time.time() - start:.3f} s",
+                f"Computing {typestr} {analysis_string} File {i + 1}/{len(files)}    Time elapsed: {telapse:.3f} "+tstring,
                 end="\r",
                 flush=True,
             )
@@ -1367,7 +1374,7 @@ class Analysis_Functions:
             cell_mask_new, dims=3, spacing=spacing
         )
 
-        return cell_mask_new, pil, centroids, areas
+        return cell_mask_new, pil, areas, centroids
 
     def threshold_cell_areas_2d(
         self,
@@ -1436,7 +1443,7 @@ class Analysis_Functions:
             pil = None
             areas = None
             centroids = None
-        return cell_mask_new, pil, centroids, areas
+        return cell_mask_new, pil, areas, centroids
 
     def create_labelled_cellmasks(
         self,
@@ -1465,7 +1472,7 @@ class Analysis_Functions:
             new_cell_mask (np.2darray): thresholded cell mask
 
         """
-        new_cell_mask, pil, centroids, areas = self.threshold_cell_areas_2d(
+        new_cell_mask, pil, areas, centroids = self.threshold_cell_areas_2d(
             cell_mask,
             lower_cell_size_threshold,
             upper_cell_size_threshold=upper_cell_size_threshold,
