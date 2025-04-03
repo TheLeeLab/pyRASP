@@ -1343,10 +1343,12 @@ class Analysis_Functions:
         except Exception as error:
             print("Caught this error: " + repr(error))
             return
+        todel = np.zeros_like(cell_mask.shape[0])
         # first, delete any planes that are filled by more than plane_max
         for i in np.arange(cell_mask.shape[0]):
             if np.mean(cell_mask[i, :, :]) > plane_max:
                 cell_mask[i, :, :] = 0
+                todel[i] = 1
 
         filled = binary_fill_holes(cell_mask)
 
@@ -1378,6 +1380,9 @@ class Analysis_Functions:
             if len(np.unique(pil_raw[i][:, 0])) < n_planes:
                 cell_mask_new[pil_raw[i][:, 0], pil_raw[i][:, 1], pil_raw[i][:, 2]] = 0
 
+        for i in np.arange(cell_mask.shape[0]):
+            if todel[i] == 1:
+                cell_mask_new[i, :, :] = 0
         pil, areas, centroids, _, _ = IA_F.calculate_region_properties(
             cell_mask_new, dims=3, spacing=spacing
         )
