@@ -1319,6 +1319,7 @@ class Analysis_Functions:
         spacing=(0.5, 0.11, 0.11),
         n_planes=3,
         erosionsize=5,
+        plane_max=0.15,
     ):
         """
         Removes small or objects from a cell mask.
@@ -1340,7 +1341,11 @@ class Analysis_Functions:
         except Exception as error:
             print("Caught this error: " + repr(error))
             return
-
+        # first, delete any planes that are filled by more than plane_max
+        for i in np.arange(cell_mask.shape[0]):
+            if np.mean(cell_mask[i, :, :]) > plane_max:
+                cell_mask[i, :, :] = 0
+        
         filled = binary_fill_holes(cell_mask)
 
         cell_mask_new = ski.morphology.remove_small_holes(

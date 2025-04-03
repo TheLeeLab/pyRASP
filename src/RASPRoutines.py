@@ -1143,6 +1143,7 @@ class RASP_Routines:
         replace_files=False,
         median=None,
         end_string="HC_threshold",
+        new_folder="New_Cell_Analysis",
         dims=3,
         sigma1=2.0,
         sigma2=40.0,
@@ -1172,10 +1173,7 @@ class RASP_Routines:
             cell_punctum_analysis_AT (pl.DataFrame): dataframe of cell analysis above threshold
 
         """
-        from datetime import date
-
-        today = date.today().strftime("%Y%m%d")
-        newfolder = os.path.join(os.path.split(analysis_file)[0], today)
+        newfolder = os.path.join(os.path.split(analysis_file)[0], new_folder)
         if not os.path.isdir(newfolder):
             os.mkdir(newfolder)
 
