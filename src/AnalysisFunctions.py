@@ -1330,7 +1330,9 @@ class Analysis_Functions:
             upper_cell_size_threshold (float): Upper size threshold
             spacing (tuple): pixel spacing
             n_planes (int): number of planes object has to be across
-            ballsize (int): how big a dilation ball to use
+            erosionsize (int): how big a dilation ball to use
+            plane_max (float): if a plane is occupied by more than this fraction,
+                                delete it
 
         Returns:
             tuple: Processed cell mask, pixel image locations, centroids, areas
@@ -1345,7 +1347,7 @@ class Analysis_Functions:
         for i in np.arange(cell_mask.shape[0]):
             if np.mean(cell_mask[i, :, :]) > plane_max:
                 cell_mask[i, :, :] = 0
-        
+
         filled = binary_fill_holes(cell_mask)
 
         cell_mask_new = ski.morphology.remove_small_holes(
