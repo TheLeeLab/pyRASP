@@ -1127,10 +1127,10 @@ class Analysis_Functions:
                 tstring = "s"
             elif time.time() - start > 60:
                 telapse = (time.time() - start) / 60
-                tstring = "m"
-            else:
+                tstring = "mins"
+            elif time.time() - start > np.square(60):
                 telapse = (time.time() - start) / np.square(60)
-                tstring = "h"
+                tstring = "hours"
             print(
                 f"Computing {typestr} {analysis_string} File {i + 1}/{len(files)}    Time elapsed: {telapse:.3f} "
                 + tstring,
