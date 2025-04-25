@@ -559,6 +559,7 @@ class RASP_Routines:
         rwave=2.0,
         protein_string="C1",
         cell_string="C0",
+        focus_images="C1",
         if_filter=True,
         im_start=0,
         cell_analysis=True,
@@ -582,6 +583,7 @@ class RASP_Routines:
             rwave (float): Ricker wavelent sigma. Default 2.
             protein_string (np.1darray): strings for protein-stained data. Default C1.
             cell_string (np.1darray): strings for cell-containing data. Default C0.
+            focus_images (string): string for focus detection. Default C0.
             if_filter (boolean): Filter images for focus. Default True.
             im_start (integer): Images to start from. Default 0.
             cell_analysis (boolean): Parameter where script also analyses cell images. Default True.
@@ -631,8 +633,12 @@ class RASP_Routines:
             variance_map=self.variance_map,
         )
 
-        def _analysis_loop(img, k1, k2, img_cell, thres, large_thres, rdl, z_test, i):
-            z_planes, img2, Gx, Gy = self.get_infocus_planes(img, k1)
+        def _analysis_loop(img, k1, k2, img_cell, thres, large_thres, rdl, z_test, i, cell_focus):
+            if cell_focus is not None:
+                z_planes, _, _, _ = self.get_infocus_planes(img_cell, k1)
+                _, img2, Gx, Gy = self.get_infocus_planes(img, k1)
+            else:
+                z_planes, img2, Gx, Gy = self.get_infocus_planes(img, k1)
             if z_test:
                 img = img[z_planes[0] : z_planes[1], :, :]
                 img2 = img2[z_planes[0] : z_planes[1], :, :]
@@ -691,6 +697,7 @@ class RASP_Routines:
                     variance_map=self.variance_map,
                 )[im_start:, :, :]
                 img_cell = None
+                cell_focus = None
                 if cell_analysis:
                     img_cell = IO.read_tiff_tophotons(
                         os.path.join(subfolder, cell_files[i]),
@@ -699,9 +706,11 @@ class RASP_Routines:
                         offset_map=self.offset_map,
                         variance_map=self.variance_map,
                     )[im_start:, :, :]
+                if focus_images != protein_string:
+                    cell_focus = 1
                 z_test = len(img.shape) > 2
                 _analysis_loop(
-                    img, k1, k2, img_cell, thres, large_thres, rdl, z_test, i
+                    img, k1, k2, img_cell, thres, large_thres, rdl, z_test, i, cell_focus,
                 )
                 if disp:
                     print(
@@ -1136,6 +1145,7 @@ class RASP_Routines:
         protein_string,
         lower_cell_size_threshold=5000,
         upper_cell_size_threshold=200000,
+        erosionsize=3,
         threshold_upper=np.inf,
         imtype=".tif",
         blur_degree=1,
@@ -1266,6 +1276,7 @@ class RASP_Routines:
                 threshold_upper=threshold_upper,
                 lower_cell_size_threshold=lower_cell_size_threshold,
                 upper_cell_size_threshold=upper_cell_size_threshold,
+                erosionsize=erosionsize,
                 blur_degree=blur_degree,
                 cell_string=cell_string,
                 protein_string=protein_string,

@@ -91,7 +91,9 @@ class Plotter:
         heightratio=None,
         widthratio=None,
         height=0,
+        width=0,
         big=False,
+        lw=1,
     ):
         """
         Creates a two-column width figure with specified configurations.
@@ -116,8 +118,7 @@ class Plotter:
 
         # Font size and line width configurations
         fontsz = 12 if self.poster else 7
-        lw = 1
-        xsize = 5 * ncolumns if big else 6.69  # Adjust column size
+        xsize = width if width else 5 * ncolumns if big else 7.08  # Adjust column size
         ysize = height if height > 0 else (5 * nrows if big else 3 * nrows)
 
         # Apply global plotting configurations

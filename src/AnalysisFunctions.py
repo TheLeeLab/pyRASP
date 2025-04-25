@@ -881,6 +881,7 @@ class Analysis_Functions:
         threshold_upper=np.inf,
         lower_cell_size_threshold=100,
         upper_cell_size_threshold=np.inf,
+        erosionsize=3,
         blur_degree=1,
         cell_string="C0",
         protein_string="C1",
@@ -1004,6 +1005,7 @@ class Analysis_Functions:
                             lower_cell_size_threshold,
                             upper_cell_size_threshold=upper_cell_size_threshold,
                             spacing=spacing,
+                            erosionsize=erosionsize,
                         )
                     )
                     IO.write_tiff(
@@ -1343,7 +1345,7 @@ class Analysis_Functions:
         except Exception as error:
             print("Caught this error: " + repr(error))
             return
-        todel = np.zeros_like(cell_mask.shape[0])
+        todel = np.zeros(cell_mask.shape[0])
         # first, delete any planes that are filled by more than plane_max
         for i in np.arange(cell_mask.shape[0]):
             if np.mean(cell_mask[i, :, :]) > plane_max:
@@ -1365,13 +1367,14 @@ class Analysis_Functions:
         )
         small_objects = objects ^ large_objects
         cell_mask_new = np.asarray(small_objects.clip(0, 1), dtype=bool)
-        cell_mask_new = np.asarray(
-            ski.morphology.binary_closing(
-                cell_mask_new,
-                footprint=ski.morphology.ball(erosionsize),
-            ),
-            dtype=bool,
-        )
+        if erosionsize > 0:
+            cell_mask_new = np.asarray(
+                ski.morphology.binary_closing(
+                    cell_mask_new,
+                    footprint=ski.morphology.footprint_rectangle((1, erosionsize, erosionsize)),
+                ),
+                dtype=bool,
+            )
         pil_raw, _, _, _, _ = IA_F.calculate_region_properties(
             cell_mask_new, dims=3, spacing=(1, 1, 1)
         )
@@ -1380,7 +1383,7 @@ class Analysis_Functions:
             if len(np.unique(pil_raw[i][:, 0])) < n_planes:
                 cell_mask_new[pil_raw[i][:, 0], pil_raw[i][:, 1], pil_raw[i][:, 2]] = 0
 
-        for i in np.arange(cell_mask.shape[0]):
+        for i in np.arange(cell_mask_new.shape[0]):
             if todel[i] == 1:
                 cell_mask_new[i, :, :] = 0
         pil, areas, centroids, _, _ = IA_F.calculate_region_properties(
