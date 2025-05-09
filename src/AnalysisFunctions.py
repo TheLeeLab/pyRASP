@@ -49,6 +49,7 @@ class Analysis_Functions:
         Returns:
             polars.DataFrame: DataFrame with number of spots per z-plane.
         """
+        data = None
         results = None
         if threshold is None:
             columns = ["n_spots", "z", "image_filename"]

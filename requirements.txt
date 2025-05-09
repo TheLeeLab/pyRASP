@@ -140,6 +140,7 @@ PyQt5-Qt5==5.15.16
 PyQt5_sip==12.17.0
 PyQt6-Qt6==6.8.2
 PyQt6_sip==13.10.0
+pyRDF==2.3.0
 pytest==8.3.4
 python-dateutil==2.8.2
 python-json-logger==2.0.7

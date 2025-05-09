@@ -551,7 +551,7 @@ class Plotter:
             axs.contour(mask, [0.5], linewidths=masklinewidth, colors=maskcolor)
 
         return axs
-
+    
     def image_scatter_plot(
         self,
         axs,

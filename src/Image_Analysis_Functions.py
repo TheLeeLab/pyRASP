@@ -17,6 +17,7 @@ from scipy.ndimage import (
     binary_fill_holes,
     median_filter,
 )
+from sklearn.cluster import HDBSCAN
 from numba import jit
 import polars as pl
 import pathos
@@ -180,7 +181,7 @@ class ImageAnalysis_Functions:
 
         return radiality
 
-    def default_SMD_routine(self, image, d=2, pfa=1e-6):
+    def default_SMD_routine(self, image, d=2, pfa=1e-6, localise_in_first_frame=False):
         """
         Daisy-chains analyses to get
         basic image properties (centroids, radiality)
@@ -188,9 +189,9 @@ class ImageAnalysis_Functions:
 
         Args:
             image (array): image as numpy array
-            k1 (array): gaussian blur kernel
-            k2 (array): ricker wavelet kernel
-
+            d (int): integer for pyRASP intensity analyses
+            pfa (float): probability of false alarm for spot detection code
+            
         Returns:
             centroids (2D array): centroid positions per oligomer
             estimated_intensity (numpy.ndarray): Estimated sum intensity per oligomer.
@@ -198,13 +199,16 @@ class ImageAnalysis_Functions:
             estimated_background_perpixel (numpy.ndarray): Estimated mean background per pixel.
 
         """
+        to_return = None
         if len(image.shape) > 2:
-            to_return = None
             for i in np.arange(image.shape[0]):
                 to_save = {}
                 img = image[i, :, :]
-                centroids = SD_F.detect_puncta_in_image(image=img, pfa=pfa)
-
+                if localise_in_first_frame == False:
+                    centroids = SD_F.detect_puncta_in_image(image=img, pfa=pfa)
+                elif localise_in_first_frame == True:
+                    if i == 0:
+                        centroids = SD_F.detect_puncta_in_image(image=img, pfa=pfa)
                 (
                     estimated_intensity,
                     estimated_background,
@@ -400,9 +404,34 @@ class ImageAnalysis_Functions:
 
         return boolean_matrix
 
+    def infocus_indices(self, focus_scores, cluster_size=4):
+        """
+        Identify in-focus indices based on HDBSCAN.
+
+        Args:
+            focus_scores (numpy.ndarray): Focus scores for different slices.
+            cluster_size (int): how big the smallest cluster is
+
+        Returns:
+            in_focus_indices (list): List containing the first and last in-focus indices.
+        """
+        hdb = HDBSCAN(min_cluster_size=cluster_size)
+
+        hdb.fit(focus_scores.reshape(-1, 1))
+        if len(np.unique(hdb.labels_)) == 1:
+            return np.array([0, 0]) # no in-focus slices
+        else:
+            mean_scores = np.zeros(len(np.unique(hdb.labels_)))
+            for i, l in enumerate(np.unique(hdb.labels_)):
+                mean_scores[i] = np.mean(focus_scores[hdb.labels_ == l])
+            focus_label = np.unique(hdb.labels_)[np.argmax(mean_scores)]
+            infocus_indices = np.where(hdb.labels_ == focus_label)[0]
+            in_focus_indices = np.array([np.min(infocus_indices), np.max(infocus_indices)+1])
+            return in_focus_indices
+
     @staticmethod
     @jit(nopython=True)
-    def infocus_indices(focus_scores, threshold_differential):
+    def infocus_indices_old(focus_scores, threshold_differential):
         """
         Identify in-focus indices based on focus scores and a threshold differential.
 
@@ -481,9 +510,9 @@ class ImageAnalysis_Functions:
 
         x_in, y_in, x_out, y_out = self.intensity_pixel_indices(centroids, image_size)
 
-        estimated_background = np.mean(image[y_out, x_out], axis=0)
+        estimated_background = np.mean(image[x_out, y_out], axis=0)
         estimated_intensity = np.sum(
-            np.subtract(image[y_in, x_in], estimated_background), axis=0
+            np.subtract(image[x_in, y_in], estimated_background), axis=0
         )
 
         estimated_intensity[estimated_intensity < 0] = np.nan
@@ -517,8 +546,7 @@ class ImageAnalysis_Functions:
 
         small_oct = ski.morphology.octagon(2, 4)
         outer_ind = ski.morphology.octagon(2, 5)
-        inner_ind = np.zeros_like(outer_ind)
-        inner_ind[1:-1, 1:-1] = small_oct
+        inner_ind = np.pad(small_oct, int((outer_ind.shape[0] - small_oct.shape[0])/2))
         outer_ind -= inner_ind
 
         x_inner, y_inner = calculate_offsets(inner_ind)
@@ -1004,10 +1032,16 @@ class ImageAnalysis_Functions:
             centroids_large = [i[5] for i in results]
             meanintensities_large = [i[6] for i in results]
             sumintensities_large = [i[7] for i in results]
-            lo_mask = np.stack([i[8] for i in results], axis=0)
+            try:
+                lo_mask = np.stack([i[8] for i in results], axis=0)
+            except:
+                lo_mask = None
 
             if image_cell is not None:
-                cell_mask = np.stack([i[9] for i in results], axis=0)
+                try:
+                    cell_mask = np.stack([i[9] for i in results], axis=0)
+                except:
+                    cell_mask = None
             else:
                 cell_mask = None
 
@@ -1017,7 +1051,7 @@ class ImageAnalysis_Functions:
                 estimated_background,
                 estimated_background_perpixel,
                 columns,
-                np.arange(len(z_planes)),
+                z_planes,
             )
             to_save_largeobjects = HF.make_datarray_largeobjects(
                 areas_large,
@@ -1025,7 +1059,7 @@ class ImageAnalysis_Functions:
                 sumintensities_large,
                 meanintensities_large,
                 columns_large,
-                np.arange(len(z_planes)),
+                z_planes,
             )
         else:
             (

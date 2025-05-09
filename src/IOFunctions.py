@@ -347,7 +347,7 @@ class IO_Functions:
         """
         # Use skimage's imread function to read the TIFF file
         # specifying the 'tifffile' plugin explicitly
-        data = self.read_tiff(file_path, frame=frame)
+        data = np.asarray(self.read_tiff(file_path, frame=frame), dtype=np.float32)
         if len(data.shape) > 2:
             image_dims = data.shape[1:]
         else:

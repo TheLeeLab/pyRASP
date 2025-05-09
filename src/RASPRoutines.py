@@ -173,7 +173,7 @@ class RASP_Routines:
         """
 
         img2, Gx, Gy, focus_score, na = IA_F.calculate_gradient_field(image, kernel)
-        z_planes = IA_F.infocus_indices(focus_score, self.focus_score_diff)
+        z_planes = IA_F.infocus_indices(focus_score)
         return z_planes, img2, Gx, Gy
 
     def calibrate_radiality(
@@ -837,7 +837,7 @@ class RASP_Routines:
             return z_to_plot[z_to_plot >= 0]
 
         def plot_images(
-            z_to_plot, img, to_save, to_save_largeobjects, img_cell, cell_mask
+            z_to_plot, img, to_save, to_save_largeobjects=None, img_cell=None, cell_mask=None
         ):
             for i in enumerate(z_to_plot):
                 xpositions = to_save.filter(pl.col("z") == i[1])["x"].to_numpy()

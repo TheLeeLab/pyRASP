@@ -82,6 +82,7 @@ class Helper_Functions:
             columns_large = ['x', 'y', 'z', 'area', 'mean_intensity_in_photons', 'zi', 'zf']
 
         """
+        dataarray = None
         if isinstance(z_planes, int):
             dataarray = np.vstack(
                 [
@@ -94,14 +95,13 @@ class Helper_Functions:
                 ]
             )
         else:
-            dataarray = None
-            for z in z_planes:
+            for z, i in enumerate(z_planes):
                 if len(areas_large[z]) > 0:
                     stack = np.asarray(
                         [
                             centroids_large[z][:, 0],
                             centroids_large[z][:, 1],
-                            np.full_like(centroids_large[z][:, 0], z + 1),
+                            np.full_like(centroids_large[z][:, 0], i + 1),
                             areas_large[z],
                             sumintensities_large[z],
                             meanintensities_large[z],
@@ -154,6 +154,7 @@ class Helper_Functions:
             to_save (pl.DataFrame) pandas array to save
 
         """
+        dataarray = None
         if isinstance(z_planes, int):
             dataarray = np.vstack(
                 [
@@ -166,12 +167,12 @@ class Helper_Functions:
                 ]
             )
         else:
-            for z in z_planes:
+            for z, i in enumerate(z_planes):
                 stack = np.vstack(
                     [
                         centroids[z][:, 0],
                         centroids[z][:, 1],
-                        np.full_like(centroids[z][:, 0], z + 1),
+                        np.full_like(centroids[z][:, 0], i + 1),
                         estimated_intensity[z],
                         estimated_background[z],
                         estimated_background_perpixel[z],
@@ -179,7 +180,7 @@ class Helper_Functions:
                         np.full_like(centroids[z][:, 0], 1 + z_planes[-1]),
                     ]
                 )
-                if z == z_planes[0]:
+                if i == z_planes[0]:
                     dataarray = stack
                 else:
                     da = stack
@@ -235,6 +236,7 @@ class Helper_Functions:
             to_save (pandas DataArray): pandas array to save
 
         """
+        dataarray_cell = None
         if isinstance(z_planes, str):
             if analyse_clr == True:
                 dataarray_cell = np.vstack(
