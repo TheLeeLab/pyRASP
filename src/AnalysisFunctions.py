@@ -1372,7 +1372,9 @@ class Analysis_Functions:
             cell_mask_new = np.asarray(
                 ski.morphology.binary_closing(
                     cell_mask_new,
-                    footprint=ski.morphology.footprint_rectangle((1, erosionsize, erosionsize)),
+                    footprint=ski.morphology.footprint_rectangle(
+                        (1, erosionsize, erosionsize)
+                    ),
                 ),
                 dtype=bool,
             )

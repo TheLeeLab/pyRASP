@@ -633,7 +633,9 @@ class RASP_Routines:
             variance_map=self.variance_map,
         )
 
-        def _analysis_loop(img, k1, k2, img_cell, thres, large_thres, rdl, z_test, i, cell_focus):
+        def _analysis_loop(
+            img, k1, k2, img_cell, thres, large_thres, rdl, z_test, i, cell_focus
+        ):
             if cell_focus is not None:
                 z_planes, _, _, _ = self.get_infocus_planes(img_cell, k1)
                 _, img2, Gx, Gy = self.get_infocus_planes(img, k1)
@@ -710,7 +712,16 @@ class RASP_Routines:
                     cell_focus = 1
                 z_test = len(img.shape) > 2
                 _analysis_loop(
-                    img, k1, k2, img_cell, thres, large_thres, rdl, z_test, i, cell_focus,
+                    img,
+                    k1,
+                    k2,
+                    img_cell,
+                    thres,
+                    large_thres,
+                    rdl,
+                    z_test,
+                    i,
+                    cell_focus,
                 )
                 if disp:
                     print(
@@ -837,7 +848,12 @@ class RASP_Routines:
             return z_to_plot[z_to_plot >= 0]
 
         def plot_images(
-            z_to_plot, img, to_save, to_save_largeobjects=None, img_cell=None, cell_mask=None
+            z_to_plot,
+            img,
+            to_save,
+            to_save_largeobjects=None,
+            img_cell=None,
+            cell_mask=None,
         ):
             for i in enumerate(z_to_plot):
                 xpositions = to_save.filter(pl.col("z") == i[1])["x"].to_numpy()

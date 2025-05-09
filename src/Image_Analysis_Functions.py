@@ -191,7 +191,7 @@ class ImageAnalysis_Functions:
             image (array): image as numpy array
             d (int): integer for pyRASP intensity analyses
             pfa (float): probability of false alarm for spot detection code
-            
+
         Returns:
             centroids (2D array): centroid positions per oligomer
             estimated_intensity (numpy.ndarray): Estimated sum intensity per oligomer.
@@ -419,14 +419,16 @@ class ImageAnalysis_Functions:
 
         hdb.fit(focus_scores.reshape(-1, 1))
         if len(np.unique(hdb.labels_)) == 1:
-            return np.array([0, 0]) # no in-focus slices
+            return np.array([0, 0])  # no in-focus slices
         else:
             mean_scores = np.zeros(len(np.unique(hdb.labels_)))
             for i, l in enumerate(np.unique(hdb.labels_)):
                 mean_scores[i] = np.mean(focus_scores[hdb.labels_ == l])
             focus_label = np.unique(hdb.labels_)[np.argmax(mean_scores)]
             infocus_indices = np.where(hdb.labels_ == focus_label)[0]
-            in_focus_indices = np.array([np.min(infocus_indices), np.max(infocus_indices)+1])
+            in_focus_indices = np.array(
+                [np.min(infocus_indices), np.max(infocus_indices) + 1]
+            )
             return in_focus_indices
 
     @staticmethod
@@ -546,7 +548,9 @@ class ImageAnalysis_Functions:
 
         small_oct = ski.morphology.octagon(2, 4)
         outer_ind = ski.morphology.octagon(2, 5)
-        inner_ind = np.pad(small_oct, int((outer_ind.shape[0] - small_oct.shape[0])/2))
+        inner_ind = np.pad(
+            small_oct, int((outer_ind.shape[0] - small_oct.shape[0]) / 2)
+        )
         outer_ind -= inner_ind
 
         x_inner, y_inner = calculate_offsets(inner_ind)
