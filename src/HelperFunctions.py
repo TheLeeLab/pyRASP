@@ -184,7 +184,10 @@ class Helper_Functions:
                     dataarray = stack
                 else:
                     da = stack
-                    dataarray = np.hstack([dataarray, da])
+                    if dataarray is not None:
+                        dataarray = np.hstack([dataarray, da])
+                    else:
+                        dataarray = da
         if dataarray is not None:
             dataarray = np.asarray(np.matrix(np.squeeze(dataarray)).transpose())
             if len(dataarray.shape) > 1:

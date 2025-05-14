@@ -672,20 +672,21 @@ class RASP_Routines:
                 cell_sigma2=self.cell_sigma2,
                 d=self.d,
             )
-            IO.save_analysis(
-                to_save,
-                to_save_largeobjects,
-                analysis_directory,
-                imtype,
-                protein_string,
-                cell_string,
-                files,
-                i,
-                z_planes,
-                lo_mask,
-                cell_mask=cell_mask if cell_analysis else None,
-                one_savefile=one_savefile,
-            )
+            if to_save is not None:
+                IO.save_analysis(
+                    to_save,
+                    to_save_largeobjects,
+                    analysis_directory,
+                    imtype,
+                    protein_string,
+                    cell_string,
+                    files,
+                    i,
+                    z_planes,
+                    lo_mask,
+                    cell_mask=cell_mask if cell_analysis else None,
+                    one_savefile=one_savefile,
+                )
 
         start = time.time()
 
