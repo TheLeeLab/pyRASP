@@ -206,7 +206,7 @@ class ImageAnalysis_Functions:
                 img = image[i, :, :]
                 if localise_in_first_frame == False:
                     centroids = SD_F.detect_puncta_in_image(image=img, pfa=pfa)
-                elif localise_in_first_frame == True:
+                else:
                     if i == 0:
                         centroids = SD_F.detect_puncta_in_image(image=img, pfa=pfa)
                 (
@@ -214,14 +214,12 @@ class ImageAnalysis_Functions:
                     estimated_background,
                     estimated_background_perpixel,
                 ) = self.estimate_intensity(img, centroids)
-                to_keep = ~np.isnan(estimated_intensity)
-                to_save["sum_intensity_in_photons"] = estimated_intensity[to_keep]
-                to_save["bg_per_punctum"] = estimated_background[to_keep]
-                to_save["bg_per_pixel"] = estimated_background_perpixel[to_keep]
-                centroids = centroids[to_keep, :]
+                to_save["sum_intensity_in_photons"] = estimated_intensity
+                to_save["bg_per_punctum"] = estimated_background
+                to_save["bg_per_pixel"] = estimated_background_perpixel
                 to_save["x"] = centroids[:, 0]
                 to_save["y"] = centroids[:, 1]
-                to_save["z"] = np.full_like(centroids[:, 1], i) + 1
+                to_save["frame"] = np.full_like(centroids[:, 1], i) + 1
 
                 if to_return is None:
                     to_return = pl.DataFrame(to_save)
