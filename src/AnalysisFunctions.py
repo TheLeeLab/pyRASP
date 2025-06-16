@@ -972,9 +972,6 @@ class Analysis_Functions:
                     hole_threshold=100,
                     cell_threshold=lower_cell_size_threshold,
                 )
-                IO.write_tiff(
-                    file_path=cell_mask_file, volume=raw_cell_mask, bit=np.uint8
-                )
             else:
                 if os.path.isfile(cell_mask_file):
                     cell_mask = IO.read_tiff(cell_mask_file)
@@ -983,6 +980,7 @@ class Analysis_Functions:
                     )
                 else:
                     raw_cell_mask = IO.read_tiff(cell_mask_file)
+                    
             if dims == 2:
                 cell_mask, pil_mask, areas, centroids = self.threshold_cell_areas_2d(
                     raw_cell_mask,
@@ -993,6 +991,7 @@ class Analysis_Functions:
                 )
             else:
                 if not os.path.isfile(cell_mask_file):
+                    print("here")
                     cell_mask, pil_mask, areas, centroids = (
                         self.threshold_cell_areas_3d(
                             raw_cell_mask,
