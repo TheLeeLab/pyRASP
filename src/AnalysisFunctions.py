@@ -1001,6 +1001,7 @@ class Analysis_Functions:
                             erosionsize=erosionsize,
                         )
                     )
+                    print(cell_mask_file)
                     IO.write_tiff(
                         file_path=cell_mask_file,
                         volume=cell_mask,
