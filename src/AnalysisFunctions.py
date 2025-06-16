@@ -991,7 +991,6 @@ class Analysis_Functions:
                 )
             else:
                 if not os.path.isfile(cell_mask_file):
-                    print("here")
                     cell_mask, pil_mask, areas, centroids = (
                         self.threshold_cell_areas_3d(
                             raw_cell_mask,
@@ -1001,7 +1000,6 @@ class Analysis_Functions:
                             erosionsize=erosionsize,
                         )
                     )
-                    print(cell_mask_file)
                     IO.write_tiff(
                         file_path=cell_mask_file,
                         volume=cell_mask,
