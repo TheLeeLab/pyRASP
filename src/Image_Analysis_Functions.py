@@ -285,6 +285,17 @@ class ImageAnalysis_Functions:
         if len(pil_large) > 0:
             indices_to_keep = np.concatenate(pil_large)
             lo_mask[tuple(indices_to_keep.T)] = True
+            peakintensities_large = np.array([
+                np.max(image[pil_large[i][:, 0], pil_large[i][:, 1]])
+                for i in range(len(pil_large))
+            ])
+            stdintensities_large = np.array([
+                np.std(image[pil_large[i][:, 0], pil_large[i][:, 1]])
+                for i in range(len(pil_large))
+            ])
+        else:
+            peakintensities_large = np.array([])
+            stdintensities_large = np.array([])
 
         dl_mask, centroids, radiality, idxs = self.small_feature_kernel(
             image, large_mask, img2, Gx, Gy, k2, thres, areathres, rdl, d
@@ -308,6 +319,8 @@ class ImageAnalysis_Functions:
             meanintensities_large,
             sumintensities_large,
             lo_mask,
+            stdintensities_large,   # index 9
+            peakintensities_large,  # index 10
         ]
 
         return to_return
@@ -670,6 +683,40 @@ class ImageAnalysis_Functions:
         )
         return large_mask.astype(bool)
 
+    def detect_large_features_3D_aggregates(
+        self, image, threshold, sigma1=2.0, sigma2=60.0
+    ):
+        """
+        Detects large protein aggregates in a 3D image using a fixed intensity
+        threshold, then joins detections across z-planes via 3D connected
+        components.
+
+        Unlike detect_large_features_3D (which uses an automatic threshold per
+        plane), this applies the same fixed threshold used in the per-plane
+        large-feature detector so that identical objects are found but each
+        aggregate is reported exactly once in 3D.
+
+        Args:
+            image (numpy.ndarray): 3-D image stack (z, x, y).
+            threshold (float): Intensity threshold for the DoG-enhanced image.
+            sigma1 (float): Inner Gaussian blur width. Default 2.0.
+            sigma2 (float): Outer Gaussian blur width (background). Default 60.0.
+
+        Returns:
+            large_mask (numpy.ndarray): 3-D boolean mask for detected aggregates.
+        """
+        large_mask = np.zeros_like(image, dtype=bool)
+        for i in range(image.shape[0]):
+            enhanced = gaussian(image[i, :, :], sigma=sigma1, truncate=2.0) - gaussian(
+                image[i, :, :], sigma=sigma2, truncate=2.0
+            )
+            plane_mask = enhanced > threshold
+            plane_mask = binary_opening(plane_mask, structure=ski.morphology.disk(1))
+            large_mask[i, :, :] = plane_mask
+        # Join across z-planes with 3D connectivity
+        large_mask = binary_fill_holes(large_mask)
+        return large_mask.astype(bool)
+
     def calculate_region_properties(
         self, binary_mask, image=None, dims=2, spacing=(0.5, 0.11, 0.11)
     ):
@@ -944,6 +991,8 @@ class ImageAnalysis_Functions:
             "area",
             "sum_intensity_in_photons",
             "mean_intensity_in_photons",
+            "std_intensity_in_photons",
+            "peak_intensity_in_photons",
             "zi",
             "zf",
         ]
@@ -964,6 +1013,8 @@ class ImageAnalysis_Functions:
                     meanintensities_large,
                     sumintensities_large,
                     lo_mask,
+                    _std_large,   # not used — 3D path computes these in 3D
+                    _peak_large,  # not used — 3D path computes these in 3D
                 ) = self.default_spotanalysis_routine(
                     image_plane,
                     k1,
@@ -1030,14 +1081,6 @@ class ImageAnalysis_Functions:
             estimated_intensity = [i[1] for i in results]
             estimated_background = [i[2] for i in results]
             estimated_background_perpixel = [i[3] for i in results]
-            areas_large = [i[4] for i in results]
-            centroids_large = [i[5] for i in results]
-            meanintensities_large = [i[6] for i in results]
-            sumintensities_large = [i[7] for i in results]
-            try:
-                lo_mask = np.stack([i[8] for i in results], axis=0)
-            except:
-                lo_mask = None
 
             if image_cell is not None:
                 try:
@@ -1055,14 +1098,47 @@ class ImageAnalysis_Functions:
                 columns,
                 z_planes,
             )
-            to_save_largeobjects = HF.make_datarray_largeobjects(
-                areas_large,
-                centroids_large,
-                sumintensities_large,
-                meanintensities_large,
-                columns_large,
-                z_planes,
-            )
+
+            # 3D aggregate detection — detects each aggregate once in 3D,
+            # avoiding the per-plane duplicates of the old per-z approach.
+            lo_mask_3d = self.detect_large_features_3D_aggregates(image, large_prot_thres)
+            if np.any(lo_mask_3d):
+                pil_lo, areas_lo, centroids_lo, sumint_lo, meanint_lo = \
+                    self.calculate_region_properties(
+                        lo_mask_3d, image, dims=3, spacing=(1, 1, 1)
+                    )
+                stdint_lo = np.array([
+                    np.std(image[pil_lo[i][:, 0], pil_lo[i][:, 1], pil_lo[i][:, 2]])
+                    for i in range(len(pil_lo))
+                ], dtype=float)
+                peakint_lo = np.array([
+                    np.max(image[pil_lo[i][:, 0], pil_lo[i][:, 1], pil_lo[i][:, 2]])
+                    for i in range(len(pil_lo))
+                ], dtype=float)
+                zi_lo = np.array([
+                    pil_lo[i][:, 0].min() + z_planes[0] + 1
+                    for i in range(len(pil_lo))
+                ], dtype=float)
+                zf_lo = np.array([
+                    pil_lo[i][:, 0].max() + z_planes[0] + 1
+                    for i in range(len(pil_lo))
+                ], dtype=float)
+                voxel_volume_um3 = 0.5 * 0.11 * 0.11  # z_step=0.5 µm, xy=0.11 µm → µm³/voxel
+                to_save_largeobjects = pl.DataFrame({
+                    "x": centroids_lo[:, 1].astype(float),
+                    "y": centroids_lo[:, 2].astype(float),
+                    "z": (centroids_lo[:, 0] + z_planes[0] + 1).astype(float),
+                    "area": areas_lo.astype(float) * voxel_volume_um3,
+                    "sum_intensity_in_photons": sumint_lo,
+                    "mean_intensity_in_photons": meanint_lo.astype(float),
+                    "std_intensity_in_photons": stdint_lo,
+                    "peak_intensity_in_photons": peakint_lo,
+                    "zi": zi_lo,
+                    "zf": zf_lo,
+                })
+            else:
+                to_save_largeobjects = None
+            lo_mask = lo_mask_3d
         else:
             (
                 centroids,
@@ -1074,6 +1150,8 @@ class ImageAnalysis_Functions:
                 meanintensities_large,
                 sumintensities_large,
                 lo_mask,
+                stdintensities_large,
+                peakintensities_large,
             ) = self.default_spotanalysis_routine(
                 image,
                 k1,
@@ -1112,6 +1190,8 @@ class ImageAnalysis_Functions:
                 sumintensities_large,
                 meanintensities_large,
                 columns_large[:-2],
+                stdintensities_large=stdintensities_large,
+                peakintensities_large=peakintensities_large,
             )
 
         return to_save, to_save_largeobjects, lo_mask, cell_mask

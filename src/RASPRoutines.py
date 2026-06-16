@@ -160,20 +160,24 @@ class RASP_Routines:
                 print(f"Error reading {filename}: {e}")
         return default
 
-    def get_infocus_planes(self, image, kernel):
+    def get_infocus_planes(self, image, kernel, filter=True):
         """
         Gets z planes that area in focus from an image stack
 
         Args:
             image (array): image as numpy array
             kernel (array): gaussian blur kernel
+            filter (bool): if True, restrict to in-focus planes; if False, use all planes
 
         Returns:
             z_planes (np.1darray): z_plane range that is in focus
         """
 
-        img2, Gx, Gy, focus_score, na = IA_F.calculate_gradient_field(image, kernel)
-        z_planes = IA_F.infocus_indices(focus_score)
+        img2, Gx, Gy, focus_score, na = IA_F.calculate_gradient_field(image, kernel, FS=filter)
+        if filter:
+            z_planes = IA_F.infocus_indices(focus_score)
+        else:
+            z_planes = np.array([0, image.shape[0]])
         return z_planes, img2, Gx, Gy
 
     def calibrate_radiality(
@@ -637,10 +641,10 @@ class RASP_Routines:
             img, k1, k2, img_cell, thres, large_thres, rdl, z_test, i, cell_focus
         ):
             if cell_focus is not None:
-                z_planes, _, _, _ = self.get_infocus_planes(img_cell, k1)
-                _, img2, Gx, Gy = self.get_infocus_planes(img, k1)
+                z_planes, _, _, _ = self.get_infocus_planes(img_cell, k1, filter=if_filter)
+                _, img2, Gx, Gy = self.get_infocus_planes(img, k1, filter=if_filter)
             else:
-                z_planes, img2, Gx, Gy = self.get_infocus_planes(img, k1)
+                z_planes, img2, Gx, Gy = self.get_infocus_planes(img, k1, filter=if_filter)
             if z_test:
                 img = img[z_planes[0] : z_planes[1], :, :]
                 img2 = img2[z_planes[0] : z_planes[1], :, :]
@@ -1278,11 +1282,6 @@ class RASP_Routines:
 
         if replace_files == False:
             if os.path.isfile(above_string):
-                print(
-                    "Analysis already complete. Exiting.",
-                    end="\r",
-                    flush=True,
-                )
                 return None, None
 
         cell_punctum_analysis_AT = (
@@ -1308,6 +1307,7 @@ class RASP_Routines:
         )
         if isinstance(cell_punctum_analysis_AT, pl.DataFrame):
             cell_punctum_analysis_AT.write_csv(above_string)
+            print(f"Saved: {above_string}")
         return cell_punctum_analysis_AT
 
     def count_puncta_in_individual_cells_threshold(

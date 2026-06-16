@@ -65,6 +65,8 @@ class Helper_Functions:
         meanintensities_large,
         columns,
         z_planes=0,
+        stdintensities_large=None,
+        peakintensities_large=None,
     ):
         """
         makes a datarray in pandas for large object information
@@ -72,43 +74,53 @@ class Helper_Functions:
         Args:
             areas_large (np.1darray): areas in pixels
             centroids_large (np.1darray): centroids of large objects
+            sumintensities_large (np.1darray): sum intensities of large objects
             meanintensities_large (np.1darray): mean intensities of large objects
             columns (list of strings): column labels
             z_planes: z_planes to put in array (if needed); if int, assumes only
                 one z-plane
+            stdintensities_large (np.1darray or None): std of intensities per object
+            peakintensities_large (np.1darray or None): peak (max) intensity per object
 
         Returns:
             to_save_largeobjects (polars DataArray) polars array to save
-            columns_large = ['x', 'y', 'z', 'area', 'mean_intensity_in_photons', 'zi', 'zf']
 
         """
         dataarray = None
         if isinstance(z_planes, int):
-            dataarray = np.vstack(
-                [
-                    centroids_large[:, 0],
-                    centroids_large[:, 1],
-                    np.full_like(centroids_large[:, 0], 1),
-                    areas_large,
-                    sumintensities_large,
-                    meanintensities_large,
-                ]
-            )
+            rows = [
+                centroids_large[:, 0],
+                centroids_large[:, 1],
+                np.full_like(centroids_large[:, 0], 1),
+                areas_large,
+                sumintensities_large,
+                meanintensities_large,
+            ]
+            if stdintensities_large is not None:
+                rows.append(stdintensities_large)
+            if peakintensities_large is not None:
+                rows.append(peakintensities_large)
+            dataarray = np.vstack(rows)
         else:
             for z, i in enumerate(z_planes):
                 if len(areas_large[z]) > 0:
-                    stack = np.asarray(
-                        [
-                            centroids_large[z][:, 0],
-                            centroids_large[z][:, 1],
-                            np.full_like(centroids_large[z][:, 0], i + 1),
-                            areas_large[z],
-                            sumintensities_large[z],
-                            meanintensities_large[z],
-                            np.full_like(centroids_large[z][:, 0], 1 + z_planes[0]),
-                            np.full_like(centroids_large[z][:, 0], 1 + z_planes[-1]),
-                        ]
-                    )
+                    rows = [
+                        centroids_large[z][:, 0],
+                        centroids_large[z][:, 1],
+                        np.full_like(centroids_large[z][:, 0], i + 1),
+                        areas_large[z],
+                        sumintensities_large[z],
+                        meanintensities_large[z],
+                    ]
+                    if stdintensities_large is not None and len(stdintensities_large[z]) > 0:
+                        rows.append(stdintensities_large[z])
+                    if peakintensities_large is not None and len(peakintensities_large[z]) > 0:
+                        rows.append(peakintensities_large[z])
+                    rows.extend([
+                        np.full_like(centroids_large[z][:, 0], 1 + z_planes[0]),
+                        np.full_like(centroids_large[z][:, 0], 1 + z_planes[-1]),
+                    ])
+                    stack = np.asarray(rows)
                     if dataarray is not None:
                         dataarray = np.vstack([dataarray, np.squeeze(stack.T)])
                     else:

@@ -938,6 +938,7 @@ class Analysis_Functions:
         analysis_type = "protein_load" if median else "spot_to_cell"
 
         if len(analysis_data) == 0:
+            print("WARNING: No analysis data after filtering by threshold.")
             return np.NAN
 
         files = np.unique(analysis_data["image_filename"].to_numpy())
@@ -946,20 +947,51 @@ class Analysis_Functions:
         analysis_directory = os.path.split(analysis_file)[0]
 
         for i, file in enumerate(files):
-            cell_mask_file = os.path.join(
-                analysis_directory,
-                os.path.split(file.split(imtype)[0])[-1].split(protein_string)[0]
-                + str(cell_string)
-                + "_cellMask.tiff",
-            )
+            # Extract just the filename, handling both Windows and Linux paths
+            # Replace backslashes with forward slashes for consistent handling
+            normalized_path = file.replace("\\", "/")
+            filename_only = normalized_path.split("/")[-1]
+
+            # Build cell mask filename
+            cell_mask_basename = filename_only.split(imtype)[0].split(protein_string)[0] + str(cell_string) + "_cellMask.tiff"
+            cell_mask_file = os.path.join(analysis_directory, cell_mask_basename)
+
             subset = analysis_data.filter(pl.col("image_filename") == file)
             zi = np.unique(subset["zi"].to_numpy())[0]
             zf = np.unique(subset["zf"].to_numpy())[0]
-            if not os.path.isfile(cell_mask_file):
-                cell_file = (
-                    file.split(protein_string + ".tif")[0] + cell_string + ".tif"
-                )
+            # Check if we have a pre-computed cell mask
+            if os.path.isfile(cell_mask_file):
+                # Cell mask already exists, just read it and calculate properties
+                cell_mask = IO.read_tiff(cell_mask_file)
+                if dims == 2:
+                    # For 2D analysis, need to threshold the existing mask
+                    cell_mask, pil_mask, areas, centroids = self.threshold_cell_areas_2d(
+                        cell_mask,
+                        lower_cell_size_threshold,
+                        upper_cell_size_threshold=upper_cell_size_threshold,
+                        z_project=z_project_first,
+                        spacing=spacing,
+                    )
+                else:
+                    # For 3D analysis, use the mask directly
+                    pil_mask, areas, centroids, _, _ = IA_F.calculate_region_properties(
+                        cell_mask, dims=3
+                    )
+            else:
+                # Need to generate cell mask from scratch
+                # First try to find the cell image in the analysis directory (handles moved data)
+                # Use the same normalized filename approach
+                cell_file_basename = filename_only.split(protein_string + ".tif")[0] + cell_string + ".tif"
+                cell_file = os.path.join(analysis_directory, cell_file_basename)
+
+                # If not found locally, try the original path from CSV (handle Windows paths)
                 if not os.path.isfile(cell_file):
+                    original_cell_path = file.replace("\\", "/")
+                    cell_file = "/".join(original_cell_path.split("/")[:-1]) + "/" + cell_file_basename
+
+                if not os.path.isfile(cell_file):
+                    print(f"  WARNING: Could not find cell file for {file}")
+                    print(f"    Tried: {os.path.join(analysis_directory, cell_file_basename)}")
                     continue
                 cell_image = IO.read_tiff(cell_file)
                 cell_image[: int(zi - 1), :, :] = 0
@@ -972,25 +1004,16 @@ class Analysis_Functions:
                     hole_threshold=100,
                     cell_threshold=lower_cell_size_threshold,
                 )
-            else:
-                if os.path.isfile(cell_mask_file):
-                    cell_mask = IO.read_tiff(cell_mask_file)
-                    pil_mask, areas, centroids, _, _ = IA_F.calculate_region_properties(
-                        cell_mask, dims=3
+
+                if dims == 2:
+                    cell_mask, pil_mask, areas, centroids = self.threshold_cell_areas_2d(
+                        raw_cell_mask,
+                        lower_cell_size_threshold,
+                        upper_cell_size_threshold=upper_cell_size_threshold,
+                        z_project=z_project_first,
+                        spacing=spacing,
                     )
                 else:
-                    raw_cell_mask = IO.read_tiff(cell_mask_file)
-                    
-            if dims == 2:
-                cell_mask, pil_mask, areas, centroids = self.threshold_cell_areas_2d(
-                    raw_cell_mask,
-                    lower_cell_size_threshold,
-                    upper_cell_size_threshold=upper_cell_size_threshold,
-                    z_project=z_project_first,
-                    spacing=spacing,
-                )
-            else:
-                if not os.path.isfile(cell_mask_file):
                     cell_mask, pil_mask, areas, centroids = (
                         self.threshold_cell_areas_3d(
                             raw_cell_mask,
@@ -1000,11 +1023,19 @@ class Analysis_Functions:
                             erosionsize=erosionsize,
                         )
                     )
+                    # Save the generated 3D cell mask for future use
                     IO.write_tiff(
                         file_path=cell_mask_file,
                         volume=cell_mask,
                         bit=np.uint8,
                     )
+
+            # Check if we have valid cells after thresholding
+            if centroids is None or areas is None:
+                continue
+            if len(centroids) == 0 or len(areas) == 0:
+                continue
+
             if dims == 2:
                 image_size = (
                     cell_mask.shape if len(cell_mask.shape) < 3 else cell_mask.shape[1:]
@@ -1052,13 +1083,15 @@ class Analysis_Functions:
             def areaanalysis(coords):
                 if coords.shape[-1] == 2:
                     xm, ym = coords[:, 0], coords[:, 1]
-                else:
-                    zm, xm, ym = coords[:, 0], coords[:, 1], coords[:, 2]
-                if np.any(xm > x_lim) or np.any(ym > y_lim) or np.any(zm > z_lim):
-                    return np.NAN, np.NAN
-                if coords.shape[-1] == 2:
+                    # Check bounds for 2D
+                    if np.any(xm > x_lim) or np.any(ym > y_lim):
+                        return np.NAN, np.NAN
                     coordinates_mask = np.asarray(np.vstack([xm, ym]), dtype=int)
                 else:
+                    zm, xm, ym = coords[:, 0], coords[:, 1], coords[:, 2]
+                    # Check bounds for 3D
+                    if np.any(xm > x_lim) or np.any(ym > y_lim) or np.any(zm > z_lim):
+                        return np.NAN, np.NAN
                     coordinates_mask = np.asarray(np.vstack([zm, xm, ym]), dtype=int)
                 mask_indices = np.ravel_multi_index(
                     coordinates_mask, image_size, order="F"
@@ -1132,6 +1165,9 @@ class Analysis_Functions:
                 flush=True,
             )
 
+        if cell_punctum_analysis is None:
+            print("WARNING: No cells with valid areas found in any files.")
+            return None
         return cell_punctum_analysis.rechunk()
 
     def colocalise_spots_with_threshold(
