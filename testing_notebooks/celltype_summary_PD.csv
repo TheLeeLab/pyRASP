@@ -1,3 +1,0 @@
-cell_type,total_oligomers,avg_per_patient,std_per_patient,min_per_patient,max_per_patient,avg_intensity,std_intensity,patient_count
-microglia,23912093,703296.85,329222.43,161360,1381600,364.74,47.63,5
-neurons,16241753,464050.09,580509.69,14609,2732249,335.05,80.66,5
