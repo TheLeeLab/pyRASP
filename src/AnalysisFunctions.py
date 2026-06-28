@@ -49,65 +49,31 @@ class Analysis_Functions:
         Returns:
             polars.DataFrame: DataFrame with number of spots per z-plane.
         """
-        data = None
-        results = None
+        if database is None or database.is_empty():
+            return None
         if threshold is None:
-            columns = ["n_spots", "z", "image_filename"]
+            data = (
+                database.group_by(["image_filename", "z"])
+                .agg(pl.len().alias("n_spots"))
+                .sort(["image_filename", "z"])
+                .select(["n_spots", "z", "image_filename"])
+            )
+            return H_F.clean_database(data, ["n_spots", "z", "image_filename"])
         else:
-            columns = ["n_spots_above", "n_spots_below", "z", "image_filename"]
-        for image_filename in np.sort(np.unique(database["image_filename"])):
-            dataslice = database.filter(pl.col("image_filename") == image_filename)
-            z_planes = np.sort(np.unique(dataslice["z"].to_numpy()))
-            if threshold is None:
-                spots_per_plane = [
-                    len(dataslice.filter(pl.col("z") == z)["sum_intensity_in_photons"])
-                    for z in z_planes
-                ]
-            else:
-                spots_above = [
-                    np.sum(
-                        dataslice.filter(pl.col("z") == z)[
-                            "sum_intensity_in_photons"
-                        ].to_numpy()
-                        > threshold
-                    )
-                    for z in z_planes
-                ]
-                spots_below = [
-                    np.sum(
-                        dataslice.filter(pl.col("z") == z)[
-                            "sum_intensity_in_photons"
-                        ].to_numpy()
-                        <= threshold
-                    )
-                    for z in z_planes
-                ]
-                spots_per_plane = np.vstack([spots_above, spots_below])
-            if results is not None:
-                results = np.hstack(
-                    [
-                        results,
-                        np.vstack(
-                            [
-                                spots_per_plane,
-                                z_planes,
-                                np.full(len(z_planes), image_filename),
-                            ]
-                        ),
-                    ]
-                )
-            else:
-                results = np.vstack(
-                    [spots_per_plane, z_planes, np.full(len(z_planes), image_filename)]
-                )
-            if results is not None:
-                spot_save = {}
-                for i, column in enumerate(columns):
-                    spot_save[column] = results[i, :]
-                data = H_F.clean_database(pl.DataFrame(data=spot_save), columns)
-            else:
-                data = None
-        return data
+            data = (
+                database.group_by(["image_filename", "z"])
+                .agg([
+                    (pl.col("sum_intensity_in_photons") > threshold)
+                    .sum().alias("n_spots_above"),
+                    (pl.col("sum_intensity_in_photons") <= threshold)
+                    .sum().alias("n_spots_below"),
+                ])
+                .sort(["image_filename", "z"])
+                .select(["n_spots_above", "n_spots_below", "z", "image_filename"])
+            )
+            return H_F.clean_database(
+                data, ["n_spots_above", "n_spots_below", "z", "image_filename"]
+            )
 
     def generate_indices(self, data, image_size, is_mask=False, is_lo=False):
         """
@@ -893,6 +859,7 @@ class Analysis_Functions:
         sigma1=2.0,
         sigma2=40.0,
         spacing=(0.5, 0.11, 0.11),
+        collect_oligomers=False,
     ):
         """
         Does analysis of number of oligomers in a mask area per "segmented" cell area.
@@ -943,6 +910,7 @@ class Analysis_Functions:
 
         files = np.unique(analysis_data["image_filename"].to_numpy())
         cell_punctum_analysis = None
+        oligomers_df = None
         start = time.time()
         analysis_directory = os.path.split(analysis_file)[0]
 
@@ -1080,6 +1048,19 @@ class Analysis_Functions:
             )
             filename_tosave = np.full_like(centroids[:, 0], file, dtype="object")
 
+            # Collect per-spot arrays (bounds-filtered) for oligomers-per-cell output
+            if collect_oligomers and dims == 3:
+                all_spot_flat = np.ravel_multi_index(
+                    np.vstack([z.astype(int), x.astype(int), y.astype(int)]),
+                    image_size,
+                    order="F",
+                )
+                sum_photons_b = subset["sum_intensity_in_photons"].to_numpy()[bounds]
+                bg_punctum_b = subset["bg_per_punctum"].to_numpy()[bounds]
+                bg_pixel_b = subset["bg_per_pixel"].to_numpy()[bounds]
+                zi_b = subset["zi"].to_numpy()[bounds]
+                zf_b = subset["zf"].to_numpy()[bounds]
+
             def areaanalysis(coords):
                 if coords.shape[-1] == 2:
                     xm, ym = coords[:, 0], coords[:, 1]
@@ -1115,6 +1096,47 @@ class Analysis_Functions:
             n_cell_ratios = np.array([r[0] for r in results])
             n_spots_in_object = np.array([r[1] for r in results])
 
+            # Build cell→oligomer mapping via a label map over the image
+            if collect_oligomers and dims == 3 and len(pil_mask) > 0:
+                n_pixels_total = int(np.prod(image_size))
+                cell_label_map = np.zeros(n_pixels_total, dtype=np.int32)
+                for j_cell, coords in enumerate(pil_mask):
+                    c = coords.astype(int)
+                    if (
+                        np.any(c[:, 0] >= z_lim)
+                        or np.any(c[:, 1] >= x_lim)
+                        or np.any(c[:, 2] >= y_lim)
+                    ):
+                        continue
+                    flat_px = np.ravel_multi_index(c.T, image_size, order="F")
+                    cell_label_map[flat_px] = j_cell + 1  # 1-based label
+
+                spot_cell_ids = cell_label_map[all_spot_flat]
+                del cell_label_map
+                in_any_cell = spot_cell_ids > 0
+
+                if in_any_cell.any():
+                    n_in = int(in_any_cell.sum())
+                    img_oligo_df = pl.DataFrame(
+                        {
+                            "z": z[in_any_cell].astype("float64"),
+                            "x": x[in_any_cell].astype("float64"),
+                            "y": y[in_any_cell].astype("float64"),
+                            "sum_intensity_in_photons": sum_photons_b[in_any_cell],
+                            "bg_per_punctum": bg_punctum_b[in_any_cell],
+                            "bg_per_pixel": bg_pixel_b[in_any_cell],
+                            "zi": zi_b[in_any_cell],
+                            "zf": zf_b[in_any_cell],
+                            "image_filename": [file] * n_in,
+                            "cell_id_in_image": spot_cell_ids[in_any_cell].tolist(),
+                        }
+                    )
+                    oligomers_df = (
+                        pl.concat([oligomers_df, img_oligo_df])
+                        if oligomers_df is not None
+                        else img_oligo_df
+                    )
+
             if len(areas) > 0:
                 if dims == 2:
                     data = {
@@ -1127,6 +1149,7 @@ class Analysis_Functions:
                             else "cell_protein_load"
                         ): n_cell_ratios,
                         "n_puncta_in_cell": n_spots_in_object,
+                        "cell_id_in_image": np.arange(1, len(areas) + 1, dtype=np.int32),
                         "image_filename": filename_tosave,
                     }
                 else:
@@ -1141,6 +1164,7 @@ class Analysis_Functions:
                             else "cell_protein_load"
                         ): n_cell_ratios,
                         "n_puncta_in_cell": n_spots_in_object,
+                        "cell_id_in_image": np.arange(1, len(areas) + 1, dtype=np.int32),
                         "image_filename": filename_tosave,
                     }
 
@@ -1167,8 +1191,9 @@ class Analysis_Functions:
 
         if cell_punctum_analysis is None:
             print("WARNING: No cells with valid areas found in any files.")
-            return None
-        return cell_punctum_analysis.rechunk()
+            return (None, None) if collect_oligomers else None
+        result = cell_punctum_analysis.rechunk()
+        return (result, oligomers_df) if collect_oligomers else result
 
     def colocalise_spots_with_threshold(
         self,

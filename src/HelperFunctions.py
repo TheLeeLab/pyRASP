@@ -126,7 +126,7 @@ class Helper_Functions:
                     else:
                         dataarray = np.squeeze(stack.T)
         if dataarray is not None:
-            dataarray = np.asarray(np.matrix(np.squeeze(dataarray)).transpose())
+            dataarray = np.squeeze(dataarray).T
             if len(dataarray.shape) > 1:
                 return pl.DataFrame(
                     data=dataarray,
@@ -201,7 +201,7 @@ class Helper_Functions:
                     else:
                         dataarray = da
         if dataarray is not None:
-            dataarray = np.asarray(np.matrix(np.squeeze(dataarray)).transpose())
+            dataarray = np.squeeze(dataarray).T
             if len(dataarray.shape) > 1:
                 return pl.DataFrame(
                     data=dataarray,

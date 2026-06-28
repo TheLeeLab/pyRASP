@@ -6,12 +6,26 @@ jsb92, 2024/01/02
 import json
 import os
 from skimage import io
+import tifffile
 import numpy as np
 import polars as pl
 import sys
 import warnings
 
 warnings.filterwarnings("ignore")
+
+_AF_instance = None
+
+
+def _get_AF():
+    global _AF_instance
+    if _AF_instance is None:
+        module_dir = os.path.abspath(os.path.dirname(__file__))
+        if module_dir not in sys.path:
+            sys.path.append(module_dir)
+        import AnalysisFunctions
+        _AF_instance = AnalysisFunctions.Analysis_Functions()
+    return _AF_instance
 
 
 class IO_Functions:
@@ -40,11 +54,7 @@ class IO_Functions:
             i (int): location in files where we're analysing
             one_savefile (boolean): if True, saving all analysis in one csv
         """
-        module_dir = os.path.dirname(__file__)
-        sys.path.append(module_dir)
-        import AnalysisFunctions
-
-        A_F = AnalysisFunctions.Analysis_Functions()
+        A_F = _get_AF()
 
         def _get_base_filename(file):
             return os.path.split(file)[-1].split(imtype)[0]
@@ -123,11 +133,7 @@ class IO_Functions:
             cell_mask (np.ndarray): cell mask if cell mask saving
             one_savefile (boolean): if True, saving all analysis in one csv
         """
-        module_dir = os.path.dirname(__file__)
-        sys.path.append(module_dir)
-        import AnalysisFunctions
-
-        A_F = AnalysisFunctions.Analysis_Functions()
+        A_F = _get_AF()
 
         def _get_base_filename(file):
             return os.path.split(file)[-1].split(imtype)[0]
@@ -316,9 +322,9 @@ class IO_Functions:
         # Use skimage's imread function to read the TIFF file
         # specifying the 'tifffile' plugin explicitly
         if isinstance(frame, type(None)):
-            image = io.imread(file_path, plugin="tifffile")
+            image = tifffile.imread(file_path)
         else:
-            image = io.imread(file_path, plugin="tifffile", key=frame)
+            image = tifffile.imread(file_path, key=frame)
         return np.asarray(image, dtype="double")
 
     def read_tiff_tophotons(

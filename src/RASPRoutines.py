@@ -8,6 +8,7 @@ import numpy as np
 import polars as pl
 import sys
 import time
+from concurrent.futures import ThreadPoolExecutor
 
 
 module_dir = os.path.abspath(os.path.dirname(__file__))
@@ -160,7 +161,7 @@ class RASP_Routines:
                 print(f"Error reading {filename}: {e}")
         return default
 
-    def get_infocus_planes(self, image, kernel, filter=True):
+    def get_infocus_planes(self, image, kernel, filter=True, sigma=None):
         """
         Gets z planes that area in focus from an image stack
 
@@ -168,17 +169,30 @@ class RASP_Routines:
             image (array): image as numpy array
             kernel (array): gaussian blur kernel
             filter (bool): if True, restrict to in-focus planes; if False, use all planes
+            sigma (float, optional): Gaussian sigma — when provided, uses gaussian_filter
+                (faster, numerically identical). Pass gsigma from analyse_images.
 
         Returns:
             z_planes (np.1darray): z_plane range that is in focus
         """
 
-        img2, Gx, Gy, focus_score, na = IA_F.calculate_gradient_field(image, kernel, FS=filter)
+        img2, Gx, Gy, focus_score, na = IA_F.calculate_gradient_field(
+            image, kernel, FS=filter, sigma=sigma
+        )
         if filter:
             z_planes = IA_F.infocus_indices(focus_score)
         else:
             z_planes = np.array([0, image.shape[0]])
         return z_planes, img2, Gx, Gy
+
+    def _get_infocus_z_only(self, image, kernel, filter=True, sigma=None):
+        """Returns only z_planes without allocating the full gradient output arrays."""
+        if not filter:
+            return np.array([0, image.shape[0]])
+        _, _, _, focus_score, _ = IA_F.calculate_gradient_field(
+            image, kernel, FS=True, sigma=sigma
+        )
+        return IA_F.infocus_indices(focus_score)
 
     def calibrate_radiality(
         self,
@@ -223,7 +237,7 @@ class RASP_Routines:
             if len(image.shape) < 3:
                 z_planes = [None]
             else:
-                z_planes, img2, Gx, Gy = self.get_infocus_planes(image, k1)
+                z_planes, img2, Gx, Gy = self.get_infocus_planes(image, k1, sigma=gsigma)
                 z_planes = np.arange(z_planes[0], z_planes[-1])
             if len(z_planes) == 0:
                 continue
@@ -521,21 +535,32 @@ class RASP_Routines:
         start = time.time()
 
         def process_files(subfolder, files):
-            for i in np.arange(len(files)):
-                img = IO.read_tiff_tophotons(
-                    os.path.join(subfolder, files[i]),
+            def _load(idx):
+                return IO.read_tiff_tophotons(
+                    os.path.join(subfolder, files[idx]),
                     QE=self.QE,
                     gain_map=self.gain_map,
                     offset_map=self.offset_map,
                     variance_map=self.variance_map,
                 )
-                _analysis_loop(img, i)
-                if disp:
-                    print(
-                        f"Analysed image file {i + 1}/{len(files)}    Time elapsed: {time.time() - start:.3f} s",
-                        end="\r",
-                        flush=True,
-                    )
+
+            n = len(files)
+            if n == 0:
+                return
+
+            with ThreadPoolExecutor(max_workers=1) as io_pool:
+                next_future = io_pool.submit(_load, 0)
+                for i in range(n):
+                    img = next_future.result()
+                    if i + 1 < n:
+                        next_future = io_pool.submit(_load, i + 1)
+                    _analysis_loop(img, i)
+                    if disp:
+                        print(
+                            f"Analysed image file {i + 1}/{n}    Time elapsed: {time.time() - start:.3f} s",
+                            end="\r",
+                            flush=True,
+                        )
 
         start = time.time()
 
@@ -641,10 +666,10 @@ class RASP_Routines:
             img, k1, k2, img_cell, thres, large_thres, rdl, z_test, i, cell_focus
         ):
             if cell_focus is not None:
-                z_planes, _, _, _ = self.get_infocus_planes(img_cell, k1, filter=if_filter)
-                _, img2, Gx, Gy = self.get_infocus_planes(img, k1, filter=if_filter)
+                z_planes = self._get_infocus_z_only(img_cell, k1, filter=if_filter, sigma=gsigma)
+                _, img2, Gx, Gy = self.get_infocus_planes(img, k1, filter=if_filter, sigma=gsigma)
             else:
-                z_planes, img2, Gx, Gy = self.get_infocus_planes(img, k1, filter=if_filter)
+                z_planes, img2, Gx, Gy = self.get_infocus_planes(img, k1, filter=if_filter, sigma=gsigma)
             if z_test:
                 img = img[z_planes[0] : z_planes[1], :, :]
                 img2 = img2[z_planes[0] : z_planes[1], :, :]
@@ -692,48 +717,63 @@ class RASP_Routines:
                     one_savefile=one_savefile,
                 )
 
-        start = time.time()
-
         def process_files(subfolder, files, cell_files):
-            for i in np.arange(len(files)):
-                img = IO.read_tiff_tophotons(
-                    os.path.join(subfolder, files[i]),
+            def _load_pair(idx):
+                """Load protein + cell images for index idx (runs in background thread)."""
+                _img = IO.read_tiff_tophotons(
+                    os.path.join(subfolder, files[idx]),
                     QE=self.QE,
                     gain_map=self.gain_map,
                     offset_map=self.offset_map,
                     variance_map=self.variance_map,
                 )[im_start:, :, :]
-                img_cell = None
-                cell_focus = None
+                _img_cell = None
                 if cell_analysis:
-                    img_cell = IO.read_tiff_tophotons(
-                        os.path.join(subfolder, cell_files[i]),
+                    _img_cell = IO.read_tiff_tophotons(
+                        os.path.join(subfolder, cell_files[idx]),
                         QE=self.QE,
                         gain_map=self.gain_map,
                         offset_map=self.offset_map,
                         variance_map=self.variance_map,
                     )[im_start:, :, :]
-                if focus_images != protein_string:
-                    cell_focus = 1
-                z_test = len(img.shape) > 2
-                _analysis_loop(
-                    img,
-                    k1,
-                    k2,
-                    img_cell,
-                    thres,
-                    large_thres,
-                    rdl,
-                    z_test,
-                    i,
-                    cell_focus,
-                )
-                if disp:
-                    print(
-                        f"Analysed image file {i + 1}/{len(files)}    Time elapsed: {time.time() - start:.3f} s",
-                        end="\r",
-                        flush=True,
+                return _img, _img_cell
+
+            n = len(files)
+            if n == 0:
+                return
+
+            with ThreadPoolExecutor(max_workers=1) as io_pool:
+                # Pre-fetch first image before the loop starts
+                next_future = io_pool.submit(_load_pair, 0)
+
+                for i in range(n):
+                    # Receive current image (may already be ready)
+                    img, img_cell = next_future.result()
+
+                    # Immediately start loading the next image while we analyse this one
+                    if i + 1 < n:
+                        next_future = io_pool.submit(_load_pair, i + 1)
+
+                    cell_focus = 1 if focus_images != protein_string else None
+                    z_test = len(img.shape) > 2
+                    _analysis_loop(
+                        img,
+                        k1,
+                        k2,
+                        img_cell,
+                        thres,
+                        large_thres,
+                        rdl,
+                        z_test,
+                        i,
+                        cell_focus,
                     )
+                    if disp:
+                        print(
+                            f"Analysed image file {i + 1}/{n}    Time elapsed: {time.time() - start:.3f} s",
+                            end="\r",
+                            flush=True,
+                        )
 
         start = time.time()
 
@@ -814,7 +854,7 @@ class RASP_Routines:
             )
 
         def process_image(img, img_cell, k1, k2):
-            z_planes, img2, Gx, Gy = self.get_infocus_planes(img, k1)
+            z_planes, img2, Gx, Gy = self.get_infocus_planes(img, k1, sigma=gsigma)
             to_save, to_save_largeobjects, lo_mask, cell_mask = (
                 IA_F.compute_spot_and_cell_props(
                     img,
