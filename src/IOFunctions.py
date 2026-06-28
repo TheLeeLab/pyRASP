@@ -351,13 +351,13 @@ class IO_Functions:
         Returns:
             image (numpy.ndarray): The image data from the TIFF file.
         """
-        # Use skimage's imread function to read the TIFF file
-        # specifying the 'tifffile' plugin explicitly
-        data = np.asarray(self.read_tiff(file_path, frame=frame), dtype=np.float32)
-        if len(data.shape) > 2:
-            image_dims = data.shape[1:]
+        if frame is None:
+            raw = tifffile.imread(file_path, is_ome=False, is_mmstack=False, is_imagej=False)
         else:
-            image_dims = data.shape
+            raw = tifffile.imread(file_path, key=frame, is_ome=False, is_mmstack=False, is_imagej=False)
+
+        data = raw.astype(np.float32)
+        image_dims = data.shape[1:] if len(data.shape) > 2 else data.shape
 
         if type(gain_map) is not float:
             if image_dims != gain_map.shape:
@@ -369,17 +369,14 @@ class IO_Functions:
 
         if type(gain_map) is not float:
             if len(data.shape) > 2:
-                data = np.divide(
-                    np.divide(
-                        np.subtract(data, offset_map[np.newaxis, :, :]),
-                        gain_map[np.newaxis, :, :],
-                    ),
-                    QE,
-                )
+                data -= offset_map[np.newaxis, :, :]
+                data /= (gain_map[np.newaxis, :, :] * QE)
             else:
-                data = np.divide(np.divide(np.subtract(data, offset_map), gain_map), QE)
+                data -= offset_map
+                data /= (gain_map * QE)
         else:
-            data = np.divide(np.divide(np.subtract(data, offset_map), gain_map), QE)
+            data -= offset_map
+            data /= (gain_map * QE)
         return data
 
     def write_tiff(self, volume, file_path, bit=np.uint16, pixel_size=0.11):
