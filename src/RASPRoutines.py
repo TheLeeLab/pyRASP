@@ -925,6 +925,22 @@ class RASP_Routines:
 
         def process_image(img, img_cell, img_bulk, k1, k2):
             z_planes, img2, Gx, Gy = self.get_infocus_planes(img, k1, sigma=gsigma)
+            # Restrict to the in-focus z range before spot/mask detection --
+            # otherwise compute_spot_and_cell_props processes every plane of
+            # the full stack but make_datarray_spot only labels the first
+            # len(z_planes) of them with the (unrelated) in-focus z numbers,
+            # silently misaligning planes and, for any array derived from the
+            # full per-plane results (e.g. the bulk overlap column), producing
+            # a length mismatch against to_save. Mirrors the slicing already
+            # done in analyse_images._analysis_loop.
+            img = img[z_planes[0] : z_planes[1], :, :]
+            img2 = img2[z_planes[0] : z_planes[1], :, :]
+            Gx = Gx[z_planes[0] : z_planes[1], :, :]
+            Gy = Gy[z_planes[0] : z_planes[1], :, :]
+            if img_cell is not None:
+                img_cell = img_cell[z_planes[0] : z_planes[1], :, :]
+            if img_bulk is not None:
+                img_bulk = img_bulk[z_planes[0] : z_planes[1], :, :]
             to_save, to_save_largeobjects, lo_mask, cell_mask, bulk_mask = (
                 IA_F.compute_spot_and_cell_props(
                     img,
@@ -950,7 +966,16 @@ class RASP_Routines:
                     bulk_sigma2=self.bulk_sigma2,
                 )
             )
-            return z_planes, to_save, to_save_largeobjects, cell_mask, bulk_mask
+            return (
+                z_planes,
+                img,
+                img_cell,
+                img_bulk,
+                to_save,
+                to_save_largeobjects,
+                cell_mask,
+                bulk_mask,
+            )
 
         def filter_z_planes(to_save, z_planes):
             z_to_plot = np.full_like(np.arange(z_planes[0] + 1, z_planes[-1] + 1), -1)
@@ -968,6 +993,7 @@ class RASP_Routines:
 
         def plot_images(
             z_to_plot,
+            z_planes,
             img,
             to_save,
             to_save_largeobjects=None,
@@ -1002,13 +1028,18 @@ class RASP_Routines:
                     fig, axs = plots.two_column_plot(
                         nrows=1, ncolumns=ncolumns, widthratio=[1] * ncolumns
                     )
+                # to_save's "z" column holds the original (absolute) z-plane
+                # number, but img/img_cell/img_bulk/cell_mask/bulk_mask were
+                # sliced down to just the in-focus range in process_image --
+                # zi converts the absolute plane number back to that local index.
+                zi = i[1] - 1 - z_planes[0]
                 col = 0
                 puncta_label = (
                     "puncta, z plane = " if ncolumns > 1 else "z plane = "
                 ) + str(int(i[1]))
                 axs[col] = plots.image_scatter_plot(
                     axs[col],
-                    img[i[1] - 1, :image_size, :image_size],
+                    img[zi, :image_size, :image_size],
                     xdata=xpositions,
                     ydata=ypositions,
                     label=puncta_label,
@@ -1017,7 +1048,7 @@ class RASP_Routines:
                 if to_save_largeobjects is not None:
                     axs[col] = plots.image_scatter_plot(
                         axs[col],
-                        img[i[1] - 1, :, :],
+                        img[zi, :, :],
                         xdata=xpositions_large,
                         ydata=ypositions_large,
                         label="z plane = " + str(int(i[1])),
@@ -1026,19 +1057,19 @@ class RASP_Routines:
                 if cell_file is not None:
                     axs[col] = plots.image_plot(
                         axs[col],
-                        img_cell[i[1] - 1, :, :],
+                        img_cell[zi, :, :],
                         label="cell, z plane = " + str(int(i[1])),
                         plotmask=True,
-                        mask=cell_mask[i[1] - 1, :, :],
+                        mask=cell_mask[zi, :, :],
                     )
                     col += 1
                 if bulk_file is not None:
                     axs[col] = plots.image_plot(
                         axs[col],
-                        img_bulk[i[1] - 1, :, :],
+                        img_bulk[zi, :, :],
                         label="bulk stain, z plane = " + str(int(i[1])),
                         plotmask=True,
-                        mask=bulk_mask[i[1] - 1, :, :],
+                        mask=bulk_mask[zi, :, :],
                         mask_fill=True,
                     )
                     col += 1
@@ -1056,16 +1087,23 @@ class RASP_Routines:
                 plt.show()
 
         if len(img.shape) > 2:
-            z_planes, to_save, to_save_largeobjects, cell_mask, bulk_mask = (
-                process_image(img, img_cell, img_bulk, k1, k2)
-            )
+            (
+                z_planes,
+                img,
+                img_cell,
+                img_bulk,
+                to_save,
+                to_save_largeobjects,
+                cell_mask,
+                bulk_mask,
+            ) = process_image(img, img_cell, img_bulk, k1, k2)
             if lower_lo_size_threshold is not None:
                 to_save_largeobjects = to_save_largeobjects.filter(
                     (pl.col("area") > lower_lo_size_threshold)
                     & (pl.col("area") <= upper_lo_size_threshold)
                 )
             if lower_cell_size_threshold is not None:
-                for i in np.arange(cell_mask.shape[-1]):
+                for i in np.arange(cell_mask.shape[0]):
                     cell_mask[i, :, :], _, _, _ = A_F.threshold_cell_areas_2d(
                         cell_mask[i, :, :],
                         lower_cell_size_threshold=lower_cell_size_threshold,
@@ -1075,6 +1113,7 @@ class RASP_Routines:
             z_to_plot = filter_z_planes(to_save, z_planes)
             plot_images(
                 z_to_plot,
+                z_planes,
                 img,
                 to_save,
                 to_save_largeobjects,
