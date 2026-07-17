@@ -1057,8 +1057,15 @@ class RASP_Routines:
                 + (1 if bulk_file is not None else 0)
             )
             for i in enumerate(z_to_plot):
-                xpositions = to_save.filter(pl.col("z") == i[1])["x"].to_numpy()
-                ypositions = to_save.filter(pl.col("z") == i[1])["y"].to_numpy()
+                z_rows = to_save.filter(pl.col("z") == i[1])
+                xpositions = z_rows["x"].to_numpy()
+                ypositions = z_rows["y"].to_numpy()
+                if "overlap_with_bulk_stain" in z_rows.columns:
+                    puncta_colors = np.where(
+                        z_rows["overlap_with_bulk_stain"].to_numpy(), "green", "red"
+                    )
+                else:
+                    puncta_colors = "red"
                 if to_save_largeobjects is not None:
                     xpositions_large = to_save_largeobjects.filter(pl.col("z") == i[1])[
                         "x"
@@ -1069,6 +1076,8 @@ class RASP_Routines:
                 testvals = (xpositions < image_size) * (ypositions < image_size)
                 xpositions = xpositions[testvals]
                 ypositions = ypositions[testvals]
+                if isinstance(puncta_colors, np.ndarray):
+                    puncta_colors = puncta_colors[testvals]
 
                 if ncolumns == 1:
                     fig, axs = plots.one_column_plot()
@@ -1091,6 +1100,7 @@ class RASP_Routines:
                     xdata=xpositions,
                     ydata=ypositions,
                     label=puncta_label,
+                    scattercolor=puncta_colors,
                 )
                 col += 1
                 if to_save_largeobjects is not None:
