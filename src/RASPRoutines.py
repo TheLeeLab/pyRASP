@@ -866,6 +866,7 @@ class RASP_Routines:
         image_size=200,
         save_figure=False,
         cell_file=None,
+        test_cell_detection=True,
         bulk_file=None,
         lower_cell_size_threshold=None,
         upper_cell_size_threshold=np.inf,
@@ -884,7 +885,14 @@ class RASP_Routines:
             rwave (float): Ricker wavelength sigma (default 2.0)
             image_size (int): Amount of image to plot - by default plots 200x200 chunk of an image
             save_figure (boolean): Save the figure as an SVG, default False
-            cell_file (string): Cell image location
+            cell_file (string): Cell image location. Whenever given, it is used
+                to pick the in-focus z range (usually a more reliable focus
+                reference than the sparser oligomer channel), regardless of
+                test_cell_detection.
+            test_cell_detection (boolean): If True (default), also runs cell
+                mask detection on cell_file and plots it (mask border overlay).
+                If False, cell_file is only used to pick the in-focus z range --
+                no cell mask is computed or plotted. Ignored if cell_file is None.
             bulk_file (string): Bulk stain image location. If given, plots the
                 raw bulk image with a semi-transparent overlay of the bulk
                 mask computed from self.bulk_threshold/sigma1/sigma2.
@@ -924,7 +932,15 @@ class RASP_Routines:
             )
 
         def process_image(img, img_cell, img_bulk, k1, k2):
-            z_planes, img2, Gx, Gy = self.get_infocus_planes(img, k1, sigma=gsigma)
+            if img_cell is not None:
+                # Cell channels are usually a more reliable focus reference
+                # than the sparser oligomer channel -- use it to pick the
+                # z range, but still compute img2/Gx/Gy (used for oligomer
+                # spot detection) from the protein image itself.
+                z_planes = self._get_infocus_z_only(img_cell, k1, sigma=gsigma)
+                _, img2, Gx, Gy = self.get_infocus_planes(img, k1, sigma=gsigma)
+            else:
+                z_planes, img2, Gx, Gy = self.get_infocus_planes(img, k1, sigma=gsigma)
             # Restrict to the in-focus z range before spot/mask detection --
             # otherwise compute_spot_and_cell_props processes every plane of
             # the full stack but make_datarray_spot only labels the first
@@ -941,10 +957,11 @@ class RASP_Routines:
                 img_cell = img_cell[z_planes[0] : z_planes[1], :, :]
             if img_bulk is not None:
                 img_bulk = img_bulk[z_planes[0] : z_planes[1], :, :]
+            image_cell_for_detection = img_cell if test_cell_detection else None
             to_save, to_save_largeobjects, lo_mask, cell_mask, bulk_mask = (
                 IA_F.compute_spot_and_cell_props(
                     img,
-                    img_cell,
+                    image_cell_for_detection,
                     k1,
                     k2,
                     img2,
@@ -1002,10 +1019,11 @@ class RASP_Routines:
             img_bulk=None,
             bulk_mask=None,
         ):
+            show_cell_panel = cell_file is not None and test_cell_detection
             ncolumns = (
                 1
                 + (1 if to_save_largeobjects is not None else 0)
-                + (1 if cell_file is not None else 0)
+                + (1 if show_cell_panel else 0)
                 + (1 if bulk_file is not None else 0)
             )
             for i in enumerate(z_to_plot):
@@ -1054,7 +1072,7 @@ class RASP_Routines:
                         label="z plane = " + str(int(i[1])),
                     )
                     col += 1
-                if cell_file is not None:
+                if show_cell_panel:
                     axs[col] = plots.image_plot(
                         axs[col],
                         img_cell[zi, :, :],
@@ -1102,7 +1120,7 @@ class RASP_Routines:
                     (pl.col("area") > lower_lo_size_threshold)
                     & (pl.col("area") <= upper_lo_size_threshold)
                 )
-            if lower_cell_size_threshold is not None:
+            if lower_cell_size_threshold is not None and cell_mask is not None:
                 for i in np.arange(cell_mask.shape[0]):
                     cell_mask[i, :, :], _, _, _ = A_F.threshold_cell_areas_2d(
                         cell_mask[i, :, :],
