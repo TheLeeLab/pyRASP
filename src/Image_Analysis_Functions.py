@@ -79,8 +79,10 @@ class ImageAnalysis_Functions:
                 # gaussian_filter with matching truncate gives numerically identical
                 # results (max diff < 1e-11) at ~5x the speed of the FFT loop.
                 filtered_image = gaussian_filter(
-                    np.asarray(image, dtype=float), sigma=(0, sigma, sigma),
-                    truncate=2.0, mode="nearest"
+                    np.asarray(image, dtype=float),
+                    sigma=(0, sigma, sigma),
+                    truncate=2.0,
+                    mode="nearest",
                 )
             else:
                 filtered_image = np.empty_like(image)
@@ -298,14 +300,18 @@ class ImageAnalysis_Functions:
         if len(pil_large) > 0:
             indices_to_keep = np.concatenate(pil_large)
             lo_mask[tuple(indices_to_keep.T)] = True
-            peakintensities_large = np.array([
-                np.max(image[pil_large[i][:, 0], pil_large[i][:, 1]])
-                for i in range(len(pil_large))
-            ])
-            stdintensities_large = np.array([
-                np.std(image[pil_large[i][:, 0], pil_large[i][:, 1]])
-                for i in range(len(pil_large))
-            ])
+            peakintensities_large = np.array(
+                [
+                    np.max(image[pil_large[i][:, 0], pil_large[i][:, 1]])
+                    for i in range(len(pil_large))
+                ]
+            )
+            stdintensities_large = np.array(
+                [
+                    np.std(image[pil_large[i][:, 0], pil_large[i][:, 1]])
+                    for i in range(len(pil_large))
+                ]
+            )
         else:
             peakintensities_large = np.array([])
             stdintensities_large = np.array([])
@@ -332,7 +338,7 @@ class ImageAnalysis_Functions:
             meanintensities_large,
             sumintensities_large,
             lo_mask,
-            stdintensities_large,   # index 9
+            stdintensities_large,  # index 9
             peakintensities_large,  # index 10
         ]
 
@@ -1057,7 +1063,7 @@ class ImageAnalysis_Functions:
                     meanintensities_large,
                     sumintensities_large,
                     lo_mask,
-                    _std_large,   # not used — 3D path computes these in 3D
+                    _std_large,  # not used — 3D path computes these in 3D
                     _peak_large,  # not used — 3D path computes these in 3D
                 ) = self.default_spotanalysis_routine(
                     image_plane,
@@ -1184,39 +1190,56 @@ class ImageAnalysis_Functions:
                 )
             lo_mask_3d = binary_fill_holes(per_plane_lo)
             if np.any(lo_mask_3d):
-                pil_lo, areas_lo, centroids_lo, sumint_lo, meanint_lo = \
+                pil_lo, areas_lo, centroids_lo, sumint_lo, meanint_lo = (
                     self.calculate_region_properties(
                         lo_mask_3d, image, dims=3, spacing=(1, 1, 1)
                     )
-                stdint_lo = np.array([
-                    np.std(image[pil_lo[i][:, 0], pil_lo[i][:, 1], pil_lo[i][:, 2]])
-                    for i in range(len(pil_lo))
-                ], dtype=float)
-                peakint_lo = np.array([
-                    np.max(image[pil_lo[i][:, 0], pil_lo[i][:, 1], pil_lo[i][:, 2]])
-                    for i in range(len(pil_lo))
-                ], dtype=float)
-                zi_lo = np.array([
-                    pil_lo[i][:, 0].min() + z_planes[0] + 1
-                    for i in range(len(pil_lo))
-                ], dtype=float)
-                zf_lo = np.array([
-                    pil_lo[i][:, 0].max() + z_planes[0] + 1
-                    for i in range(len(pil_lo))
-                ], dtype=float)
-                voxel_volume_um3 = 0.5 * 0.11 * 0.11  # z_step=0.5 µm, xy=0.11 µm → µm³/voxel
-                to_save_largeobjects = pl.DataFrame({
-                    "x": centroids_lo[:, 1].astype(float),
-                    "y": centroids_lo[:, 2].astype(float),
-                    "z": (centroids_lo[:, 0] + z_planes[0] + 1).astype(float),
-                    "area": areas_lo.astype(float) * voxel_volume_um3,
-                    "sum_intensity_in_photons": sumint_lo,
-                    "mean_intensity_in_photons": meanint_lo.astype(float),
-                    "std_intensity_in_photons": stdint_lo,
-                    "peak_intensity_in_photons": peakint_lo,
-                    "zi": zi_lo,
-                    "zf": zf_lo,
-                })
+                )
+                stdint_lo = np.array(
+                    [
+                        np.std(image[pil_lo[i][:, 0], pil_lo[i][:, 1], pil_lo[i][:, 2]])
+                        for i in range(len(pil_lo))
+                    ],
+                    dtype=float,
+                )
+                peakint_lo = np.array(
+                    [
+                        np.max(image[pil_lo[i][:, 0], pil_lo[i][:, 1], pil_lo[i][:, 2]])
+                        for i in range(len(pil_lo))
+                    ],
+                    dtype=float,
+                )
+                zi_lo = np.array(
+                    [
+                        pil_lo[i][:, 0].min() + z_planes[0] + 1
+                        for i in range(len(pil_lo))
+                    ],
+                    dtype=float,
+                )
+                zf_lo = np.array(
+                    [
+                        pil_lo[i][:, 0].max() + z_planes[0] + 1
+                        for i in range(len(pil_lo))
+                    ],
+                    dtype=float,
+                )
+                voxel_volume_um3 = (
+                    0.5 * 0.11 * 0.11
+                )  # z_step=0.5 µm, xy=0.11 µm → µm³/voxel
+                to_save_largeobjects = pl.DataFrame(
+                    {
+                        "x": centroids_lo[:, 1].astype(float),
+                        "y": centroids_lo[:, 2].astype(float),
+                        "z": (centroids_lo[:, 0] + z_planes[0] + 1).astype(float),
+                        "area": areas_lo.astype(float) * voxel_volume_um3,
+                        "sum_intensity_in_photons": sumint_lo,
+                        "mean_intensity_in_photons": meanint_lo.astype(float),
+                        "std_intensity_in_photons": stdint_lo,
+                        "peak_intensity_in_photons": peakint_lo,
+                        "zi": zi_lo,
+                        "zf": zf_lo,
+                    }
+                )
             else:
                 to_save_largeobjects = None
             lo_mask = lo_mask_3d

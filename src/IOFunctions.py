@@ -24,6 +24,7 @@ def _get_AF():
         if module_dir not in sys.path:
             sys.path.append(module_dir)
         import AnalysisFunctions
+
         _AF_instance = AnalysisFunctions.Analysis_Functions()
     return _AF_instance
 
@@ -377,9 +378,13 @@ class IO_Functions:
             image (numpy.ndarray): The image data from the TIFF file.
         """
         if frame is None:
-            raw = tifffile.imread(file_path, is_ome=False, is_mmstack=False, is_imagej=False)
+            raw = tifffile.imread(
+                file_path, is_ome=False, is_mmstack=False, is_imagej=False
+            )
         else:
-            raw = tifffile.imread(file_path, key=frame, is_ome=False, is_mmstack=False, is_imagej=False)
+            raw = tifffile.imread(
+                file_path, key=frame, is_ome=False, is_mmstack=False, is_imagej=False
+            )
 
         data = raw.astype(np.float32)
         image_dims = data.shape[1:] if len(data.shape) > 2 else data.shape
@@ -395,13 +400,13 @@ class IO_Functions:
         if type(gain_map) is not float:
             if len(data.shape) > 2:
                 data -= offset_map[np.newaxis, :, :]
-                data /= (gain_map[np.newaxis, :, :] * QE)
+                data /= gain_map[np.newaxis, :, :] * QE
             else:
                 data -= offset_map
-                data /= (gain_map * QE)
+                data /= gain_map * QE
         else:
             data -= offset_map
-            data /= (gain_map * QE)
+            data /= gain_map * QE
         return data
 
     def write_tiff(self, volume, file_path, bit=np.uint16, pixel_size=0.11):

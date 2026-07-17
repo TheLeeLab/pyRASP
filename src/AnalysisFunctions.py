@@ -62,12 +62,16 @@ class Analysis_Functions:
         else:
             data = (
                 database.group_by(["image_filename", "z"])
-                .agg([
-                    (pl.col("sum_intensity_in_photons") > threshold)
-                    .sum().alias("n_spots_above"),
-                    (pl.col("sum_intensity_in_photons") <= threshold)
-                    .sum().alias("n_spots_below"),
-                ])
+                .agg(
+                    [
+                        (pl.col("sum_intensity_in_photons") > threshold)
+                        .sum()
+                        .alias("n_spots_above"),
+                        (pl.col("sum_intensity_in_photons") <= threshold)
+                        .sum()
+                        .alias("n_spots_below"),
+                    ]
+                )
                 .sort(["image_filename", "z"])
                 .select(["n_spots_above", "n_spots_below", "z", "image_filename"])
             )
@@ -921,7 +925,11 @@ class Analysis_Functions:
             filename_only = normalized_path.split("/")[-1]
 
             # Build cell mask filename
-            cell_mask_basename = filename_only.split(imtype)[0].split(protein_string)[0] + str(cell_string) + "_cellMask.tiff"
+            cell_mask_basename = (
+                filename_only.split(imtype)[0].split(protein_string)[0]
+                + str(cell_string)
+                + "_cellMask.tiff"
+            )
             cell_mask_file = os.path.join(analysis_directory, cell_mask_basename)
 
             subset = analysis_data.filter(pl.col("image_filename") == file)
@@ -933,12 +941,14 @@ class Analysis_Functions:
                 cell_mask = IO.read_tiff(cell_mask_file)
                 if dims == 2:
                     # For 2D analysis, need to threshold the existing mask
-                    cell_mask, pil_mask, areas, centroids = self.threshold_cell_areas_2d(
-                        cell_mask,
-                        lower_cell_size_threshold,
-                        upper_cell_size_threshold=upper_cell_size_threshold,
-                        z_project=z_project_first,
-                        spacing=spacing,
+                    cell_mask, pil_mask, areas, centroids = (
+                        self.threshold_cell_areas_2d(
+                            cell_mask,
+                            lower_cell_size_threshold,
+                            upper_cell_size_threshold=upper_cell_size_threshold,
+                            z_project=z_project_first,
+                            spacing=spacing,
+                        )
                     )
                 else:
                     # For 3D analysis, use the mask directly
@@ -949,17 +959,27 @@ class Analysis_Functions:
                 # Need to generate cell mask from scratch
                 # First try to find the cell image in the analysis directory (handles moved data)
                 # Use the same normalized filename approach
-                cell_file_basename = filename_only.split(protein_string + ".tif")[0] + cell_string + ".tif"
+                cell_file_basename = (
+                    filename_only.split(protein_string + ".tif")[0]
+                    + cell_string
+                    + ".tif"
+                )
                 cell_file = os.path.join(analysis_directory, cell_file_basename)
 
                 # If not found locally, try the original path from CSV (handle Windows paths)
                 if not os.path.isfile(cell_file):
                     original_cell_path = file.replace("\\", "/")
-                    cell_file = "/".join(original_cell_path.split("/")[:-1]) + "/" + cell_file_basename
+                    cell_file = (
+                        "/".join(original_cell_path.split("/")[:-1])
+                        + "/"
+                        + cell_file_basename
+                    )
 
                 if not os.path.isfile(cell_file):
                     print(f"  WARNING: Could not find cell file for {file}")
-                    print(f"    Tried: {os.path.join(analysis_directory, cell_file_basename)}")
+                    print(
+                        f"    Tried: {os.path.join(analysis_directory, cell_file_basename)}"
+                    )
                     continue
                 cell_image = IO.read_tiff(cell_file)
                 cell_image[: int(zi - 1), :, :] = 0
@@ -974,12 +994,14 @@ class Analysis_Functions:
                 )
 
                 if dims == 2:
-                    cell_mask, pil_mask, areas, centroids = self.threshold_cell_areas_2d(
-                        raw_cell_mask,
-                        lower_cell_size_threshold,
-                        upper_cell_size_threshold=upper_cell_size_threshold,
-                        z_project=z_project_first,
-                        spacing=spacing,
+                    cell_mask, pil_mask, areas, centroids = (
+                        self.threshold_cell_areas_2d(
+                            raw_cell_mask,
+                            lower_cell_size_threshold,
+                            upper_cell_size_threshold=upper_cell_size_threshold,
+                            z_project=z_project_first,
+                            spacing=spacing,
+                        )
                     )
                 else:
                     cell_mask, pil_mask, areas, centroids = (
@@ -1149,7 +1171,9 @@ class Analysis_Functions:
                             else "cell_protein_load"
                         ): n_cell_ratios,
                         "n_puncta_in_cell": n_spots_in_object,
-                        "cell_id_in_image": np.arange(1, len(areas) + 1, dtype=np.int32),
+                        "cell_id_in_image": np.arange(
+                            1, len(areas) + 1, dtype=np.int32
+                        ),
                         "image_filename": filename_tosave,
                     }
                 else:
@@ -1164,7 +1188,9 @@ class Analysis_Functions:
                             else "cell_protein_load"
                         ): n_cell_ratios,
                         "n_puncta_in_cell": n_spots_in_object,
-                        "cell_id_in_image": np.arange(1, len(areas) + 1, dtype=np.int32),
+                        "cell_id_in_image": np.arange(
+                            1, len(areas) + 1, dtype=np.int32
+                        ),
                         "image_filename": filename_tosave,
                     }
 

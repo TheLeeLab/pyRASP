@@ -112,14 +112,22 @@ class Helper_Functions:
                         sumintensities_large[z],
                         meanintensities_large[z],
                     ]
-                    if stdintensities_large is not None and len(stdintensities_large[z]) > 0:
+                    if (
+                        stdintensities_large is not None
+                        and len(stdintensities_large[z]) > 0
+                    ):
                         rows.append(stdintensities_large[z])
-                    if peakintensities_large is not None and len(peakintensities_large[z]) > 0:
+                    if (
+                        peakintensities_large is not None
+                        and len(peakintensities_large[z]) > 0
+                    ):
                         rows.append(peakintensities_large[z])
-                    rows.extend([
-                        np.full_like(centroids_large[z][:, 0], 1 + z_planes[0]),
-                        np.full_like(centroids_large[z][:, 0], 1 + z_planes[-1]),
-                    ])
+                    rows.extend(
+                        [
+                            np.full_like(centroids_large[z][:, 0], 1 + z_planes[0]),
+                            np.full_like(centroids_large[z][:, 0], 1 + z_planes[-1]),
+                        ]
+                    )
                     stack = np.asarray(rows)
                     if dataarray is not None:
                         dataarray = np.vstack([dataarray, np.squeeze(stack.T)])

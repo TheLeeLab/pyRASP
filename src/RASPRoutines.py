@@ -256,7 +256,9 @@ class RASP_Routines:
             if len(image.shape) < 3:
                 z_planes = [None]
             else:
-                z_planes, img2, Gx, Gy = self.get_infocus_planes(image, k1, sigma=gsigma)
+                z_planes, img2, Gx, Gy = self.get_infocus_planes(
+                    image, k1, sigma=gsigma
+                )
                 z_planes = np.arange(z_planes[0], z_planes[-1])
             if len(z_planes) == 0:
                 continue
@@ -691,13 +693,29 @@ class RASP_Routines:
         )
 
         def _analysis_loop(
-            img, k1, k2, img_cell, img_bulk, thres, large_thres, rdl, z_test, i, cell_focus
+            img,
+            k1,
+            k2,
+            img_cell,
+            img_bulk,
+            thres,
+            large_thres,
+            rdl,
+            z_test,
+            i,
+            cell_focus,
         ):
             if cell_focus is not None:
-                z_planes = self._get_infocus_z_only(img_cell, k1, filter=if_filter, sigma=gsigma)
-                _, img2, Gx, Gy = self.get_infocus_planes(img, k1, filter=if_filter, sigma=gsigma)
+                z_planes = self._get_infocus_z_only(
+                    img_cell, k1, filter=if_filter, sigma=gsigma
+                )
+                _, img2, Gx, Gy = self.get_infocus_planes(
+                    img, k1, filter=if_filter, sigma=gsigma
+                )
             else:
-                z_planes, img2, Gx, Gy = self.get_infocus_planes(img, k1, filter=if_filter, sigma=gsigma)
+                z_planes, img2, Gx, Gy = self.get_infocus_planes(
+                    img, k1, filter=if_filter, sigma=gsigma
+                )
             if z_test:
                 img = img[z_planes[0] : z_planes[1], :, :]
                 img2 = img2[z_planes[0] : z_planes[1], :, :]
