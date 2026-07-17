@@ -488,6 +488,9 @@ class Plotter:
         mask=None,
         maskcolor="white",
         masklinewidth=0.75,
+        mask_fill=False,
+        mask_fill_color="red",
+        mask_fill_alpha=0.3,
     ):
         """image_plot function
         takes image data and makes an image plot
@@ -504,6 +507,11 @@ class Plotter:
             pixelsize (float): pixel size in nm for scalebar, default 110
             scalebarsize (float): scalebarsize in nm, default 5000
             scalebarlabel (string): scale bar label, default 5 um
+            mask_fill (boolean): if True (and plotmask True), overlays the
+                mask as a semi-transparent colour fill instead of a contour
+                border. Default False.
+            mask_fill_color (string): fill colour used when mask_fill True
+            mask_fill_alpha (float): fill opacity used when mask_fill True
 
         Returns:
             axs (axis): axis object"""
@@ -548,7 +556,16 @@ class Plotter:
         )
 
         if plotmask == True:
-            axs.contour(mask, [0.5], linewidths=masklinewidth, colors=maskcolor)
+            if mask_fill:
+                masked = np.ma.masked_where(~mask.astype(bool), mask.astype(float))
+                axs.imshow(
+                    masked,
+                    cmap=matplotlib.colors.ListedColormap([mask_fill_color]),
+                    alpha=mask_fill_alpha,
+                    origin="lower",
+                )
+            else:
+                axs.contour(mask, [0.5], linewidths=masklinewidth, colors=maskcolor)
 
         return axs
 

@@ -648,6 +648,26 @@ class ImageAnalysis_Functions:
 
         return large_mask.astype(bool)
 
+    def _overlap_with_mask(self, centroids, mask):
+        """
+        Tests, for each centroid, whether the pixel it sits on is True in mask.
+
+        Args:
+            centroids (np.ndarray): centroid positions, column 0/1 indexing
+                mask.shape[0]/[1] directly (same convention used throughout
+                this module, e.g. intensity_pixel_indices).
+            mask (np.ndarray): binary mask, same shape as the image the
+                centroids were detected on.
+
+        Returns:
+            overlap (np.ndarray): boolean array, one value per centroid.
+        """
+        if mask is None or len(centroids) == 0:
+            return np.zeros(len(centroids), dtype=bool)
+        rows = np.clip(centroids[:, 0].astype(int), 0, mask.shape[0] - 1)
+        cols = np.clip(centroids[:, 1].astype(int), 0, mask.shape[1] - 1)
+        return mask[rows, cols]
+
     def detect_large_features_3D(
         self,
         image,
@@ -954,6 +974,10 @@ class ImageAnalysis_Functions:
         cell_sigma1=2.0,
         cell_sigma2=40.0,
         d=2,
+        image_bulk=None,
+        bulk_threshold=100.0,
+        bulk_sigma1=2.0,
+        bulk_sigma2=60.0,
     ):
         """
         Gets basic image properties (centroids, radiality)
@@ -974,12 +998,18 @@ class ImageAnalysis_Functions:
             cell_sigma1 (float): cell blur value 1
             cell_sigma2 (float): cell blur value 2
             d (integer): pixel radius value
+            image_bulk (array): image of bulk stain as numpy array, optional
+            bulk_threshold (float): bulk stain DoG threshold
+            bulk_sigma1 (float): bulk stain blur value 1
+            bulk_sigma2 (float): bulk stain blur value 2
 
         Returns:
-            to_save (pl.DataFrame): spot properties ready to save
+            to_save (pl.DataFrame): spot properties ready to save; has an
+                "overlap_with_bulk_stain" boolean column if image_bulk given
             to_save_largeobjects (pl.DataFrame): large object properties ready to save
             lo_mask (np.ndarray): lo masks
             cell_mask (np.ndarray): cell mask
+            bulk_mask (np.ndarray): bulk stain mask
         """
 
         columns = [
@@ -1009,7 +1039,13 @@ class ImageAnalysis_Functions:
             z_planes = np.arange(z[0], z[1])
 
             def analyse_zplanes(
-                zp, image_plane, img2_plane, Gx_plane, Gy_plane, imagecell_plane
+                zp,
+                image_plane,
+                img2_plane,
+                Gx_plane,
+                Gy_plane,
+                imagecell_plane,
+                imagebulk_plane,
             ):
                 (
                     centroids,
@@ -1047,6 +1083,19 @@ class ImageAnalysis_Functions:
                     )
                 else:
                     cell_mask = None
+
+                if imagebulk_plane is not None:
+                    bulk_mask = self.detect_large_features(
+                        imagebulk_plane,
+                        bulk_threshold,
+                        0,
+                        bulk_sigma1,
+                        bulk_sigma2,
+                    )
+                    overlap_bulk = self._overlap_with_mask(centroids, bulk_mask)
+                else:
+                    bulk_mask = None
+                    overlap_bulk = np.zeros(len(centroids), dtype=bool)
                 return (
                     centroids,
                     estimated_intensity,
@@ -1058,6 +1107,8 @@ class ImageAnalysis_Functions:
                     sumintensities_large,
                     lo_mask,
                     cell_mask,
+                    bulk_mask,
+                    overlap_bulk,
                 )
 
             planes = [image[i, :, :] for i in range(image.shape[0])]
@@ -1070,6 +1121,12 @@ class ImageAnalysis_Functions:
                 ]
             else:
                 planes_imagecell = [None] * image.shape[0]
+            if image_bulk is not None:
+                planes_imagebulk = [
+                    image_bulk[i, :, :] for i in range(image_bulk.shape[0])
+                ]
+            else:
+                planes_imagebulk = [None] * image.shape[0]
 
             results = self._get_pool().map(
                 analyse_zplanes,
@@ -1079,6 +1136,7 @@ class ImageAnalysis_Functions:
                 planes_Gx,
                 planes_Gy,
                 planes_imagecell,
+                planes_imagebulk,
             )
 
             centroids = [i[0] for i in results]
@@ -1094,6 +1152,16 @@ class ImageAnalysis_Functions:
             else:
                 cell_mask = None
 
+            if image_bulk is not None:
+                try:
+                    bulk_mask = np.stack([i[10] for i in results], axis=0)
+                except:
+                    bulk_mask = None
+                overlap_bulk = np.concatenate([i[11] for i in results])
+            else:
+                bulk_mask = None
+                overlap_bulk = None
+
             to_save = HF.make_datarray_spot(
                 centroids,
                 estimated_intensity,
@@ -1102,6 +1170,10 @@ class ImageAnalysis_Functions:
                 columns,
                 z_planes,
             )
+            if overlap_bulk is not None:
+                to_save = to_save.with_columns(
+                    pl.Series("overlap_with_bulk_stain", overlap_bulk.astype(bool))
+                )
 
             # Reuse per-plane lo_masks already computed in the pool instead of
             # re-running DoG — apply binary_opening per plane then fill in 3D.
@@ -1185,6 +1257,17 @@ class ImageAnalysis_Functions:
                 if image_cell is not None
                 else None
             )
+            bulk_mask = (
+                self.detect_large_features(
+                    image_bulk,
+                    bulk_threshold,
+                    0,
+                    bulk_sigma1,
+                    bulk_sigma2,
+                )
+                if image_bulk is not None
+                else None
+            )
 
             to_save = HF.make_datarray_spot(
                 centroids,
@@ -1193,6 +1276,11 @@ class ImageAnalysis_Functions:
                 estimated_background_perpixel,
                 columns[:-2],
             )
+            if bulk_mask is not None:
+                overlap_bulk = self._overlap_with_mask(centroids, bulk_mask)
+                to_save = to_save.with_columns(
+                    pl.Series("overlap_with_bulk_stain", overlap_bulk.astype(bool))
+                )
             to_save_largeobjects = HF.make_datarray_largeobjects(
                 areas_large,
                 centroids_large,
@@ -1203,4 +1291,4 @@ class ImageAnalysis_Functions:
                 peakintensities_large=peakintensities_large,
             )
 
-        return to_save, to_save_largeobjects, lo_mask, cell_mask
+        return to_save, to_save_largeobjects, lo_mask, cell_mask, bulk_mask

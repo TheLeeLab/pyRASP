@@ -116,6 +116,8 @@ class IO_Functions:
         lo_mask=[0],
         cell_mask=None,
         one_savefile=True,
+        bulk_mask=None,
+        bulk_string=None,
     ):
         """
         saves analysis.
@@ -132,6 +134,8 @@ class IO_Functions:
             lo_mask (np.ndarray): mask of large objects
             cell_mask (np.ndarray): cell mask if cell mask saving
             one_savefile (boolean): if True, saving all analysis in one csv
+            bulk_mask (np.ndarray): bulk stain mask if bulk mask saving
+            bulk_string (np.1darray): strings for bulk-stained data
         """
         A_F = _get_AF()
 
@@ -169,6 +173,16 @@ class IO_Functions:
                     os.path.join(
                         analysis_directory,
                         f"{base_filename}.split(protein_string)[0]{cell_string}_cellMask.tiff",
+                    ),
+                    bit=np.uint8,
+                )
+
+            if bulk_mask is not None:
+                self.write_tiff(
+                    bulk_mask,
+                    os.path.join(
+                        analysis_directory,
+                        f"{base_filename.split(protein_string)[0]}{bulk_string}_bulkMask.tiff",
                     ),
                     bit=np.uint8,
                 )
@@ -221,6 +235,17 @@ class IO_Functions:
                 os.path.join(
                     analysis_directory,
                     f"{_get_base_filename(files[i]).split(protein_string)[0]}{cell_string}_cellMask.tiff",
+                ),
+                bit=np.uint8,
+            )
+
+        # Optional bulk stain mask
+        if bulk_mask is not None:
+            self.write_tiff(
+                bulk_mask,
+                os.path.join(
+                    analysis_directory,
+                    f"{_get_base_filename(files[i]).split(protein_string)[0]}{bulk_string}_bulkMask.tiff",
                 ),
                 bit=np.uint8,
             )

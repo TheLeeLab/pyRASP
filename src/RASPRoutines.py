@@ -40,6 +40,7 @@ class RASP_Routines:
         defaultdfocus=True,
         defaultintfocus=True,
         defaultcellparams=True,
+        defaultbulkparams=True,
         defaultcameraparams=True,
     ):
         """
@@ -81,6 +82,9 @@ class RASP_Routines:
         if defaultcellparams:
             self._initialize_cell_params()
 
+        if defaultbulkparams:
+            self._initialize_bulk_params()
+
         if defaultcameraparams:
             self._initialize_camera_params()
 
@@ -112,6 +116,21 @@ class RASP_Routines:
         self.cell_sigma2 = data["sigma2"]
         self.cell_threshold1 = data["threshold1"]
         self.cell_threshold2 = data["threshold2"]
+        return
+
+    def _initialize_bulk_params(self):
+        """
+        Loads or sets default bulk stain parameters.
+        """
+        default_values = {
+            "sigma1": 2.0,
+            "sigma2": 60.0,
+            "threshold": 100.0,
+        }
+        data = self._load_json("default_bulk_params.json", default_values)
+        self.bulk_sigma1 = data["sigma1"]
+        self.bulk_sigma2 = data["sigma2"]
+        self.bulk_threshold = data["threshold"]
         return
 
     def _initialize_camera_params(self):
@@ -588,6 +607,7 @@ class RASP_Routines:
         rwave=2.0,
         protein_string="C1",
         cell_string="C0",
+        bulk_string=None,
         focus_images="C1",
         if_filter=True,
         im_start=0,
@@ -612,6 +632,10 @@ class RASP_Routines:
             rwave (float): Ricker wavelent sigma. Default 2.
             protein_string (np.1darray): strings for protein-stained data. Default C1.
             cell_string (np.1darray): strings for cell-containing data. Default C0.
+            bulk_string (string): string for bulk stain data. If given, a bulk
+                stain mask is computed (using self.bulk_threshold/sigma1/sigma2)
+                and an "overlap_with_bulk_stain" boolean column is added to the
+                saved spot dataframe. Default None (bulk analysis disabled).
             focus_images (string): string for focus detection. Default C0.
             if_filter (boolean): Filter images for focus. Default True.
             im_start (integer): Images to start from. Default 0.
@@ -650,6 +674,10 @@ class RASP_Routines:
             "cell_threshold2": self.cell_threshold2,
             "QE": self.QE,
         }
+        if bulk_string is not None:
+            to_save["bulk_sigma1"] = self.bulk_sigma1
+            to_save["bulk_sigma2"] = self.bulk_sigma2
+            to_save["bulk_threshold"] = self.bulk_threshold
 
         # save analysis parameters in overall directory
         analysis_p_directory = os.path.abspath(folder) + "_analysisparameters"
@@ -663,7 +691,7 @@ class RASP_Routines:
         )
 
         def _analysis_loop(
-            img, k1, k2, img_cell, thres, large_thres, rdl, z_test, i, cell_focus
+            img, k1, k2, img_cell, img_bulk, thres, large_thres, rdl, z_test, i, cell_focus
         ):
             if cell_focus is not None:
                 z_planes = self._get_infocus_z_only(img_cell, k1, filter=if_filter, sigma=gsigma)
@@ -677,11 +705,14 @@ class RASP_Routines:
                 Gy = Gy[z_planes[0] : z_planes[1], :, :]
                 if img_cell is not None:
                     img_cell = img_cell[z_planes[0] : z_planes[1], :, :]
+                if img_bulk is not None:
+                    img_bulk = img_bulk[z_planes[0] : z_planes[1], :, :]
             (
                 to_save,
                 to_save_largeobjects,
                 lo_mask,
                 cell_mask,
+                bulk_mask,
             ) = IA_F.compute_spot_and_cell_props(
                 img,
                 img_cell,
@@ -700,6 +731,10 @@ class RASP_Routines:
                 cell_sigma1=self.cell_sigma1,
                 cell_sigma2=self.cell_sigma2,
                 d=self.d,
+                image_bulk=img_bulk,
+                bulk_threshold=self.bulk_threshold,
+                bulk_sigma1=self.bulk_sigma1,
+                bulk_sigma2=self.bulk_sigma2,
             )
             if to_save is not None:
                 IO.save_analysis(
@@ -715,11 +750,13 @@ class RASP_Routines:
                     lo_mask,
                     cell_mask=cell_mask if cell_analysis else None,
                     one_savefile=one_savefile,
+                    bulk_mask=bulk_mask if bulk_string is not None else None,
+                    bulk_string=bulk_string,
                 )
 
-        def process_files(subfolder, files, cell_files):
+        def process_files(subfolder, files, cell_files, bulk_files):
             def _load_pair(idx):
-                """Load protein + cell images for index idx (runs in background thread)."""
+                """Load protein + cell + bulk images for index idx (runs in background thread)."""
                 _img = IO.read_tiff_tophotons(
                     os.path.join(subfolder, files[idx]),
                     QE=self.QE,
@@ -736,7 +773,16 @@ class RASP_Routines:
                         offset_map=self.offset_map,
                         variance_map=self.variance_map,
                     )[im_start:, :, :]
-                return _img, _img_cell
+                _img_bulk = None
+                if bulk_string is not None:
+                    _img_bulk = IO.read_tiff_tophotons(
+                        os.path.join(subfolder, bulk_files[idx]),
+                        QE=self.QE,
+                        gain_map=self.gain_map,
+                        offset_map=self.offset_map,
+                        variance_map=self.variance_map,
+                    )[im_start:, :, :]
+                return _img, _img_cell, _img_bulk
 
             n = len(files)
             if n == 0:
@@ -748,7 +794,7 @@ class RASP_Routines:
 
                 for i in range(n):
                     # Receive current image (may already be ready)
-                    img, img_cell = next_future.result()
+                    img, img_cell, img_bulk = next_future.result()
 
                     # Immediately start loading the next image while we analyse this one
                     if i + 1 < n:
@@ -761,6 +807,7 @@ class RASP_Routines:
                         k1,
                         k2,
                         img_cell,
+                        img_bulk,
                         thres,
                         large_thres,
                         rdl,
@@ -786,17 +833,27 @@ class RASP_Routines:
                     if cell_analysis
                     else []
                 )
+                bulk_files = (
+                    H_F.file_search(subfolder, bulk_string, imtype)
+                    if bulk_string is not None
+                    else []
+                )
                 analysis_directory = os.path.abspath(subfolder) + "_analysis"
                 IO.make_directory(analysis_directory)
-                process_files(subfolder, files, cell_files)
+                process_files(subfolder, files, cell_files, bulk_files)
         else:
             files = all_files
             cell_files = (
                 H_F.file_search(folder, cell_string, imtype) if cell_analysis else []
             )
+            bulk_files = (
+                H_F.file_search(folder, bulk_string, imtype)
+                if bulk_string is not None
+                else []
+            )
             analysis_directory = os.path.abspath(folder) + "_analysis"
             IO.make_directory(analysis_directory)
-            process_files(folder, files, cell_files)
+            process_files(folder, files, cell_files, bulk_files)
         return
 
     def single_image_analysis(
@@ -809,6 +866,7 @@ class RASP_Routines:
         image_size=200,
         save_figure=False,
         cell_file=None,
+        bulk_file=None,
         lower_cell_size_threshold=None,
         upper_cell_size_threshold=np.inf,
         lower_lo_size_threshold=None,
@@ -827,6 +885,9 @@ class RASP_Routines:
             image_size (int): Amount of image to plot - by default plots 200x200 chunk of an image
             save_figure (boolean): Save the figure as an SVG, default False
             cell_file (string): Cell image location
+            bulk_file (string): Bulk stain image location. If given, plots the
+                raw bulk image with a semi-transparent overlay of the bulk
+                mask computed from self.bulk_threshold/sigma1/sigma2.
             lower_cell_size_threshold (float): lower threshold of cell size
             upper_cell_size_threshold (float): upper threshold of cell size
             lower_lo_size_threshold (float): lower threshold of large object size
@@ -853,9 +914,18 @@ class RASP_Routines:
                 offset_map=self.offset_map,
             )
 
-        def process_image(img, img_cell, k1, k2):
+        img_bulk = None
+        if bulk_file:
+            img_bulk = IO.read_tiff_tophotons(
+                bulk_file,
+                QE=self.QE,
+                gain_map=self.gain_map,
+                offset_map=self.offset_map,
+            )
+
+        def process_image(img, img_cell, img_bulk, k1, k2):
             z_planes, img2, Gx, Gy = self.get_infocus_planes(img, k1, sigma=gsigma)
-            to_save, to_save_largeobjects, lo_mask, cell_mask = (
+            to_save, to_save_largeobjects, lo_mask, cell_mask, bulk_mask = (
                 IA_F.compute_spot_and_cell_props(
                     img,
                     img_cell,
@@ -874,9 +944,13 @@ class RASP_Routines:
                     cell_sigma1=self.cell_sigma1,
                     cell_sigma2=self.cell_sigma2,
                     d=self.d,
+                    image_bulk=img_bulk,
+                    bulk_threshold=self.bulk_threshold,
+                    bulk_sigma1=self.bulk_sigma1,
+                    bulk_sigma2=self.bulk_sigma2,
                 )
             )
-            return z_planes, to_save, to_save_largeobjects, cell_mask
+            return z_planes, to_save, to_save_largeobjects, cell_mask, bulk_mask
 
         def filter_z_planes(to_save, z_planes):
             z_to_plot = np.full_like(np.arange(z_planes[0] + 1, z_planes[-1] + 1), -1)
@@ -899,7 +973,15 @@ class RASP_Routines:
             to_save_largeobjects=None,
             img_cell=None,
             cell_mask=None,
+            img_bulk=None,
+            bulk_mask=None,
         ):
+            ncolumns = (
+                1
+                + (1 if to_save_largeobjects is not None else 0)
+                + (1 if cell_file is not None else 0)
+                + (1 if bulk_file is not None else 0)
+            )
             for i in enumerate(z_to_plot):
                 xpositions = to_save.filter(pl.col("z") == i[1])["x"].to_numpy()
                 ypositions = to_save.filter(pl.col("z") == i[1])["y"].to_numpy()
@@ -914,53 +996,52 @@ class RASP_Routines:
                 xpositions = xpositions[testvals]
                 ypositions = ypositions[testvals]
 
-                if cell_file is None:
-                    if to_save_largeobjects is not None:
-                        fig, axs = plots.two_column_plot(
-                            nrows=1, ncolumns=2, widthratio=[1, 1]
-                        )
-                    else:
-                        fig, axs = plots.one_column_plot()
-                    axs[0] = plots.image_scatter_plot(
-                        axs[0],
-                        img[i[1] - 1, :image_size, :image_size],
-                        xdata=xpositions,
-                        ydata=ypositions,
-                        label="z plane = " + str(int(i[1])),
-                    )
-                    if to_save_largeobjects is not None:
-                        axs[1] = plots.image_scatter_plot(
-                            axs[1],
-                            img[i[1] - 1, :, :],
-                            xdata=xpositions_large,
-                            ydata=ypositions_large,
-                            label="z plane = " + str(int(i[1])),
-                        )
+                if ncolumns == 1:
+                    fig, axs = plots.one_column_plot()
                 else:
                     fig, axs = plots.two_column_plot(
-                        nrows=1, ncolumns=3, widthratio=[1, 1, 1]
+                        nrows=1, ncolumns=ncolumns, widthratio=[1] * ncolumns
                     )
-                    axs[0] = plots.image_scatter_plot(
-                        axs[0],
-                        img[i[1] - 1, :image_size, :image_size],
-                        xdata=xpositions,
-                        ydata=ypositions,
-                        label="puncta, z plane = " + str(int(i[1])),
-                    )
-                    axs[1] = plots.image_scatter_plot(
-                        axs[1],
+                col = 0
+                puncta_label = (
+                    "puncta, z plane = " if ncolumns > 1 else "z plane = "
+                ) + str(int(i[1]))
+                axs[col] = plots.image_scatter_plot(
+                    axs[col],
+                    img[i[1] - 1, :image_size, :image_size],
+                    xdata=xpositions,
+                    ydata=ypositions,
+                    label=puncta_label,
+                )
+                col += 1
+                if to_save_largeobjects is not None:
+                    axs[col] = plots.image_scatter_plot(
+                        axs[col],
                         img[i[1] - 1, :, :],
                         xdata=xpositions_large,
                         ydata=ypositions_large,
                         label="z plane = " + str(int(i[1])),
                     )
-                    axs[2] = plots.image_plot(
-                        axs[2],
+                    col += 1
+                if cell_file is not None:
+                    axs[col] = plots.image_plot(
+                        axs[col],
                         img_cell[i[1] - 1, :, :],
                         label="cell, z plane = " + str(int(i[1])),
                         plotmask=True,
-                        mask=cell_mask[:, :, i[1] - 1],
+                        mask=cell_mask[i[1] - 1, :, :],
                     )
+                    col += 1
+                if bulk_file is not None:
+                    axs[col] = plots.image_plot(
+                        axs[col],
+                        img_bulk[i[1] - 1, :, :],
+                        label="bulk stain, z plane = " + str(int(i[1])),
+                        plotmask=True,
+                        mask=bulk_mask[i[1] - 1, :, :],
+                        mask_fill=True,
+                    )
+                    col += 1
 
                 plt.tight_layout()
                 if save_figure:
@@ -975,8 +1056,8 @@ class RASP_Routines:
                 plt.show()
 
         if len(img.shape) > 2:
-            z_planes, to_save, to_save_largeobjects, cell_mask = process_image(
-                img, img_cell, k1, k2
+            z_planes, to_save, to_save_largeobjects, cell_mask, bulk_mask = (
+                process_image(img, img_cell, img_bulk, k1, k2)
             )
             if lower_lo_size_threshold is not None:
                 to_save_largeobjects = to_save_largeobjects.filter(
@@ -993,7 +1074,14 @@ class RASP_Routines:
                     )
             z_to_plot = filter_z_planes(to_save, z_planes)
             plot_images(
-                z_to_plot, img, to_save, to_save_largeobjects, img_cell, cell_mask
+                z_to_plot,
+                img,
+                to_save,
+                to_save_largeobjects,
+                img_cell,
+                cell_mask,
+                img_bulk,
+                bulk_mask,
             )
         else:
             print("The provided image is not a z-stack.")
