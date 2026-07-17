@@ -1152,7 +1152,7 @@ class ImageAnalysis_Functions:
             else:
                 cell_mask = None
 
-            if image_bulk is not None:
+            if image_bulk is not None and len(results) > 0:
                 try:
                     bulk_mask = np.stack([i[10] for i in results], axis=0)
                 except:
@@ -1170,7 +1170,7 @@ class ImageAnalysis_Functions:
                 columns,
                 z_planes,
             )
-            if overlap_bulk is not None:
+            if overlap_bulk is not None and to_save is not None:
                 to_save = to_save.with_columns(
                     pl.Series("overlap_with_bulk_stain", overlap_bulk.astype(bool))
                 )
@@ -1276,7 +1276,7 @@ class ImageAnalysis_Functions:
                 estimated_background_perpixel,
                 columns[:-2],
             )
-            if bulk_mask is not None:
+            if bulk_mask is not None and to_save is not None:
                 overlap_bulk = self._overlap_with_mask(centroids, bulk_mask)
                 to_save = to_save.with_columns(
                     pl.Series("overlap_with_bulk_stain", overlap_bulk.astype(bool))
