@@ -22,7 +22,9 @@ import polars as pl
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 from AnalysisFunctions import Analysis_Functions
 
-DATA_ROOT = "/scratch/sycamore-asap/ASAP_Imaging_Data/Main_Survey/20241105_oligomers_in_cells"
+DATA_ROOT = (
+    "/scratch/sycamore-asap/ASAP_Imaging_Data/Main_Survey/20241105_oligomers_in_cells"
+)
 ANALYSIS_SUBDIR = "NewCellAnalysis_OnlyLowerThreshold_NewPhotonThreshold"
 
 # Analysis parameters matching the original runs
@@ -62,9 +64,7 @@ ALL_TARGETS = [
 
 
 def process(af, region, cell_type, condition):
-    analysis_dir = os.path.join(
-        DATA_ROOT, region, cell_type, f"{condition}_analysis"
-    )
+    analysis_dir = os.path.join(DATA_ROOT, region, cell_type, f"{condition}_analysis")
     spot_csv = os.path.join(analysis_dir, "spot_analysis.csv")
     new_cell_dir = os.path.join(analysis_dir, ANALYSIS_SUBDIR)
     oligo_out = os.path.join(new_cell_dir, "oligomers_in_cells_percentile_0.csv")
