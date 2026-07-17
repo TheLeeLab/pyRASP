@@ -868,6 +868,7 @@ class RASP_Routines:
         cell_file=None,
         test_cell_detection=True,
         bulk_file=None,
+        focus_images=None,
         lower_cell_size_threshold=None,
         upper_cell_size_threshold=np.inf,
         lower_lo_size_threshold=None,
@@ -885,23 +886,51 @@ class RASP_Routines:
             rwave (float): Ricker wavelength sigma (default 2.0)
             image_size (int): Amount of image to plot - by default plots 200x200 chunk of an image
             save_figure (boolean): Save the figure as an SVG, default False
-            cell_file (string): Cell image location. Whenever given, it is used
-                to pick the in-focus z range (usually a more reliable focus
-                reference than the sparser oligomer channel), regardless of
-                test_cell_detection.
+            cell_file (string): Cell image location
             test_cell_detection (boolean): If True (default), also runs cell
                 mask detection on cell_file and plots it (mask border overlay).
-                If False, cell_file is only used to pick the in-focus z range --
-                no cell mask is computed or plotted. Ignored if cell_file is None.
+                If False, cell_file is loaded (and, if it's the file matched by
+                focus_images, still used to pick the in-focus z range) but no
+                cell mask is computed or plotted. Ignored if cell_file is None.
             bulk_file (string): Bulk stain image location. If given, plots the
                 raw bulk image with a semi-transparent overlay of the bulk
                 mask computed from self.bulk_threshold/sigma1/sigma2.
+            focus_images (string): Channel substring identifying which of
+                protein_file/cell_file/bulk_file is used to pick the in-focus
+                z range -- same convention as analyse_images' focus_images
+                (matched against each given file's name). Default None uses
+                protein_file, matching analyse_images' default of
+                focus_images == protein_string.
             lower_cell_size_threshold (float): lower threshold of cell size
             upper_cell_size_threshold (float): upper threshold of cell size
             lower_lo_size_threshold (float): lower threshold of large object size
             upper_lo_size_threshold (float): upper threshold of large object size
 
         """
+        focus_role = "protein"
+        if focus_images is not None:
+            candidate_files = {
+                "protein": protein_file,
+                "cell": cell_file,
+                "bulk": bulk_file,
+            }
+            matches = [
+                role
+                for role, f in candidate_files.items()
+                if f and focus_images in os.path.basename(f)
+            ]
+            if len(matches) == 0:
+                raise ValueError(
+                    f"focus_images={focus_images!r} did not match protein_file, "
+                    "cell_file, or bulk_file."
+                )
+            if len(matches) > 1:
+                raise ValueError(
+                    f"focus_images={focus_images!r} matched more than one of "
+                    f"protein_file/cell_file/bulk_file ({matches}); use a more "
+                    "specific substring."
+                )
+            focus_role = matches[0]
         import PlottingFunctions
 
         plots = PlottingFunctions.Plotter()
@@ -932,15 +961,16 @@ class RASP_Routines:
             )
 
         def process_image(img, img_cell, img_bulk, k1, k2):
-            if img_cell is not None:
-                # Cell channels are usually a more reliable focus reference
-                # than the sparser oligomer channel -- use it to pick the
-                # z range, but still compute img2/Gx/Gy (used for oligomer
-                # spot detection) from the protein image itself.
-                z_planes = self._get_infocus_z_only(img_cell, k1, sigma=gsigma)
-                _, img2, Gx, Gy = self.get_infocus_planes(img, k1, sigma=gsigma)
-            else:
+            if focus_role == "protein":
                 z_planes, img2, Gx, Gy = self.get_infocus_planes(img, k1, sigma=gsigma)
+            else:
+                # focus_role is "cell" or "bulk" -- use that channel to pick
+                # the z range (often a more reliable focus reference than the
+                # sparser oligomer channel), but still compute img2/Gx/Gy
+                # (used for oligomer spot detection) from the protein image.
+                focus_img = img_cell if focus_role == "cell" else img_bulk
+                z_planes = self._get_infocus_z_only(focus_img, k1, sigma=gsigma)
+                _, img2, Gx, Gy = self.get_infocus_planes(img, k1, sigma=gsigma)
             # Restrict to the in-focus z range before spot/mask detection --
             # otherwise compute_spot_and_cell_props processes every plane of
             # the full stack but make_datarray_spot only labels the first
@@ -1084,11 +1114,12 @@ class RASP_Routines:
                 if bulk_file is not None:
                     axs[col] = plots.image_plot(
                         axs[col],
-                        img_bulk[zi, :, :],
+                        img_bulk[zi, :image_size, :image_size],
                         label="bulk stain, z plane = " + str(int(i[1])),
                         plotmask=True,
-                        mask=bulk_mask[zi, :, :],
-                        mask_fill=True,
+                        mask=bulk_mask[zi, :image_size, :image_size],
+                        maskcolor="red",
+                        masklinewidth=0.5,
                     )
                     col += 1
 
