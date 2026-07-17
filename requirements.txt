@@ -114,7 +114,7 @@ notebook==7.3.2
 notebook_shim==0.2.4
 npe2==0.7.7
 numba==0.59.1
-numcodecs==0.15.1
+numcodecs==0.13.1
 numpy==1.26.4
 numpydoc==1.8.0
 ome-zarr==0.11.1
