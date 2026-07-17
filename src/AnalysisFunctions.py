@@ -13,7 +13,6 @@ import time
 from copy import copy
 import skimage as ski
 from skimage import filters
-from scipy.ndimage import binary_fill_holes
 
 import os
 import sys
@@ -951,9 +950,24 @@ class Analysis_Functions:
                         )
                     )
                 else:
-                    # For 3D analysis, use the mask directly
-                    pil_mask, areas, centroids, _, _ = IA_F.calculate_region_properties(
-                        cell_mask, dims=3
+                    # For 3D analysis: a precomputed mask (written by
+                    # analyse_images/single_image_analysis) is already a clean
+                    # 3D segmentation -- detect_large_features_3D + this same
+                    # cleanup already ran once at generation time using
+                    # RASP.cell_lower_size_threshold/cell_upper_size_threshold.
+                    # Re-applying it here is deliberate, not wasted "double
+                    # detection": it's idempotent if lower/upper_cell_size_threshold
+                    # match what was used at generation time, and lets you sweep
+                    # a *different* size threshold against the same saved mask
+                    # without re-running the (expensive) per-plane Otsu detection.
+                    cell_mask, pil_mask, areas, centroids = (
+                        self.threshold_cell_areas_3d(
+                            cell_mask,
+                            lower_cell_size_threshold,
+                            upper_cell_size_threshold=upper_cell_size_threshold,
+                            spacing=spacing,
+                            erosionsize=erosionsize,
+                        )
                     )
             else:
                 # Need to generate cell mask from scratch
@@ -1392,86 +1406,19 @@ class Analysis_Functions:
                 )
         return (plane_1_analysis, plane_2_analysis, spot_1_analysis, spot_2_analysis)
 
-    def threshold_cell_areas_3d(
-        self,
-        cell_mask,
-        lower_cell_size_threshold=10000,
-        upper_cell_size_threshold=200000,
-        spacing=(0.5, 0.11, 0.11),
-        n_planes=3,
-        erosionsize=5,
-        plane_max=0.15,
-    ):
+    def threshold_cell_areas_3d(self, *args, **kwargs):
         """
-        Removes small or objects from a cell mask.
+        Removes small or large objects from a 3D cell mask.
 
-        Args:
-            cell_mask_raw (np.ndarray): Cell mask object
-            lower_cell_size_threshold (float): Lower size threshold
-            upper_cell_size_threshold (float): Upper size threshold
-            spacing (tuple): pixel spacing
-            n_planes (int): number of planes object has to be across
-            erosionsize (int): how big a dilation ball to use
-            plane_max (float): if a plane is occupied by more than this fraction,
-                                delete it
+        Moved to ImageAnalysis_Functions.threshold_cell_areas_3d so that
+        compute_spot_and_cell_props can use it directly during cell-mask
+        detection without a circular import (AnalysisFunctions already imports
+        Image_Analysis_Functions). Kept here as a thin wrapper for existing
+        callers of A_F.threshold_cell_areas_3d(...).
 
-        Returns:
-            tuple: Processed cell mask, pixel image locations, centroids, areas
+        Args/Returns: see ImageAnalysis_Functions.threshold_cell_areas_3d.
         """
-        try:
-            if len(cell_mask.shape) < 3:
-                raise Exception("Data is not 3D, as required.")
-        except Exception as error:
-            print("Caught this error: " + repr(error))
-            return
-        todel = np.zeros(cell_mask.shape[0])
-        # first, delete any planes that are filled by more than plane_max
-        for i in np.arange(cell_mask.shape[0]):
-            if np.mean(cell_mask[i, :, :]) > plane_max:
-                cell_mask[i, :, :] = 0
-                todel[i] = 1
-
-        filled = binary_fill_holes(cell_mask)
-
-        cell_mask_new = ski.morphology.remove_small_holes(
-            filled,
-            area_threshold=lower_cell_size_threshold,
-        )
-        cell_mask_new = ski.morphology.remove_small_objects(
-            cell_mask_new, min_size=lower_cell_size_threshold
-        )
-        objects = ski.measure.label(cell_mask_new)
-        large_objects = ski.morphology.remove_small_objects(
-            objects, min_size=upper_cell_size_threshold
-        )
-        small_objects = objects ^ large_objects
-        cell_mask_new = np.asarray(small_objects.clip(0, 1), dtype=bool)
-        if erosionsize > 0:
-            cell_mask_new = np.asarray(
-                ski.morphology.binary_closing(
-                    cell_mask_new,
-                    footprint=ski.morphology.footprint_rectangle(
-                        (1, erosionsize, erosionsize)
-                    ),
-                ),
-                dtype=bool,
-            )
-        pil_raw, _, _, _, _ = IA_F.calculate_region_properties(
-            cell_mask_new, dims=3, spacing=(1, 1, 1)
-        )
-
-        for i in np.arange(len(pil_raw)):
-            if len(np.unique(pil_raw[i][:, 0])) < n_planes:
-                cell_mask_new[pil_raw[i][:, 0], pil_raw[i][:, 1], pil_raw[i][:, 2]] = 0
-
-        for i in np.arange(cell_mask_new.shape[0]):
-            if todel[i] == 1:
-                cell_mask_new[i, :, :] = 0
-        pil, areas, centroids, _, _ = IA_F.calculate_region_properties(
-            cell_mask_new, dims=3, spacing=spacing
-        )
-
-        return cell_mask_new, pil, areas, centroids
+        return IA_F.threshold_cell_areas_3d(*args, **kwargs)
 
     def threshold_cell_areas_2d(
         self,

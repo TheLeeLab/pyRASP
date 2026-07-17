@@ -104,18 +104,31 @@ class RASP_Routines:
     def _initialize_cell_params(self):
         """
         Loads or sets default cell parameters.
+
+        Cell masks are detected with a full 3D, per-plane-Otsu-thresholded
+        detector (see compute_spot_and_cell_props / detect_large_features_3D),
+        so these are size/blur parameters rather than fixed intensity
+        thresholds.
         """
         default_values = {
             "sigma1": 2.0,
             "sigma2": 40.0,
-            "threshold1": 200.0,
-            "threshold2": 200.0,
+            "lower_size_threshold": 2000.0,
+            "upper_size_threshold": None,
+            "hole_threshold": 100.0,
+            "erosionsize": 3,
         }
         data = self._load_json("default_cell_params.json", default_values)
         self.cell_sigma1 = data["sigma1"]
         self.cell_sigma2 = data["sigma2"]
-        self.cell_threshold1 = data["threshold1"]
-        self.cell_threshold2 = data["threshold2"]
+        self.cell_lower_size_threshold = data["lower_size_threshold"]
+        self.cell_upper_size_threshold = (
+            np.inf
+            if data["upper_size_threshold"] is None
+            else data["upper_size_threshold"]
+        )
+        self.cell_hole_threshold = data["hole_threshold"]
+        self.cell_erosionsize = data["erosionsize"]
         return
 
     def _initialize_bulk_params(self):
@@ -672,8 +685,10 @@ class RASP_Routines:
             "focus_score_diff": self.focus_score_diff,
             "cell_sigma1": self.cell_sigma1,
             "cell_sigma2": self.cell_sigma2,
-            "cell_threshold1": self.cell_threshold1,
-            "cell_threshold2": self.cell_threshold2,
+            "cell_lower_size_threshold": self.cell_lower_size_threshold,
+            "cell_upper_size_threshold": self.cell_upper_size_threshold,
+            "cell_hole_threshold": self.cell_hole_threshold,
+            "cell_erosionsize": self.cell_erosionsize,
             "QE": self.QE,
         }
         if bulk_string is not None:
@@ -744,10 +759,12 @@ class RASP_Routines:
                 areathres=self.areathres,
                 rdl=rdl,
                 z=z_planes,
-                cell_threshold1=self.cell_threshold1,
-                cell_threshold2=self.cell_threshold1,
                 cell_sigma1=self.cell_sigma1,
                 cell_sigma2=self.cell_sigma2,
+                cell_lower_size_threshold=self.cell_lower_size_threshold,
+                cell_upper_size_threshold=self.cell_upper_size_threshold,
+                cell_hole_threshold=self.cell_hole_threshold,
+                cell_erosionsize=self.cell_erosionsize,
                 d=self.d,
                 image_bulk=img_bulk,
                 bulk_threshold=self.bulk_threshold,
@@ -1020,10 +1037,12 @@ class RASP_Routines:
                     areathres=self.areathres,
                     rdl=rdl,
                     z=z_planes,
-                    cell_threshold1=self.cell_threshold1,
-                    cell_threshold2=self.cell_threshold1,
                     cell_sigma1=self.cell_sigma1,
                     cell_sigma2=self.cell_sigma2,
+                    cell_lower_size_threshold=self.cell_lower_size_threshold,
+                    cell_upper_size_threshold=self.cell_upper_size_threshold,
+                    cell_hole_threshold=self.cell_hole_threshold,
+                    cell_erosionsize=self.cell_erosionsize,
                     d=self.d,
                     image_bulk=img_bulk,
                     bulk_threshold=self.bulk_threshold,
@@ -1526,7 +1545,7 @@ class RASP_Routines:
 
         if replace_files == False:
             if os.path.isfile(above_string):
-                return None, None
+                return None
 
         cell_punctum_analysis_AT = (
             A_F.number_of_puncta_per_segmented_cell_with_threshold(

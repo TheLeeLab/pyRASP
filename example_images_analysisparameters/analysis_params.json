@@ -1,0 +1,21 @@
+{
+    "flatness": 1.0,
+    "integratedGrad": 10.0,
+    "areathres": 42.0,
+    "d": 2,
+    "gaussian_sigma": 1.4,
+    "ricker_sigma": 2.0,
+    "thres": 0.025,
+    "large_thres": 1000.0,
+    "focus_score_diff": 0.236103223425232,
+    "cell_sigma1": 2.0,
+    "cell_sigma2": 40.0,
+    "cell_lower_size_threshold": 500.0,
+    "cell_upper_size_threshold": Infinity,
+    "cell_hole_threshold": 100.0,
+    "cell_erosionsize": 3,
+    "QE": 0.95,
+    "bulk_sigma1": 2.0,
+    "bulk_sigma2": 60.0,
+    "bulk_threshold": 100.0
+}

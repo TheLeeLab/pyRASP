@@ -1,6 +1,8 @@
 {
-    "sigma1": 2,
-    "sigma2": 40,
-    "threshold1": 200,
-    "threshold2": 200
+    "sigma1": 2.0,
+    "sigma2": 40.0,
+    "lower_size_threshold": 2000.0,
+    "upper_size_threshold": null,
+    "hole_threshold": 100.0,
+    "erosionsize": 3
 }

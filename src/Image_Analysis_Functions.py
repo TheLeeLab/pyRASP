@@ -674,6 +674,64 @@ class ImageAnalysis_Functions:
         cols = np.clip(centroids[:, 1].astype(int), 0, mask.shape[1] - 1)
         return mask[rows, cols]
 
+    def _detect_cell_mask_3d(
+        self,
+        image_cell,
+        cell_sigma1,
+        cell_sigma2,
+        cell_lower_size_threshold,
+        cell_upper_size_threshold,
+        cell_hole_threshold,
+        cell_erosionsize,
+        cell_spacing,
+    ):
+        """
+        Runs the full 3D cell-mask pipeline on a cell-channel image: per-plane
+        Otsu-thresholded DoG detection (detect_large_features_3D), then 3D
+        cleanup (threshold_cell_areas_3d) that connects objects across z,
+        removes objects outside the size range or that don't span enough
+        planes, and closes the result.
+
+        Args:
+            image_cell (np.ndarray or None): cell-channel image, either a 3D
+                (z, y, x) stack or a single 2D (y, x) plane.
+            cell_sigma1/cell_sigma2 (float): DoG-enhancement blur widths.
+            cell_lower_size_threshold/cell_upper_size_threshold (float): cell
+                size range in voxels.
+            cell_hole_threshold (float): hole-fill size threshold (voxels).
+            cell_erosionsize (int): closing footprint size.
+            cell_spacing (tuple): voxel spacing (z, y, x) in um.
+
+        Returns:
+            cell_mask (np.ndarray or None): cleaned cell mask, same
+                dimensionality as image_cell, or None if image_cell is None or
+                detection fails.
+        """
+        if image_cell is None:
+            return None
+        is_2d = image_cell.ndim == 2
+        image_cell_3d = image_cell[np.newaxis, :, :] if is_2d else image_cell
+        try:
+            raw_cell_mask = self.detect_large_features_3D(
+                image_cell_3d,
+                filter_function=ski.filters.threshold_otsu,
+                sigma1=cell_sigma1,
+                sigma2=cell_sigma2,
+                hole_threshold=cell_hole_threshold,
+                cell_threshold=cell_lower_size_threshold,
+            )
+            cell_mask, _, _, _ = self.threshold_cell_areas_3d(
+                raw_cell_mask,
+                lower_cell_size_threshold=cell_lower_size_threshold,
+                upper_cell_size_threshold=cell_upper_size_threshold,
+                spacing=cell_spacing,
+                n_planes=min(3, raw_cell_mask.shape[0]),
+                erosionsize=cell_erosionsize,
+            )
+        except Exception:
+            return None
+        return cell_mask[0] if is_2d else cell_mask
+
     def detect_large_features_3D(
         self,
         image,
@@ -721,6 +779,87 @@ class ImageAnalysis_Functions:
             large_mask, min_size=cell_threshold
         )
         return large_mask.astype(bool)
+
+    def threshold_cell_areas_3d(
+        self,
+        cell_mask,
+        lower_cell_size_threshold=10000,
+        upper_cell_size_threshold=200000,
+        spacing=(0.5, 0.11, 0.11),
+        n_planes=3,
+        erosionsize=5,
+        plane_max=0.15,
+    ):
+        """
+        Removes small or objects from a cell mask.
+
+        Args:
+            cell_mask_raw (np.ndarray): Cell mask object
+            lower_cell_size_threshold (float): Lower size threshold
+            upper_cell_size_threshold (float): Upper size threshold
+            spacing (tuple): pixel spacing
+            n_planes (int): number of planes object has to be across
+            erosionsize (int): how big a dilation ball to use
+            plane_max (float): if a plane is occupied by more than this fraction,
+                                delete it
+
+        Returns:
+            tuple: Processed cell mask, pixel image locations, areas, centroids
+        """
+        try:
+            if len(cell_mask.shape) < 3:
+                raise Exception("Data is not 3D, as required.")
+        except Exception as error:
+            print("Caught this error: " + repr(error))
+            return
+        todel = np.zeros(cell_mask.shape[0])
+        # first, delete any planes that are filled by more than plane_max
+        for i in np.arange(cell_mask.shape[0]):
+            if np.mean(cell_mask[i, :, :]) > plane_max:
+                cell_mask[i, :, :] = 0
+                todel[i] = 1
+
+        filled = binary_fill_holes(cell_mask)
+
+        cell_mask_new = ski.morphology.remove_small_holes(
+            filled,
+            area_threshold=lower_cell_size_threshold,
+        )
+        cell_mask_new = ski.morphology.remove_small_objects(
+            cell_mask_new, min_size=lower_cell_size_threshold
+        )
+        objects = ski.measure.label(cell_mask_new)
+        large_objects = ski.morphology.remove_small_objects(
+            objects, min_size=upper_cell_size_threshold
+        )
+        small_objects = objects ^ large_objects
+        cell_mask_new = np.asarray(small_objects.clip(0, 1), dtype=bool)
+        if erosionsize > 0:
+            cell_mask_new = np.asarray(
+                ski.morphology.binary_closing(
+                    cell_mask_new,
+                    footprint=ski.morphology.footprint_rectangle(
+                        (1, erosionsize, erosionsize)
+                    ),
+                ),
+                dtype=bool,
+            )
+        pil_raw, _, _, _, _ = self.calculate_region_properties(
+            cell_mask_new, dims=3, spacing=(1, 1, 1)
+        )
+
+        for i in np.arange(len(pil_raw)):
+            if len(np.unique(pil_raw[i][:, 0])) < n_planes:
+                cell_mask_new[pil_raw[i][:, 0], pil_raw[i][:, 1], pil_raw[i][:, 2]] = 0
+
+        for i in np.arange(cell_mask_new.shape[0]):
+            if todel[i] == 1:
+                cell_mask_new[i, :, :] = 0
+        pil, areas, centroids, _, _ = self.calculate_region_properties(
+            cell_mask_new, dims=3, spacing=spacing
+        )
+
+        return cell_mask_new, pil, areas, centroids
 
     def detect_large_features_3D_aggregates(
         self, image, threshold, sigma1=2.0, sigma2=60.0
@@ -975,10 +1114,13 @@ class ImageAnalysis_Functions:
         areathres=30.0,
         rdl=[50.0, 0.0, 0.0],
         z=0,
-        cell_threshold1=100.0,
-        cell_threshold2=200,
         cell_sigma1=2.0,
         cell_sigma2=40.0,
+        cell_lower_size_threshold=2000.0,
+        cell_upper_size_threshold=np.inf,
+        cell_hole_threshold=100.0,
+        cell_erosionsize=3,
+        cell_spacing=(0.5, 0.11, 0.11),
         d=2,
         image_bulk=None,
         bulk_threshold=100.0,
@@ -987,7 +1129,15 @@ class ImageAnalysis_Functions:
     ):
         """
         Gets basic image properties (centroids, radiality)
-        from a single image and generates cell mask from another image channel
+        from a single image and generates cell mask from another image channel.
+
+        Cell masks are generated with a full 3D, per-plane-Otsu-thresholded
+        detector (detect_large_features_3D) rather than the fixed-threshold 2D
+        detector used for the bulk-stain mask, followed by 3D cleanup
+        (threshold_cell_areas_3d) that connects objects across z, removes
+        small/large objects and objects that don't span enough planes, and
+        closes the result -- so the returned/saved cell_mask is already a
+        clean 3D segmentation, not a stack of independently-thresholded planes.
 
         Args:
             image (array): image of protein stain as numpy array
@@ -999,10 +1149,18 @@ class ImageAnalysis_Functions:
             areathres (float): area threshold
             rdl (array): radiality thresholds
             z (array): z planes to image, default 0
-            cell_threshold1 (float): 1st cell intensity threshold
-            cell_threshold2 (float): 2nd cell intensity threshold
-            cell_sigma1 (float): cell blur value 1
-            cell_sigma2 (float): cell blur value 2
+            cell_sigma1 (float): cell blur value 1 (DoG-enhancement inner sigma)
+            cell_sigma2 (float): cell blur value 2 (DoG-enhancement outer/background sigma)
+            cell_lower_size_threshold (float): minimum cell size in voxels; also
+                used as the remove_small_objects threshold inside
+                detect_large_features_3D
+            cell_upper_size_threshold (float): maximum cell size in voxels
+            cell_hole_threshold (float): hole-fill size threshold (voxels) inside
+                detect_large_features_3D
+            cell_erosionsize (int): closing footprint size used by the final
+                3D cleanup pass
+            cell_spacing (tuple): voxel spacing (z, y, x) in um, used to convert
+                cell sizes into real units
             d (integer): pixel radius value
             image_bulk (array): image of bulk stain as numpy array, optional
             bulk_threshold (float): bulk stain DoG threshold
@@ -1050,7 +1208,6 @@ class ImageAnalysis_Functions:
                 img2_plane,
                 Gx_plane,
                 Gy_plane,
-                imagecell_plane,
                 imagebulk_plane,
             ):
                 (
@@ -1079,17 +1236,6 @@ class ImageAnalysis_Functions:
                     d,
                 )
 
-                if imagecell_plane is not None:
-                    cell_mask = self.detect_large_features(
-                        imagecell_plane,
-                        cell_threshold1,
-                        cell_threshold2,
-                        cell_sigma1,
-                        cell_sigma2,
-                    )
-                else:
-                    cell_mask = None
-
                 if imagebulk_plane is not None:
                     bulk_mask = self.detect_large_features(
                         imagebulk_plane,
@@ -1112,7 +1258,6 @@ class ImageAnalysis_Functions:
                     meanintensities_large,
                     sumintensities_large,
                     lo_mask,
-                    cell_mask,
                     bulk_mask,
                     overlap_bulk,
                 )
@@ -1121,12 +1266,6 @@ class ImageAnalysis_Functions:
             planes_img2 = [img2[i, :, :] for i in range(img2.shape[0])]
             planes_Gx = [Gx[i, :, :] for i in range(Gx.shape[0])]
             planes_Gy = [Gy[i, :, :] for i in range(Gy.shape[0])]
-            if image_cell is not None:
-                planes_imagecell = [
-                    image_cell[i, :, :] for i in range(image_cell.shape[0])
-                ]
-            else:
-                planes_imagecell = [None] * image.shape[0]
             if image_bulk is not None:
                 planes_imagebulk = [
                     image_bulk[i, :, :] for i in range(image_bulk.shape[0])
@@ -1141,7 +1280,6 @@ class ImageAnalysis_Functions:
                 planes_img2,
                 planes_Gx,
                 planes_Gy,
-                planes_imagecell,
                 planes_imagebulk,
             )
 
@@ -1150,20 +1288,23 @@ class ImageAnalysis_Functions:
             estimated_background = [i[2] for i in results]
             estimated_background_perpixel = [i[3] for i in results]
 
-            if image_cell is not None:
-                try:
-                    cell_mask = np.stack([i[9] for i in results], axis=0)
-                except:
-                    cell_mask = None
-            else:
-                cell_mask = None
+            cell_mask = self._detect_cell_mask_3d(
+                image_cell,
+                cell_sigma1,
+                cell_sigma2,
+                cell_lower_size_threshold,
+                cell_upper_size_threshold,
+                cell_hole_threshold,
+                cell_erosionsize,
+                cell_spacing,
+            )
 
             if image_bulk is not None and len(results) > 0:
                 try:
-                    bulk_mask = np.stack([i[10] for i in results], axis=0)
+                    bulk_mask = np.stack([i[9] for i in results], axis=0)
                 except:
                     bulk_mask = None
-                overlap_bulk = np.concatenate([i[11] for i in results])
+                overlap_bulk = np.concatenate([i[10] for i in results])
             else:
                 bulk_mask = None
                 overlap_bulk = None
@@ -1269,16 +1410,15 @@ class ImageAnalysis_Functions:
                 rdl,
                 d,
             )
-            cell_mask = (
-                self.detect_large_features(
-                    image_cell,
-                    cell_threshold1,
-                    cell_threshold2,
-                    cell_sigma1,
-                    cell_sigma2,
-                )
-                if image_cell is not None
-                else None
+            cell_mask = self._detect_cell_mask_3d(
+                image_cell,
+                cell_sigma1,
+                cell_sigma2,
+                cell_lower_size_threshold,
+                cell_upper_size_threshold,
+                cell_hole_threshold,
+                cell_erosionsize,
+                cell_spacing,
             )
             bulk_mask = (
                 self.detect_large_features(

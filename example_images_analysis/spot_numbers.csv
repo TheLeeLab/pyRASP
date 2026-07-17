@@ -1,0 +1,9 @@
+n_spots,z,image_filename
+2396.0,10.0,/home/jsb92/Documents/pyRASP/example_images/Example_01_ProteinImage_C1.tif
+2388.0,11.0,/home/jsb92/Documents/pyRASP/example_images/Example_01_ProteinImage_C1.tif
+2419.0,12.0,/home/jsb92/Documents/pyRASP/example_images/Example_01_ProteinImage_C1.tif
+2450.0,13.0,/home/jsb92/Documents/pyRASP/example_images/Example_01_ProteinImage_C1.tif
+2396.0,10.0,/home/jsb92/Documents/pyRASP/example_images/Example_02_ProteinImage_C1.tif
+2388.0,11.0,/home/jsb92/Documents/pyRASP/example_images/Example_02_ProteinImage_C1.tif
+2419.0,12.0,/home/jsb92/Documents/pyRASP/example_images/Example_02_ProteinImage_C1.tif
+2450.0,13.0,/home/jsb92/Documents/pyRASP/example_images/Example_02_ProteinImage_C1.tif
